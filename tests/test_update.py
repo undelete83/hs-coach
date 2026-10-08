@@ -208,7 +208,7 @@ class TestRealSwap(unittest.TestCase):
         self.addCleanup(self.cleanup_root)
         self.app = os.path.join(self.root, "App Ordner")           # Leerzeichen im Pfad
         os.makedirs(os.path.join(self.app, "_internal"))
-        self.exe_src = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "whoami.exe")
+        self.exe_src = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "rundll32.exe")      # GUI-Programm ohne Fenster: beim Neustart darf nichts aufpoppen
         shutil.copy(self.exe_src, os.path.join(self.app, "HSCoach.exe"))
         open(os.path.join(self.app, "_internal", "old.dll"), "w").write("old")
         self.work = os.path.join(self.root, "work")
