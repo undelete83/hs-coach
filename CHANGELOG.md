@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.5 - 09.10.2026
+- Behoben: Frisch gespielte Diener mit Eifer (z. B. Schuppenwurm) wurden als „erschöpft“ gewertet, der Plan sagte deshalb „Keine sinnvolle Aktion“. Sie dürfen sofort Diener angreifen (den Helden nicht) und werden jetzt so eingeplant.
+
 ## 2.7.4 - 09.10.2026
 - Neuer Button „⟳ Auf Update prüfen“: sucht sofort bei GitHub nach einer neuen Version, ohne den Coach neu zu starten. Bei einem Update folgt die gewohnte Rückfrage und Installation; ohne Update meldet er „Du hast bereits die neueste Version“, bei Verbindungsproblemen eine Fehlermeldung.
 - Zusätzlich sucht der Coach alle 30 Minuten still nach Updates, sodass der Hinweis in der Statuszeile auch bei langer Laufzeit erscheint.

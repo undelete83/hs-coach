@@ -29,6 +29,23 @@ class TestAttacks(unittest.TestCase):
         self.assertEqual(len(p.steps), 1)
         self.assertIn("gegnerischen Helden", p.steps[0].text)
 
+    def test_fresh_rush_minion_with_exhausted_flag_attacks_minions(self):
+        """Das Spiel meldet frisch gespielte Eifer-Diener als EXHAUSTED - sie duerfen trotzdem Diener angreifen."""
+        s = gs(mana=0, mine=[mm(1, "Eiferer", 5, 4, rush=True, exhausted=True, turns_in_play=0)],
+               opp=[mm(10, "Wolf", 2, 3, taunt=True)])
+        p = plan_for(s)
+        self.assertTrue(p.steps)
+        self.assertIn("Eiferer", p.steps[0].text)
+        self.assertIn("Wolf", p.steps[0].text)
+
+    def test_fresh_rush_minion_with_exhausted_flag_not_face(self):
+        s = gs(mana=0, mine=[mm(1, "Eiferer", 5, 4, rush=True, exhausted=True, turns_in_play=0)], opp_hp=20)
+        self.assertEqual(plan_for(s).steps, [])
+
+    def test_exhausted_normal_minion_cannot_attack(self):
+        s = gs(mana=0, mine=[mm(1, "Müder", 5, 4, exhausted=True)], opp=[mm(10, "Wolf", 2, 3)])
+        self.assertEqual(plan_for(s).steps, [])
+
     def test_rush_cannot_hit_face(self):
         s = gs(mana=0, mine=[mm(1, "Stürmer", 4, 4, rush=True, turns_in_play=0)], opp_hp=20)
         self.assertEqual(plan_for(s).steps, [])

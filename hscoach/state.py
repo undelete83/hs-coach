@@ -34,7 +34,10 @@ class Minion:
 
     @property
     def can_attack(self):
-        return self.atk > 0 and not self.frozen and not self.exhausted and self.attacks_done < self.windfury
+        # Eifer (Rush): Das Spiel setzt EXHAUSTED auch bei frisch gespielten Eifer-Dienern, sie duerfen aber sofort
+        # Diener angreifen (can_attack_face regelt, dass der Held tabu bleibt).
+        exhausted = self.exhausted and not (self.rush and self.turns_in_play == 0)
+        return self.atk > 0 and not self.frozen and not exhausted and self.attacks_done < self.windfury
 
     @property
     def can_attack_face(self):
