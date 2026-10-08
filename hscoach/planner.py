@@ -212,6 +212,8 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         if fx.needs_frozen and not ss.opp[i].frozen:
             return False
         m = ss.opp[i]
+        if fx.max_atk and m.atk > fx.max_atk:
+            return False
         del ss.opp[i]
         if log is not None:
             log.append(f"{m.name} wird vernichtet")
@@ -330,6 +332,21 @@ def _card_cost(ss, c):
         if _discount_matches(c, kind):
             return max(0, c.cost - amt), i
     return c.cost, -1
+
+
+RACE_DE = {"DRAGON": "Drache", "ELEMENTAL": "Elementar", "DEMON": "Dämon", "BEAST": "Bestie", "MURLOC": "Murloc",
+           "PIRATE": "Pirat", "MECHANICAL": "Mech", "UNDEAD": "Untoter", "TOTEM": "Totem"}
+
+
+def _resolve(ss, c, cards):
+    """Kampfschrei mit Bedingung 'wenn Ihr einen <Volk> auf der Hand habt': gilt nur, solange noch eine andere
+    passende Karte unausgespielt in der Hand ist (Reihenfolge im Plan zaehlt). Gibt die Karte mit dem wirksamen Effekt zurueck."""
+    fx = c.fx
+    if not fx.cond_hold or fx.cond_fx is None:
+        return c
+    if any(o.idx not in ss.used and o.idx != c.idx and (o.race == fx.cond_hold or o.race == "ALL") for o in cards):
+        return c._replace(fx=fx.cond_fx)
+    return c
 
 
 def _play_card(ss, c, tgt, log=None):
@@ -521,6 +538,7 @@ class Planner:
             cost, _ = _card_cost(ss, c)
             if cost > ss.mana:
                 continue
+            c = _resolve(ss, c, cards)
             key = (c.cid, c.name)
             if key in seen_names:      # identische Karten in der Hand nur einmal expandieren
                 continue
@@ -533,6 +551,8 @@ class Planner:
                 opts = _targets(ss, kind)
                 if c.fx.needs_frozen:
                     opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].frozen]
+                if c.fx.max_atk:
+                    opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].atk <= c.fx.max_atk]
                 if c.fx.freeze == "target" and c.fx.dmg == 0 and c.fx.cond_frozen_dmg == 0 and c.fx.destroy == "":
                     opts = [t for t in opts if t[0] == "m"]
                 for t in opts:
@@ -621,10 +641,13 @@ class Planner:
         for act in _unroll(end.path):
             log = []
             if act[0] == "play":
-                c = by_idx[act[1]]
+                c0 = by_idx[act[1]]
+                c = _resolve(ss, c0, cards)
                 nxt = _play_card(ss, c, act[2], log)
                 if nxt is None:
                     break
+                if c is not c0:
+                    log.insert(0, f"Kampfschrei aktiv ({RACE_DE.get(c0.fx.cond_hold, 'passende Karte')} auf der Hand)")
                 plan.cids.append(c.cid)
                 tname = self._tname(ss, act[2])
                 if c.ctype == "MINION":

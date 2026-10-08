@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.2 - 09.10.2026
+- Kampfschreie mit der Bedingung „wenn Ihr einen Drachen auf der Hand habt“ werden jetzt geplant: Der Coach nennt das Ziel (z. B. Schuppenreiterin: 2 Schaden auf …), prüft, ob nach der Spielreihenfolge noch ein Drache auf der Hand ist, und beachtet Grenzen wie „max. 3 Angriff“ (Bücherwyrm). Riskante Varianten (zufällig, verletzt, Flächenschaden) bleiben bewusst unberücksichtigt.
+- Schließen nach einem Update läuft ohne Tk-Fehler im Log.
+
 ## 2.7.1 - 08.10.2026
 - Technische Version, um das Selbst-Update mit einem echten Release zu testen. Keine Änderungen an den Funktionen.
 

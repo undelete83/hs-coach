@@ -87,6 +87,27 @@ class TestParse(unittest.TestCase):
         self.assertTrue(e.unknown)
 
 
+class TestHoldRaceCondition(unittest.TestCase):
+    def test_damage_battlecry_with_dragon_condition(self):
+        e = parse_effect("Kampfschrei: Verursacht 2 Schaden, wenn Ihr einen Drachen auf der Hand habt.", "MINION")
+        self.assertEqual(e.cond_hold, "DRAGON")
+        self.assertEqual((e.cond_fx.dmg, e.cond_fx.target_kind), (2, "any"))
+        self.assertEqual(e.dmg, 0)
+
+    def test_destroy_with_max_attack(self):
+        e = parse_effect("Kampfschrei: Vernichtet einen feindlichen Diener mit max. 3 Angriff, wenn Ihr einen Drachen auf der Hand habt.", "MINION")
+        self.assertEqual((e.cond_hold, e.cond_fx.destroy, e.cond_fx.max_atk), ("DRAGON", "target", 3))
+
+    def test_risky_variants_stay_ignored(self):
+        for t in ("Kampfschrei: Fügt allen anderen Charakteren 3 Schaden zu, wenn Ihr einen Drachen auf der Hand habt.",
+                  "Kampfschrei: Vernichtet einen zufälligen feindlichen Diener, wenn Ihr einen Drachen auf der Hand habt.",
+                  "Kampfschrei: Vernichtet einen verletzten feindlichen Diener, wenn Ihr einen Drachen auf der Hand habt.",
+                  "Kampfschrei: Erhält +1 Angriff und Eifer, wenn Ihr einen Drachen auf der Hand habt."):
+            e = parse_effect(t, "MINION")
+            self.assertEqual(e.cond_hold, "", t)
+            self.assertEqual((e.dmg, e.destroy), (0, ""), t)
+
+
 if __name__ == "__main__":
     unittest.main()
 

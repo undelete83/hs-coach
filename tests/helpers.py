@@ -73,6 +73,11 @@ CARDS = {
     "HEROPOWER_SCHLAG": dict(name="Eisschlag", cardtype="HERO_POWER", cost=2, text="Verursacht 1 Schaden."),
     "ELEM": dict(name="Wasserelementar", cardtype="MINION", cost=4, text=""),
     "WEAPON": dict(name="Kriegsbeil", cardtype="WEAPON", cost=1, text=""),
+    "SCHUPPENREITERIN": dict(name="Schuppenreiterin", cardtype="MINION", cost=3,
+                             text="Kampfschrei: Verursacht 2 Schaden, wenn Ihr einen Drachen auf der Hand habt."),
+    "BUECHERWYRM": dict(name="Bücherwyrm", cardtype="MINION", cost=6,
+                        text="Kampfschrei: Vernichtet einen feindlichen Diener mit max. 3 Angriff, wenn Ihr einen Drachen auf der Hand habt."),
+    "DRACHE": dict(name="Drachenjunges", cardtype="MINION", cost=5, text=""),
 }
 
 

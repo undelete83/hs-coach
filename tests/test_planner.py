@@ -295,3 +295,44 @@ class TestFreezingElemental(unittest.TestCase):
         e = parse_effect("Ruft einen Wasserelementar (5/8) herbei.", "HERO_POWER")
         self.assertEqual(e.summon, (5, 8, 1))
         self.assertTrue(e.summon_freezer)
+
+
+class TestHoldRaceBattlecry(unittest.TestCase):
+    def hand(self, with_dragon=True):
+        h = [card(1, "SCHUPPENREITERIN")]
+        if with_dragon:
+            h.append(card(2, "DRACHE", race="DRAGON"))
+        return h
+
+    def test_battlecry_targets_when_dragon_in_hand(self):
+        s = gs(mana=3, opp=[mm(10, "Wächter", 2, 3, taunt=True)], hand=self.hand())
+        p = plan_for(s)
+        first = p.steps[0].text
+        self.assertIn("Schuppenreiterin", first)
+        self.assertIn("auf Wächter", first)
+        self.assertIn("Kampfschrei aktiv (Drache auf der Hand)", first)
+
+    def test_plain_minion_without_dragon(self):
+        s = gs(mana=3, opp=[mm(10, "Wächter", 2, 3, taunt=True)], hand=self.hand(with_dragon=False))
+        first = plan_for(s).steps[0].text
+        self.assertNotIn(" auf ", first)
+        self.assertNotIn("Kampfschrei aktiv", first)
+
+    def test_playing_the_dragon_first_switches_battlecry_off(self):
+        """Wer den Drachen zuerst spielt, hat ihn nicht mehr auf der Hand - die Planung darf das nicht uebersehen."""
+        s = gs(mana=8, opp=[mm(10, "Wächter", 2, 3, taunt=True)], hand=self.hand())
+        p = plan_for(s)
+        texts_ = texts(p)
+        ri = next(i for i, t in enumerate(texts_) if "Schuppenreiterin" in t)
+        di = next((i for i, t in enumerate(texts_) if "Drachenjunges" in t), None)
+        if di is not None and di < ri:
+            self.assertNotIn("Kampfschrei aktiv", texts_[ri])
+
+    def test_destroy_respects_max_attack(self):
+        hand = [card(1, "BUECHERWYRM"), card(2, "DRACHE", race="DRAGON")]
+        s = gs(mana=6, opp=[mm(10, "Brocken", 5, 5), mm(11, "Kleiner", 3, 2)], hand=hand)
+        first = plan_for(s).steps[0].text
+        if "Bücherwyrm" in first and " auf " in first:
+            self.assertIn("auf Kleiner", first)
+            self.assertNotIn("Brocken", first.split("→")[0].replace("Bücherwyrm", ""))
+

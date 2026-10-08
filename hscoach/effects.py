@@ -14,6 +14,8 @@ RACE_WORDS = {
     "pirat": "PIRATE", "piraten": "PIRATE", "murloc": "MURLOC", "totem": "TOTEM", "untoter": "UNDEAD",
 }
 
+_HOLD = re.compile(r",?\s*wenn ihr einen (\w+) auf der hand habt$")
+_HOLD_REJECT = re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
 
@@ -40,6 +42,9 @@ class Effect:
     summon_freezer: bool = False  # beschworener Diener friert Verletzte ein (Wasserelementar)
     secret: bool = False
     conditional: bool = False
+    cond_hold: str = ""           # Bedingung "wenn Ihr einen <Volk> auf der Hand habt" (z. B. DRAGON)
+    cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
+    max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
     notes: list = field(default_factory=list)
@@ -107,7 +112,7 @@ def _scope(s):
 def parse_effect(text, cardtype="SPELL", secret=False):
     """Parst den (bereinigten) Text. Bei Dienern/Waffen nur den Kampfschrei."""
     e = Effect()
-    t = clean_text(text or "").lower()
+    t = clean_text(text or "").lower().replace("max. ", "max ").replace("mind. ", "mind ")   # Abkuerzungspunkt trennt keine Saetze
     if not t:
         e.unknown = cardtype in ("SPELL",)
         return e
@@ -131,6 +136,15 @@ def parse_effect(text, cardtype="SPELL", secret=False):
         s = s.strip().rstrip(".")
         if not s or s.startswith("zwillingszauber"):
             continue
+        mh = _HOLD.search(s)
+        if mh and RACE_WORDS.get(mh.group(1)) and not _HOLD_REJECT.search(s[:mh.start()]):
+            cf = parse_effect(s[:mh.start()], "SPELL")           # nur Einzelziel-Schaden/-Vernichten werden simuliert
+            single = (cf.dmg and not cf.aoe_dmg and not cf.freeze and not cf.transform) or cf.destroy == "target"
+            if single and not (cf.aoe_dmg or cf.destroy == "aoe"):
+                e.conditional = True
+                e.cond_hold, e.cond_fx = RACE_WORDS[mh.group(1)], cf
+                e.notes.append(s)
+                continue
         if _COND.search(s) and "bereits eingefroren" not in s:
             e.conditional = True
             e.notes.append(s)
@@ -161,6 +175,10 @@ def parse_effect(text, cardtype="SPELL", secret=False):
                 e.freeze, e.freeze_target = "target", (sc or last_scope or "any")
                 last_scope = e.freeze_target
                 e.unknown = False
+
+        m = re.search(r"mit (?:max |höchstens )?(\d+) (?:oder weniger )?angriff", s)
+        if m and ("vernichtet" in s or "zerstört" in s):
+            e.max_atk = int(m.group(1))
 
         m = re.search(r"(vernichtet|zerstört) (einen|alle|jeden)\s+(\w+\s+)?(feindlichen\s+)?(eingefrorenen\s+)?diener", s)
         if m:
