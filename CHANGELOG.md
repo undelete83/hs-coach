@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.1 - 08.10.2026
+- Technische Version, um das Selbst-Update mit einem echten Release zu testen. Keine Änderungen an den Funktionen.
+
 ## 2.7.0 - 08.10.2026
 - Selbst-Update der Windows-Version: Bei einer neuen Version genügt ein Klick auf den Hinweis in der Statuszeile. Der Coach lädt das Paket, prüft die SHA-256-Prüfsumme, entpackt es sicher, tauscht sich nach dem Beenden aus (mit Rückfall auf die alte Version, falls das Kopieren scheitert) und startet neu. Einstellungen, API-Key und Berichte bleiben erhalten.
 - Aus dem Quellcode oder bei nicht beschreibbarem Ordner öffnet der Hinweis weiterhin die Download-Seite.
