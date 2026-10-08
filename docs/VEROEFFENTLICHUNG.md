@@ -23,8 +23,10 @@ Stand: 08.10.2026 (Version 2.6.0). Ziel: ein öffentliches Repo und eine Version
 
 ## 4. Installation
 - [x] `scripts/build_exe.py` baut `dist/HSCoach-<Version>.zip` mit PyInstaller (ohne Konsolenfenster).
-- [ ] GitHub-Release anlegen (Tag `v<Version>`, Zip anhängen, Text aus `CHANGELOG.md`) – erst nach dem Öffentlichmachen.
-- [x] Update-Hinweis: beim Start einmal `releases/latest` abfragen, bei neuerer Version Hinweis in der Statuszeile mit Link; abschaltbar, keine automatische Installation.
+- [x] GitHub-Release `v2.6.0` mit Zip. Ab 2.7.0: Zip und `.sha256` anhängen, Text aus `CHANGELOG.md`.
+- [x] Update-Hinweis: beim Start einmal `releases/latest` abfragen, bei neuerer Version Hinweis in der Statuszeile; abschaltbar.
+- [x] Selbst-Update der `.exe` (ab 2.7.0): Download nur von `github.com/<repo>/releases/download/`, SHA-256-Prüfung gegen den von GitHub gelieferten Wert, sicheres Entpacken, Austausch nach dem Beenden mit Rückfall auf die alte Version. Nur nach Klick und Bestätigung. Ende-zu-Ende getestet gegen einen lokalen Server (`HS_COACH_UPDATE_URL`, Testhook `HS_COACH_UPDATE_AUTO`).
+- [ ] Optional: Release-Zip signieren (Schutz auch gegen einen gekaperten GitHub-Account).
 - [ ] Optional: Icon für die `.exe`, Code-Signatur (gegen SmartScreen-Warnung).
 
 ## 5. Rechtliches und Quellen

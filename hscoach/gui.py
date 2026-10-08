@@ -1,5 +1,6 @@
 """Tk-Oberflaeche. Alles Rechnen (Log lesen, Planen, API) passiert in Hintergrund-Threads."""
 import logging
+import os
 import queue
 import re
 import threading
@@ -73,7 +74,11 @@ class App(tk.Tk):
         self.build = version.BuildInfo()
         self._newer_checked = 0.0
         self._newer = ""
-        self._release = None          # (version, url) eines neueren GitHub-Releases
+        self._release = None          # update.Release eines neueren GitHub-Releases
+        self._auto_update = False     # darf sich diese Installation selbst aktualisieren?
+        self._closed = False
+        self._updating = False
+        self._update_msg = ""
         self._logcfg_state = detect.check_log_config()
         self.title(f"HS Coach {self.build.label}")
         self.configure(bg=BG)
@@ -164,6 +169,9 @@ class App(tk.Tk):
         return lbl
 
     def _build(self):
+        # Statuszeile zuerst packen: sie behaelt ihren Platz auch bei kleinen Fenstern (dort steht der Update-Hinweis)
+        self.lbl_status = tk.Label(self, text="", bg=BG, fg="#555577", font=("Consolas", 8))
+        self.lbl_status.pack(side="bottom", pady=3)
         hdr = tk.Frame(self, bg="#1a1a3e", pady=6)
         hdr.pack(fill="x")
         tk.Label(hdr, text="⚔  HEARTHSTONE COACH", bg="#1a1a3e", fg=GOLD, font=("Segoe UI", 18, "bold")).pack()
@@ -279,8 +287,6 @@ class App(tk.Tk):
 
         self.img_frame = tk.Frame(self, bg=BG)
         self.img_frame.pack(fill="x", padx=10, pady=(2, 4))
-        self.lbl_status = tk.Label(self, text="", bg=BG, fg="#555577", font=("Consolas", 8))
-        self.lbl_status.pack(side="bottom", pady=3)
         self._set_ai_idle()
 
     # -- Hilfen ----------------------------------------------------------------------------------
@@ -377,13 +383,57 @@ class App(tk.Tk):
 
     def _on_release(self, found):
         self._release = found
+        self._auto_update = bool(found.asset_url and found.sha256 and update.can_self_update())
+        if self._auto_update and os.environ.get("HS_COACH_UPDATE_URL") and os.environ.get("HS_COACH_UPDATE_AUTO"):
+            self._start_update(found)          # Testhook: Ende-zu-Ende-Test gegen einen lokalen Server, ohne Klick
 
     def _open_release(self, _event=None):
-        if self._release:
+        r = self._release
+        if not r or self._updating:
+            return
+        if not self._auto_update:
             import webbrowser
-            webbrowser.open(self._release[1])
+            webbrowser.open(r.url)
+            return
+        from tkinter import messagebox
+        s = self._state
+        warn = "\n\nAchtung: Es läuft gerade eine Partie - der Coach wird kurz beendet." if (
+            s is not None and not s.result and (s.turn or s.mulligan)) else ""
+        if messagebox.askyesno("Update", f"Version {r.version} jetzt installieren?\n\nDer Coach lädt das Update, prüft es "
+                               "und startet danach neu. Einstellungen und API-Key bleiben erhalten." + warn, parent=self):
+            self._start_update(r)
+
+    def _start_update(self, r):
+        import os
+        self._updating = True
+        self._update_msg = f"⬇ Update {r.version} wird geladen ..."
+        work_dir = os.path.join(config.APP_DIR, "update")
+
+        def progress(done, total):
+            pct = f" {done * 100 // total}%" if total else ""
+            self.post(lambda: setattr(self, "_update_msg", f"⬇ Update {r.version} wird geladen ...{pct}"))
+
+        def work():
+            try:
+                new_dir = update.prepare(r, self.cfg["update_repo"], work_dir, progress)
+                self.post(lambda: setattr(self, "_update_msg", f"⟳ Update {r.version} wird installiert - der Coach startet neu ..."))
+                update.install_and_restart(new_dir, work_dir)
+            except Exception as ex:
+                log.exception("Update fehlgeschlagen")
+                self.post(lambda: self._update_failed(str(ex), r))
+                return
+            self.post(self._on_close)
+        threading.Thread(target=work, daemon=True, name="self-update").start()
+
+    def _update_failed(self, err, r):
+        from tkinter import messagebox
+        self._updating = False
+        self._update_msg = ""
+        messagebox.showerror("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
+                             parent=self)
 
     def _on_close(self):
+        self._closed = True
         try:
             self.cfg["geometry"] = self.geometry()
             config.save(self.cfg, ["geometry"])
@@ -398,6 +448,8 @@ class App(tk.Tk):
         self._calls.put(fn)
 
     def _drain(self):
+        if self._closed:
+            return
         while True:
             try:
                 fn = self._calls.get_nowait()
@@ -456,10 +508,13 @@ class App(tk.Tk):
             self._newer_checked = now
             self._newer = self.build.newer_available()
         txt += f"   |   {self.build.label} (gestartet {self.build.started})"
+        if self._update_msg:
+            self.lbl_status.config(text=self._update_msg, fg="#ffaa44", cursor="")
+            return
         if self._newer:
             txt += f"   |   ⟳ NEUSTART EMPFOHLEN - neuer Stand {self._newer}"
         if self._release:
-            txt += f"   |   ⬆ Neue Version {self._release[0]} verfügbar (Klick: Download-Seite)"
+            txt += f"   |   ⬆ Neue Version {self._release[0]} verfügbar ({'Klick: jetzt aktualisieren' if self._auto_update else 'Klick: Download-Seite'})"
         self.lbl_status.config(text=txt, fg="#ffaa44" if (self._newer or self._release) else "#555577",
                                cursor="hand2" if self._release else "")
 

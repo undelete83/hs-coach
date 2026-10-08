@@ -4,6 +4,7 @@
 Aufruf:  python scripts/build_exe.py
 Es wird ein eigenes virtuelles Environment (.venv-build) angelegt, damit nur die noetigen Pakete in der .exe landen.
 """
+import hashlib
 import os
 import shutil
 import subprocess
@@ -41,7 +42,11 @@ def main():
             for f in files:
                 p = os.path.join(base, f)
                 z.write(p, os.path.join("HSCoach", os.path.relpath(p, out)))
-    print(f"\nFertig: {zip_path} ({os.path.getsize(zip_path) / 1e6:.1f} MB)")
+    with open(zip_path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    with open(zip_path + ".sha256", "w", encoding="ascii", newline="\n") as f:
+        f.write(f"{digest}  {os.path.basename(zip_path)}\n")
+    print(f"\nFertig: {zip_path} ({os.path.getsize(zip_path) / 1e6:.1f} MB)\nSHA-256: {digest}")
 
 
 if __name__ == "__main__":

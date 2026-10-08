@@ -12,7 +12,7 @@ Live-Coach für **Hearthstone** (Windows). Der Coach liest die Logdatei, die Hea
 - **Mulligan-Hilfe** und **Glossar** (Maus über unterstrichene Begriffe).
 - **Optional mit eigenem Anthropic-API-Key**: KI-Tipps pro Zug (Streaming, Kostenanzeige) und eine Spielanalyse nach der Partie. Ohne Key sind diese Funktionen aus – alles andere funktioniert voll.
 - **Kartenbilder** der empfohlenen Karten (abschaltbar).
-- **Update-Hinweis**: Beim Start wird bei GitHub nachgesehen, ob es eine neuere Version gibt (abschaltbar). Es wird nichts automatisch installiert.
+- **Updates mit einem Klick**: Beim Start wird bei GitHub nachgesehen, ob es eine neuere Version gibt (abschaltbar). Dann erscheint in der Statuszeile ein Hinweis; ein Klick lädt das Update, prüft die SHA-256-Prüfsumme, ersetzt die Programmdateien und startet den Coach neu. Einstellungen, API-Key und Berichte bleiben erhalten. Ohne Rückfrage geschieht nichts.
 
 ## Schnellstart
 
@@ -24,6 +24,8 @@ Live-Coach für **Hearthstone** (Windows). Der Coach liest die Logdatei, die Hea
 4. Spiel starten – der Coach findet den Log-Ordner und deinen Spielernamen selbst.
 
 Windows SmartScreen kann bei der unsignierten `.exe` warnen („Weitere Informationen → Trotzdem ausführen“). Wer das nicht möchte, nutzt Variante B.
+
+Spätere Updates installiert der Coach auf Wunsch selbst (Klick auf den Hinweis in der Statuszeile). Liegt der Programmordner an einem geschützten Ort (z. B. `C:\Program Files`) oder läuft der Coach aus dem Quellcode, öffnet der Hinweis stattdessen die Download-Seite; dann das neue Zip wie oben entpacken und den alten Ordner ersetzen (`git pull` bei Variante B).
 
 Python muss für Variante A nicht installiert sein. Meldet Windows beim Start, dass eine Datei wie `VCRUNTIME140.dll` fehlt, hilft das kostenlose [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe); auf aktuellem Windows 10/11 ist es normalerweise schon vorhanden.
 
