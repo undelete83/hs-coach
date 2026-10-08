@@ -25,6 +25,8 @@ Live-Coach für **Hearthstone** (Windows). Der Coach liest die Logdatei, die Hea
 
 Windows SmartScreen kann bei der unsignierten `.exe` warnen („Weitere Informationen → Trotzdem ausführen“). Wer das nicht möchte, nutzt Variante B.
 
+Python muss für Variante A nicht installiert sein. Meldet Windows beim Start, dass eine Datei wie `VCRUNTIME140.dll` fehlt, hilft das kostenlose [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe); auf aktuellem Windows 10/11 ist es normalerweise schon vorhanden.
+
 ### Variante B: aus dem Quellcode
 
 Voraussetzungen: Python 3.11 oder neuer.
