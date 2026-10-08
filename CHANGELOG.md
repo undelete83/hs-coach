@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.6 - 09.10.2026
+- Arkane Geschosse und ähnliche Zauber („Verursacht 3 Schaden, der zufällig auf alle Feinde verteilt wird“, „Verschießt N Geschosse auf zufällige Feinde“) werden geplant statt als „Effekt unbekannt“ gemeldet. Ist kein gegnerischer Diener da, trifft alles den Helden (exakt gerechnet); bei Dienern auf dem Board rechnet der Planer mit dem Erwartungswert fürs Gesicht.
+
 ## 2.7.5 - 09.10.2026
 - Behoben: Frisch gespielte Diener mit Eifer (z. B. Schuppenwurm) wurden als „erschöpft“ gewertet, der Plan sagte deshalb „Keine sinnvolle Aktion“. Sie dürfen sofort Diener angreifen (den Helden nicht) und werden jetzt so eingeplant.
 

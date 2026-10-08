@@ -87,6 +87,24 @@ class TestParse(unittest.TestCase):
         self.assertTrue(e.unknown)
 
 
+class TestMissiles(unittest.TestCase):
+    def test_arcane_missiles(self):
+        e = parse_effect("Verursacht $3 Schaden, der zufällig auf alle Feinde verteilt wird.", "SPELL")
+        self.assertEqual(e.missiles, (3, 1))
+        self.assertTrue(e.concrete)
+        self.assertEqual((e.dmg, e.target_kind), (0, ""))
+
+    def test_shots_with_damage_each(self):
+        e = parse_effect("Verschießt 3 Geschosse auf zufällige Feinde, die je 3 Schaden verursachen.", "SPELL")
+        self.assertEqual(e.missiles, (3, 3))
+        e = parse_effect("Verschießt 5 Geschosse auf zufällige Feinde, die je 1 Schaden verursachen.", "SPELL")
+        self.assertEqual(e.missiles, (5, 1))
+
+    def test_minion_only_variants_not_modelled(self):
+        e = parse_effect("Verschießt 3 Geschosse auf zufällige Diener, die je 2 Schaden verursachen.", "SPELL")
+        self.assertIsNone(e.missiles)
+
+
 class TestHoldRaceCondition(unittest.TestCase):
     def test_damage_battlecry_with_dragon_condition(self):
         e = parse_effect("Kampfschrei: Verursacht 2 Schaden, wenn Ihr einen Drachen auf der Hand habt.", "MINION")

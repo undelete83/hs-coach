@@ -260,8 +260,22 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             _hurt_hero(ss, True, n)
         if scope == "all_chars":
             _hurt_hero(ss, False, n)
+    if fx.missiles:
+        cnt, per = fx.missiles
+        per += sp
+        k = len(ss.opp)
+        if k == 0:                                   # nur der Held ist ein Ziel: jedes Geschoss trifft ihn
+            face = cnt * per
+            note = f"{face} Schaden ans Gesicht (zufällige Ziele - nur der Held ist übrig)"
+        else:                                        # Erwartungswert: jedes Geschoss trifft den Helden mit 1/(k+1)
+            face = int(round(cnt * per / (k + 1)))
+            ss.util += 0.8                           # der Rest trifft Diener - ungenau, aber nicht wertlos
+            note = f"{cnt} Geschosse à {per} Schaden, zufällig verteilt (ca. {face} ins Gesicht)"
+        _hurt_hero(ss, True, face)
+        if log is not None:
+            log.append(note)
     if fx.freeze == "aoe":
-        ss.opp[:] = [m._replace(frozen=True) for m in ss.opp]
+        ss.opp[:] =[m._replace(frozen=True) for m in ss.opp]
         if log is not None and ss.opp:
             log.append("alle feindlichen Diener eingefroren")
     if fx.destroy == "aoe":

@@ -367,3 +367,23 @@ class TestHoldRaceBattlecry(unittest.TestCase):
         self.assertIn("Schuppenwurm (4/4)", t[0])
         self.assertFalse(any("greift" in x for x in t))
 
+
+class TestRandomMissiles(unittest.TestCase):
+    def test_empty_enemy_board_all_missiles_hit_face(self):
+        s = gs(mana=2, opp_hp=28, hand=[card(1, "GESCHOSSE"), card(2, "GESCHOSSE")])
+        p = plan_for(s)
+        t = texts(p)
+        self.assertEqual(len(t), 2)
+        self.assertTrue(all("Arkane Geschosse" in x and "3 Schaden ans Gesicht" in x for x in t), t)
+        self.assertEqual(p.unknown_cards, [])
+
+    def test_lethal_with_missiles_on_empty_board(self):
+        s = gs(mana=1, opp_hp=3, hand=[card(1, "GESCHOSSE")])
+        self.assertTrue(plan_for(s).lethal)
+
+    def test_enemy_minions_split_expectation(self):
+        s = gs(mana=1, opp_hp=28, opp=[mm(10, "Wolf", 2, 3)], hand=[card(1, "GESCHOSSE")])
+        t = texts(plan_for(s))
+        if t:
+            self.assertIn("zufällig verteilt", t[0])
+

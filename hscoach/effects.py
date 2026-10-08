@@ -15,7 +15,9 @@ RACE_WORDS = {
 }
 
 _HOLD = re.compile(r",?\s*wenn ihr einen (\w+) auf der hand habt$")
-_SELF_BUFF = re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
+_MISSILES_SPLIT = re.compile(r"verursacht (\d+) schaden, der zufällig auf alle feinde verteilt wird")
+_MISSILES_SHOT = re.compile(r"verschießt (\d+) geschosse auf zufällige feinde, die je (\d+) schaden verursachen")
+_SELF_BUFF =re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
 _HOLD_REJECT =re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
@@ -45,6 +47,7 @@ class Effect:
     conditional: bool = False
     cond_hold: str = ""           # Bedingung "wenn Ihr einen <Volk> auf der Hand habt" (z. B. DRAGON)
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
+    missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
@@ -160,6 +163,13 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.notes.append(s)
             continue
         sc = _scope(s)
+
+        m = _MISSILES_SPLIT.search(s) or _MISSILES_SHOT.search(s)
+        if m:                                           # Arkane Geschosse & Co.: zufaellig auf alle Feinde
+            n, per = (int(m.group(1)), 1) if m.re is _MISSILES_SPLIT else (int(m.group(1)), int(m.group(2)))
+            e.missiles = (n, per)
+            e.unknown = False
+            continue
 
         m = re.search(r"(\d+) schaden", s)
         if m and ("fügt" in s or "verursacht" in s or "schaden zu" in s):
