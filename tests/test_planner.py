@@ -336,3 +336,17 @@ class TestHoldRaceBattlecry(unittest.TestCase):
             self.assertIn("auf Kleiner", first)
             self.assertNotIn("Brocken", first.split("→")[0].replace("Bücherwyrm", ""))
 
+    def test_schuppenwurm_buff_and_rush_attack(self):
+        """Mit Drache auf der Hand: 5/4 mit Eifer - greift sofort einen Diener an (aber nicht den Helden)."""
+        hand = [card(1, "SCHUPPENWURM", atk=4, hp=4), card(2, "DRACHE", atk=5, hp=5, race="DRAGON")]
+        s = gs(mana=4, opp=[mm(10, "Wächter", 2, 3, taunt=True)], hand=hand)
+        t = texts(plan_for(s))
+        self.assertIn("Schuppenwurm (5/4)", t[0])
+        self.assertTrue(any("Schuppenwurm (5/4) greift Wächter" in x for x in t), t)
+
+    def test_schuppenwurm_without_dragon_is_plain(self):
+        s = gs(mana=4, opp=[mm(10, "Wächter", 2, 3, taunt=True)], hand=[card(1, "SCHUPPENWURM", atk=4, hp=4)])
+        t = texts(plan_for(s))
+        self.assertIn("Schuppenwurm (4/4)", t[0])
+        self.assertFalse(any("greift" in x for x in t))
+

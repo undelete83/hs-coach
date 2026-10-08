@@ -77,6 +77,8 @@ CARDS = {
                              text="Kampfschrei: Verursacht 2 Schaden, wenn Ihr einen Drachen auf der Hand habt."),
     "BUECHERWYRM": dict(name="Bücherwyrm", cardtype="MINION", cost=6,
                         text="Kampfschrei: Vernichtet einen feindlichen Diener mit max. 3 Angriff, wenn Ihr einen Drachen auf der Hand habt."),
+    "SCHUPPENWURM": dict(name="Schuppenwurm", cardtype="MINION", cost=4,
+                        text="Kampfschrei: Erhält +1 Angriff und Eifer, wenn Ihr einen Drachen auf der Hand habt."),
     "DRACHE": dict(name="Drachenjunges", cardtype="MINION", cost=5, text=""),
 }
 

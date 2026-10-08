@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.3 - 09.10.2026
+- Selbststärkung per Kampfschrei („Erhält +1 Angriff und Eifer/Spott/Ansturm, wenn Ihr einen Drachen auf der Hand habt“, z. B. Schuppenwurm) wird geplant: Der Coach rechnet mit den echten Werten (5/4) und lässt den Diener bei Eifer sofort angreifen.
+- Begriffe korrigiert: **Eifer** = sofort angreifen, aber nur Diener; **Ansturm** = sofort angreifen, auch den Helden. Die Anzeige am Board und das Glossar nutzen jetzt die richtigen Wörter.
+
 ## 2.7.2 - 09.10.2026
 - Kampfschreie mit der Bedingung „wenn Ihr einen Drachen auf der Hand habt“ werden jetzt geplant: Der Coach nennt das Ziel (z. B. Schuppenreiterin: 2 Schaden auf …), prüft, ob nach der Spielreihenfolge noch ein Drache auf der Hand ist, und beachtet Grenzen wie „max. 3 Angriff“ (Bücherwyrm). Riskante Varianten (zufällig, verletzt, Flächenschaden) bleiben bewusst unberücksichtigt.
 - Schließen nach einem Update läuft ohne Tk-Fehler im Log.

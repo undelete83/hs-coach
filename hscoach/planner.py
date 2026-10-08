@@ -334,6 +334,19 @@ def _card_cost(ss, c):
     return c.cost, -1
 
 
+def _buffed(m, buff):
+    """Selbststaerkung des gerade gespielten Dieners (Kampfschrei): +Angriff/+Leben und Spott/Eifer/Ansturm."""
+    atk, hp, kw = buff
+    m = m._replace(atk=m.atk + atk, hp=m.hp + hp)
+    if kw == "spott":
+        m = m._replace(taunt=True)
+    elif kw == "eifer":                      # Rush: sofort angreifen, aber nur Diener
+        m = m._replace(att=max(m.att, m.wf), face=False)
+    elif kw == "ansturm":                    # Charge: sofort angreifen, auch den Helden
+        m = m._replace(att=max(m.att, m.wf), face=True)
+    return m
+
+
 RACE_DE = {"DRAGON": "Drache", "ELEMENTAL": "Elementar", "DEMON": "Dämon", "BEAST": "Bestie", "MURLOC": "Murloc",
            "PIRATE": "Pirat", "MECHANICAL": "Mech", "UNDEAD": "Untoter", "TOTEM": "Totem"}
 
@@ -378,6 +391,8 @@ def _play_card(ss, c, tgt, log=None):
         n.mine.append(M(n.uid, c.name, c.cid, c.atk, c.hp, c.taunt, c.ds, c.poison, False, c.stealth, False, wf,
                         ready, bool(c.charge) or not c.rush, c.lifesteal, 0, c.race, True,
                         FREEZER_TEXT in (c.text or "").lower()))
+        if fx.self_buff:
+            n.mine[-1] = _buffed(n.mine[-1], fx.self_buff)
         if fx.concrete and not _apply_fx(n, fx, tgt, False, c.name, log):
             return None
     elif c.ctype == "WEAPON":
@@ -651,7 +666,8 @@ class Planner:
                 plan.cids.append(c.cid)
                 tname = self._tname(ss, act[2])
                 if c.ctype == "MINION":
-                    head = f"Spiele {c.name} ({c.atk}/{c.hp})"
+                    b = c.fx.self_buff or (0, 0, "")
+                    head = f"Spiele {c.name} ({c.atk + b[0]}/{c.hp + b[1]})"
                     kind = "minion"
                 elif c.ctype == "WEAPON":
                     head = f"Lege {c.name} an ({c.atk}/{c.hp})"

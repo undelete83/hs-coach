@@ -62,6 +62,8 @@ class Minion:
         if self.immune:
             f.append("IMMUN")
         if self.rush and self.turns_in_play == 0:
+            f.append("EIFER")
+        elif self.charge and self.turns_in_play == 0:
             f.append("ANSTURM")
         return f
 

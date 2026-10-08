@@ -15,7 +15,8 @@ RACE_WORDS = {
 }
 
 _HOLD = re.compile(r",?\s*wenn ihr einen (\w+) auf der hand habt$")
-_HOLD_REJECT = re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
+_SELF_BUFF = re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
+_HOLD_REJECT =re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
 
@@ -44,6 +45,7 @@ class Effect:
     conditional: bool = False
     cond_hold: str = ""           # Bedingung "wenn Ihr einen <Volk> auf der Hand habt" (z. B. DRAGON)
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
+    self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
@@ -138,7 +140,15 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             continue
         mh = _HOLD.search(s)
         if mh and RACE_WORDS.get(mh.group(1)) and not _HOLD_REJECT.search(s[:mh.start()]):
-            cf = parse_effect(s[:mh.start()], "SPELL")           # nur Einzelziel-Schaden/-Vernichten werden simuliert
+            core = s[:mh.start()]
+            mb = _SELF_BUFF.match(core)
+            if mb:                                                # Selbststaerkung (z. B. Schuppenwurm: +1 Angriff und Eifer)
+                e.conditional = True
+                e.cond_hold = RACE_WORDS[mh.group(1)]
+                e.cond_fx = Effect(unknown=False, self_buff=(int(mb.group(1)), int(mb.group(2) or 0), mb.group(3) or ""))
+                e.notes.append(s)
+                continue
+            cf = parse_effect(core, "SPELL")           # nur Einzelziel-Schaden/-Vernichten werden simuliert
             single = (cf.dmg and not cf.aoe_dmg and not cf.freeze and not cf.transform) or cf.destroy == "target"
             if single and not (cf.aoe_dmg or cf.destroy == "aoe"):
                 e.conditional = True

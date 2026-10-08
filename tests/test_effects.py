@@ -98,11 +98,16 @@ class TestHoldRaceCondition(unittest.TestCase):
         e = parse_effect("Kampfschrei: Vernichtet einen feindlichen Diener mit max. 3 Angriff, wenn Ihr einen Drachen auf der Hand habt.", "MINION")
         self.assertEqual((e.cond_hold, e.cond_fx.destroy, e.cond_fx.max_atk), ("DRAGON", "target", 3))
 
+    def test_self_buff_with_keyword(self):
+        for word, kw in (("Eifer", "eifer"), ("Spott", "spott"), ("Ansturm", "ansturm")):
+            e = parse_effect(f"Kampfschrei: Erhält +1 Angriff und {word}, wenn Ihr einen Drachen auf der Hand habt.", "MINION")
+            self.assertEqual((e.cond_hold, e.cond_fx.self_buff), ("DRAGON", (1, 0, kw)))
+
     def test_risky_variants_stay_ignored(self):
         for t in ("Kampfschrei: Fügt allen anderen Charakteren 3 Schaden zu, wenn Ihr einen Drachen auf der Hand habt.",
                   "Kampfschrei: Vernichtet einen zufälligen feindlichen Diener, wenn Ihr einen Drachen auf der Hand habt.",
                   "Kampfschrei: Vernichtet einen verletzten feindlichen Diener, wenn Ihr einen Drachen auf der Hand habt.",
-                  "Kampfschrei: Erhält +1 Angriff und Eifer, wenn Ihr einen Drachen auf der Hand habt."):
+                  "Spott. Kampfschrei: Erhält +1/+2, wenn Ihr einen Dämon auf der Hand habt, der mind. (5) kostet."):
             e = parse_effect(t, "MINION")
             self.assertEqual(e.cond_hold, "", t)
             self.assertEqual((e.dmg, e.destroy), (0, ""), t)
