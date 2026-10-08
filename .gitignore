@@ -1,0 +1,11 @@
+hs_coach_key.txt
+api_key.txt
+.env
+hs_coach_config.json
+*.pyc
+__pycache__/
+*.part
+build/
+dist/
+*.spec
+.venv-build/
