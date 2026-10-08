@@ -459,6 +459,8 @@ class App(tk.Tk):
                 fn()
             except Exception:
                 log.exception("GUI-Callback-Fehler")
+            if self._closed:             # ein Callback (z. B. Update) hat das Fenster geschlossen
+                return
         try:
             s, v = self.backend.get()
             if s is not None and v != self._seen_version:
