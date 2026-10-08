@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.4 - 09.10.2026
+- Neuer Button „⟳ Auf Update prüfen“: sucht sofort bei GitHub nach einer neuen Version, ohne den Coach neu zu starten. Bei einem Update folgt die gewohnte Rückfrage und Installation; ohne Update meldet er „Du hast bereits die neueste Version“, bei Verbindungsproblemen eine Fehlermeldung.
+- Zusätzlich sucht der Coach alle 30 Minuten still nach Updates, sodass der Hinweis in der Statuszeile auch bei langer Laufzeit erscheint.
+
 ## 2.7.3 - 09.10.2026
 - Selbststärkung per Kampfschrei („Erhält +1 Angriff und Eifer/Spott/Ansturm, wenn Ihr einen Drachen auf der Hand habt“, z. B. Schuppenwurm) wird geplant: Der Coach rechnet mit den echten Werten (5/4) und lässt den Diener bei Eifer sofort angreifen.
 - Begriffe korrigiert: **Eifer** = sofort angreifen, aber nur Diener; **Ansturm** = sofort angreifen, auch den Helden. Die Anzeige am Board und das Glossar nutzen jetzt die richtigen Wörter.

@@ -96,6 +96,60 @@ class TestCheck(unittest.TestCase):
         self.assertEqual(called, [])
 
 
+class TestCheckNow(unittest.TestCase):
+    def test_statuses(self):
+        self.assertEqual(update.check_now(REPO, "2.7.0", opener_for({"tag_name": "v2.7.0"})), ("current", None))
+        status, rel = update.check_now(REPO, "2.7.0", opener_for({"tag_name": "v2.8.0"}))
+        self.assertEqual((status, rel.version), ("new", "2.8.0"))
+        status, msg = update.check_now(REPO, "2.7.0", failing)
+        self.assertEqual(status, "error")
+        self.assertIn("offline", msg)
+        self.assertEqual(update.check_now("", "2.7.0")[0], "error")
+
+    def test_manual_check_ignores_update_check_setting(self):
+        got = []
+        import threading
+        ev = threading.Event()
+        update.check_now_async({"update_check": False, "update_repo": ""}, lambda *a: (got.append(a), ev.set()))
+        self.assertTrue(ev.wait(5))
+        self.assertEqual(got[0][0], "error")          # leeres Repo -> Fehler, aber die Pruefung lief trotz update_check=False
+
+
+class TestUpdateButtonHandler(unittest.TestCase):
+    """Die Auswertung des Button-Ergebnisses in der GUI (ohne Fenster)."""
+
+    def setUp(self):
+        from unittest import mock
+        from hscoach import gui
+        self.gui, self.mock = gui, mock
+        self.app = mock.MagicMock()
+        self.app.build.version = "2.7.3"
+
+    def run_handler(self, status, result):
+        with self.mock.patch("tkinter.messagebox.showinfo") as info, self.mock.patch("tkinter.messagebox.showwarning") as warn:
+            self.gui.App._update_checked(self.app, status, result)
+        return info, warn
+
+    def test_current_version_message(self):
+        info, warn = self.run_handler("current", None)
+        info.assert_called_once()
+        self.assertIn("2.7.3", info.call_args[0][1])
+        warn.assert_not_called()
+        self.app.btn_update.config.assert_called_with(state="normal", text="⟳ Auf Update prüfen")
+
+    def test_error_message(self):
+        info, warn = self.run_handler("error", "offline")
+        warn.assert_called_once()
+        self.assertIn("offline", warn.call_args[0][1])
+
+    def test_new_release_starts_update_flow(self):
+        rel = update.Release("2.8.0", "u", "a", "n", 1, "s")
+        info, warn = self.run_handler("new", rel)
+        self.app._on_release.assert_called_once_with(rel)
+        self.app._open_release.assert_called_once()
+        info.assert_not_called()
+
+
 class TestDownload(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

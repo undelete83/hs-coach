@@ -78,21 +78,27 @@ def _asset_info(data, opener):
     return "", "", 0, ""
 
 
-def check(repo, current=__version__, opener=urllib.request.urlopen):
-    """Release-Info, wenn es ein neueres Release gibt, sonst None. Wirft nie."""
+def check_now(repo, current=__version__, opener=urllib.request.urlopen):
+    """Genaues Ergebnis fuer die manuelle Pruefung: ("new", Release) | ("current", None) | ("error", Meldung). Wirft nie."""
     if not repo or "/" not in repo:
-        return None
+        return "error", "Es ist kein Update-Repository eingestellt."
     try:
         data = json.loads(_fetch(API_URL.format(repo=repo), opener, "application/vnd.github+json").decode("utf-8"))
         tag = str(data.get("tag_name") or "")
         if data.get("draft") or data.get("prerelease") or not is_newer(tag, current):
-            return None
+            return "current", None
         name, url, size, sha = _asset_info(data, opener)
-        return Release(tag.lstrip("vV"), data.get("html_url") or f"https://github.com/{repo}/releases",
-                       url, name, size, sha)
+        return "new", Release(tag.lstrip("vV"), data.get("html_url") or f"https://github.com/{repo}/releases",
+                              url, name, size, sha)
     except Exception as ex:
         log.info("Update-Abfrage ohne Ergebnis: %s", ex)
-        return None
+        return "error", str(ex)
+
+
+def check(repo, current=__version__, opener=urllib.request.urlopen):
+    """Release-Info, wenn es ein neueres Release gibt, sonst None. Wirft nie."""
+    status, result = check_now(repo, current, opener)
+    return result if status == "new" else None
 
 
 def check_async(cfg, callback, current=__version__):
@@ -105,6 +111,13 @@ def check_async(cfg, callback, current=__version__):
         if found:
             callback(found)
     threading.Thread(target=_run, daemon=True, name="update-check").start()
+
+
+def check_now_async(cfg, callback, current=__version__):
+    """Manuelle Pruefung im Hintergrund (ignoriert die Einstellung `update_check`); callback(status, ergebnis)."""
+    def _run():
+        callback(*check_now(cfg.get("update_repo", ""), current))
+    threading.Thread(target=_run, daemon=True, name="update-check-manual").start()
 
 
 # -- Selbst-Update ---------------------------------------------------------------------------------

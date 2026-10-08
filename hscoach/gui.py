@@ -133,6 +133,7 @@ class App(tk.Tk):
         self.after(600, self._first_run)
         self.lbl_status.bind("<Button-1>", self._open_release)
         update.check_async(self.cfg, lambda found: self.post(lambda: self._on_release(found)))
+        self.after(30 * 60 * 1000, self._periodic_update_check)
 
     # -- Aufbau -------------------------------------------------------------------------------
     def _apply_geometry(self):
@@ -194,6 +195,8 @@ class App(tk.Tk):
                              font=("Segoe UI", 10), cursor="hand2", activebackground="#2a2a5e", activeforeground=GOLD)
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)
+        self.btn_update = btn("⟳ Auf Update prüfen", self._check_update)
+        self.btn_update.pack(side="right", padx=4)
         self.btn_analysis = btn("📝 Analyse", self._analyze)
         self.btn_analysis.pack(side="right", padx=8)
         self.btn_ai = btn("💡 KI-Tipp", lambda: self._ask_claude(manual=True))
@@ -386,6 +389,35 @@ class App(tk.Tk):
         self._auto_update = bool(found.asset_url and found.sha256 and update.can_self_update())
         if self._auto_update and os.environ.get("HS_COACH_UPDATE_URL") and os.environ.get("HS_COACH_UPDATE_AUTO"):
             self._start_update(found)          # Testhook: Ende-zu-Ende-Test gegen einen lokalen Server, ohne Klick
+
+    def _check_update(self):
+        """Button: sofort bei GitHub nachsehen - ohne den Coach neu zu starten."""
+        if self._updating:
+            return
+        self.btn_update.config(state="disabled", text="⏳ Prüfe ...")
+
+        def done(status, result):
+            self.post(lambda: self._update_checked(status, result))
+        update.check_now_async(self.cfg, done)
+
+    def _update_checked(self, status, result):
+        from tkinter import messagebox
+        self.btn_update.config(state="normal", text="⟳ Auf Update prüfen")
+        if status == "new":
+            self._on_release(result)
+            self._open_release()
+        elif status == "current":
+            messagebox.showinfo("Update", f"Du hast bereits die neueste Version ({self.build.version}).", parent=self)
+        else:
+            messagebox.showwarning("Update", f"Die Suche nach Updates ist fehlgeschlagen:\n{result}\n\n"
+                                   "Internetverbindung prüfen und später erneut versuchen.", parent=self)
+
+    def _periodic_update_check(self):
+        """Alle 30 Minuten still nachsehen, damit der Hinweis auch ohne Neustart erscheint."""
+        if not self._closed and self.cfg.get("update_check") and not self._release and not self._updating:
+            update.check_async(self.cfg, lambda found: self.post(lambda: self._on_release(found)))
+        if not self._closed:
+            self.after(30 * 60 * 1000, self._periodic_update_check)
 
     def _open_release(self, _event=None):
         r = self._release
