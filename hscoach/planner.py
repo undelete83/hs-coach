@@ -4,6 +4,7 @@ Der Planer kennt nur, was er sicher aus Zahlen und Kartentext lesen kann (Schade
 Vernichten, Rabatte, Beschwoerungen, ...). Unbekannte Effekte werden nicht erfunden, sondern als
 "Effekt unbekannt" gekennzeichnet.
 """
+import dataclasses
 import time
 from collections import namedtuple
 from dataclasses import dataclass, field
@@ -193,6 +194,8 @@ def _targets(ss, kind):
         return opp_ok
     if kind == "face":
         return [("face",)]
+    if kind == "friendly_minion":
+        return [("f", m.uid) for m in ss.mine]
     return []
 
 
@@ -217,6 +220,44 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         del ss.opp[i]
         if log is not None:
             log.append(f"{m.name} wird vernichtet")
+    if fx.buff and tgt and tgt[0] == "f":
+        i = _find(ss.mine, tgt[1])
+        if i < 0:
+            return False
+        a, h, taunt = fx.buff
+        ss.mine[i] = _buffed(ss.mine[i], (a, h, "spott" if taunt else ""))
+        if log is not None:
+            log.append(f"{ss.mine[i].name} wird zu {ss.mine[i].atk}/{ss.mine[i].hp}" + (" mit Spott" if taunt else ""))
+    if fx.team_buff:
+        a, h, taunt = fx.team_buff
+        ss.mine[:] = [_buffed(m, (a, h, "spott" if taunt else "")) for m in ss.mine]
+        if log is not None and ss.mine:
+            log.append(f"alle deine Diener +{a}/+{h}" + (" und Spott" if taunt else ""))
+    if fx.hero_atk_buff:
+        ss.hero_atk += fx.hero_atk_buff
+        if log is not None:
+            log.append(f"Held +{fx.hero_atk_buff} Angriff in diesem Zug")
+    if fx.silence == "target" and tgt_uid is not None:
+        i = _find(ss.opp, tgt_uid)
+        ss.opp[i] = _silenced(ss.opp[i])
+        if log is not None:
+            log.append(f"{ss.opp[i].name} verliert Spott/Schilde/Effekte")
+    if fx.silence == "aoe":
+        ss.opp[:] = [_silenced(m) for m in ss.opp]
+        if log is not None and ss.opp:
+            log.append("alle feindlichen Diener zum Schweigen gebracht")
+    if fx.bounce == "target" and tgt_uid is not None:
+        i = _find(ss.opp, tgt_uid)
+        m = ss.opp[i]
+        del ss.opp[i]
+        ss.util += 0.5                       # der Gegner muss die Karte erneut ausspielen
+        if log is not None:
+            log.append(f"{m.name} geht zurück auf die Hand")
+    if fx.destroy_ends and ss.opp:
+        gone = {ss.opp[0].uid, ss.opp[-1].uid}
+        if log is not None:
+            log.append("vernichtet " + " und ".join(m.name for m in ss.opp if m.uid in gone))
+        ss.opp[:] = [m for m in ss.opp if m.uid not in gone]
     if fx.transform and tgt_uid is not None:
         i = _find(ss.opp, tgt_uid)
         m = ss.opp[i]
@@ -306,8 +347,14 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         ss.disc = ss.disc + (fx.discount,)
         if log is not None:
             log.append("nächste passende Karte billiger")
+    if fx.ramp:
+        ss.util += 0.6 * fx.ramp             # mehr Mana ab der naechsten Runde
+        if log is not None:
+            log.append(f"+{fx.ramp} Manakristall(e) ab der nächsten Runde")
     if fx.summon and len(ss.mine) < MAX_BOARD:
         atk, hp, cnt = fx.summon
+        if fx.fill_summon:
+            cnt = MAX_BOARD - len(ss.mine)
         for _ in range(cnt):
             if len(ss.mine) >= MAX_BOARD:
                 break
@@ -348,6 +395,10 @@ def _card_cost(ss, c):
     return c.cost, -1
 
 
+def _silenced(m):
+    return m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
+
+
 def _buffed(m, buff):
     """Selbststaerkung des gerade gespielten Dieners (Kampfschrei): +Angriff/+Leben und Spott/Eifer/Ansturm."""
     atk, hp, kw = buff
@@ -369,6 +420,10 @@ def _resolve(ss, c, cards):
     """Kampfschrei mit Bedingung 'wenn Ihr einen <Volk> auf der Hand habt': gilt nur, solange noch eine andere
     passende Karte unausgespielt in der Hand ist (Reihenfolge im Plan zaehlt). Gibt die Karte mit dem wirksamen Effekt zurueck."""
     fx = c.fx
+    if fx.buff_per:                           # Staerkung je anderem Diener / je Handkarte: jetzt in feste Werte umrechnen
+        kind, a, h = fx.buff_per
+        n = len(ss.mine) if kind == "minions" else sum(1 for o in cards if o.idx not in ss.used and o.idx != c.idx)
+        return c._replace(fx=dataclasses.replace(fx, self_buff=(a * n, h * n, ""), buff_per=None))
     if not fx.cond_hold or fx.cond_fx is None:
         return c
     if any(o.idx not in ss.used and o.idx != c.idx and (o.race == fx.cond_hold or o.race == "ALL") for o in cards):
@@ -582,6 +637,8 @@ class Planner:
                     opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].frozen]
                 if c.fx.max_atk:
                     opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].atk <= c.fx.max_atk]
+                if c.fx.silence == "target" and not (c.fx.dmg or c.fx.destroy or c.fx.freeze or c.fx.transform):
+                    opts = [t for t in opts if t[0] == "m" and _silenced(ss.opp[_find(ss.opp, t[1])]) != ss.opp[_find(ss.opp, t[1])]]
                 if c.fx.freeze == "target" and c.fx.dmg == 0 and c.fx.cond_frozen_dmg == 0 and c.fx.destroy == "":
                     opts = [t for t in opts if t[0] == "m"]
                 for t in opts:
@@ -675,7 +732,7 @@ class Planner:
                 nxt = _play_card(ss, c, act[2], log)
                 if nxt is None:
                     break
-                if c is not c0:
+                if c is not c0 and c0.fx.cond_hold:
                     log.insert(0, f"Kampfschrei aktiv ({RACE_DE.get(c0.fx.cond_hold, 'passende Karte')} auf der Hand)")
                 plan.cids.append(c.cid)
                 tname = self._tname(ss, act[2])
@@ -691,7 +748,8 @@ class Planner:
                     kind = "spell"
                     if not c.fx.concrete and not c.secret:
                         plan.unknown_cards.append(c.name)
-                        log.append("Effekt unbekannt - Kartentext lesen")
+                        txt_ = (c.text or "").strip()
+                        log.append("Effekt unbekannt: " + (txt_[:150] + ("…" if len(txt_) > 150 else "") if txt_ else "Kartentext lesen"))
                 if c.secret:
                     log.append("Geheimnis wird vorbereitet")
                 txt = head + (f" auf {tname}" if tname and act[2] else "")

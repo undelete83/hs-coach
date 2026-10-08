@@ -6,7 +6,10 @@ Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft da
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
 ## 2.7.6 - 09.10.2026
-- Arkane Geschosse und ähnliche Zauber („Verursacht 3 Schaden, der zufällig auf alle Feinde verteilt wird“, „Verschießt N Geschosse auf zufällige Feinde“) werden geplant statt als „Effekt unbekannt“ gemeldet. Ist kein gegnerischer Diener da, trifft alles den Helden (exakt gerechnet); bei Dienern auf dem Board rechnet der Planer mit dem Erwartungswert fürs Gesicht.
+- Mehr Karten werden verstanden und geplant, statt als „Effekt unbekannt“ zu enden: Arkane Geschosse und ähnliche Zufalls-Geschosse (ohne gegnerische Diener exakt, sonst als Erwartungswert), Heilen des eigenen Helden, Schweigen, Gegner-Diener zurück auf die Hand oder „aus dem Spiel entfernen“, leere Manakristalle, „Füllt Eure Seite des Schlachtfelds“ (Fokussierungsiris), Selbststärkung je anderem Diener bzw. je Handkarte (Frostwolfkriegsfürst, Zwielichtdrache), Shandris Mondfeder (linker und rechter Gegner-Diener), „Euer nächster Zauber kostet (0), wenn Ihr einen Drachen auf der Hand habt“ sowie Stärkungszauber (+X/+Y auf einen Diener oder alle, Held +Angriff in diesem Zug).
+- Bei Karten, die der Planer weiterhin nicht simulieren kann (Entdecken, zufällige Karten, Quests ...), zeigt der Plan jetzt den Kartentext direkt an, statt nur „Kartentext lesen“.
+- `scripts/audit_effects.py` zeigt, wie viele sammelbare Zauber der Parser versteht (aktuell 55 %; der Rest sind überwiegend Entdecken-, Zufalls- und Questkarten).
+- Der Kartentext-Marker `[d]` mitten in Wörtern wird entfernt.
 
 ## 2.7.5 - 09.10.2026
 - Behoben: Frisch gespielte Diener mit Eifer (z. B. Schuppenwurm) wurden als „erschöpft“ gewertet, der Plan sagte deshalb „Keine sinnvolle Aktion“. Sie dürfen sofort Diener angreifen (den Helden nicht) und werden jetzt so eingeplant.

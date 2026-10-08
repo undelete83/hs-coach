@@ -15,9 +15,16 @@ RACE_WORDS = {
 }
 
 _HOLD = re.compile(r",?\s*wenn ihr einen (\w+) auf der hand habt$")
-_MISSILES_SPLIT = re.compile(r"verursacht (\d+) schaden, der zufällig auf alle feinde verteilt wird")
+_MISSILES_SPLIT = re.compile(r"verursacht (\d+) schaden, der zufällig auf alle (?:feinde|feindlichen charaktere) verteilt wird")
 _MISSILES_SHOT = re.compile(r"verschießt (\d+) geschosse auf zufällige feinde, die je (\d+) schaden verursachen")
-_SELF_BUFF =re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
+_SELF_BUFF = re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
+_BUFF_PER = re.compile(r"erhält \+(\d+)(?:/\+(\d+)| (angriff|leben)) für (jeden anderen befreundeten diener auf dem schlachtfeld|jede karte auf eurer hand)$")
+_HERO_BUFF = re.compile(r"verleiht eurem helden \+(\d+) angriff in diesem zug(?: und (\d+) rüstung)?$")
+_TEAM_BUFF = re.compile(r"verleiht euren dienern \+(\d+)(?:/\+(\d+)| angriff)(?: und (spott))?$")
+_MINION_BUFF = re.compile(r"verleiht einem (?:befreundeten )?diener (?:(spott) und )?\+(\d+)(?:/\+(\d+)| angriff)(?: und (spott))?$")
+_HEAL_HERO = re.compile(r"stellt bei (?:eurem helden|jedem helden|allen befreundeten charakteren|allen charakteren) (\d+) leben wieder her")
+_RAMP = re.compile(r"erhaltet (einen|zwei|drei|\d+) leeren? manakristall")
+_FILL = re.compile(r"füllt eure seite des schlachtfelds mit (?:\w+ )?(\w+) \((\d+)/(\d+)\)")
 _HOLD_REJECT =re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
@@ -49,6 +56,15 @@ class Effect:
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
     missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
+    buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
+    buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
+    team_buff: tuple = None       # (angriff, leben, spott) auf alle eigenen Diener
+    hero_atk_buff: int = 0        # Held erhaelt +N Angriff in diesem Zug
+    silence: str = ""             # "" | target | aoe (feindliche Diener)
+    bounce: str = ""              # "" | target: feindlichen Diener auf die Hand zurueck
+    ramp: int = 0                 # leere Manakristalle (wirken ab der naechsten Runde)
+    fill_summon: bool = False     # summon fuellt die eigene Seite des Schlachtfelds
+    destroy_ends: bool = False    # vernichtet den linken und den rechten feindlichen Diener
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
@@ -59,6 +75,8 @@ class Effect:
         """Welche Art von Ziel braucht die Karte? '' = kein Ziel."""
         for k in (self.dmg_target if self.dmg else "", self.freeze_target if self.freeze == "target" else "",
                   self.destroy_target if self.destroy == "target" else "",
+                  "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
+                  "friendly_minion" if self.buff else "",
                   "minion" if self.transform else ""):
             if k:
                 return k
@@ -74,7 +92,7 @@ def clean_text(raw):
     if not raw:
         return ""
     t = re.sub(r"<[^>]+>", "", raw)
-    t = t.replace("[x]", "")
+    t = t.replace("[x]", "").replace("[d]", "")           # [d] = Geschlechts-Markierung mitten im Wort
     t = re.sub(r"[\$#](\d+)", r"\1", t)
     t = re.sub(r"(\d+)\s*\|4\(([^,)]*),([^)]*)\)", lambda m: f"{m.group(1)} {m.group(2) if m.group(1) == '1' else m.group(3)}", t)
     t = re.sub(r"\|4\(([^,)]*),[^)]*\)", r"\1", t)
@@ -152,7 +170,7 @@ def parse_effect(text, cardtype="SPELL", secret=False):
                 e.notes.append(s)
                 continue
             cf = parse_effect(core, "SPELL")           # nur Einzelziel-Schaden/-Vernichten werden simuliert
-            single = (cf.dmg and not cf.aoe_dmg and not cf.freeze and not cf.transform) or cf.destroy == "target"
+            single = (cf.dmg and not cf.aoe_dmg and not cf.freeze and not cf.transform) or cf.destroy == "target" or bool(cf.discount)
             if single and not (cf.aoe_dmg or cf.destroy == "aoe"):
                 e.conditional = True
                 e.cond_hold, e.cond_fx = RACE_WORDS[mh.group(1)], cf
@@ -168,6 +186,57 @@ def parse_effect(text, cardtype="SPELL", secret=False):
         if m:                                           # Arkane Geschosse & Co.: zufaellig auf alle Feinde
             n, per = (int(m.group(1)), 1) if m.re is _MISSILES_SPLIT else (int(m.group(1)), int(m.group(2)))
             e.missiles = (n, per)
+            e.unknown = False
+            continue
+
+        m = _FILL.search(s)
+        if m:                                           # Fokussierungsiris: Seite des Schlachtfelds auffuellen
+            e.summon = (int(m.group(2)), int(m.group(3)), 0)
+            e.fill_summon = True
+            e.summon_freezer = "wasserelementar" in s
+            e.unknown = False
+            continue
+        m = _BUFF_PER.match(s)
+        if m:                                           # Staerkung je anderem Diener / je Handkarte
+            val = int(m.group(1))
+            atk, hp = (val, int(m.group(2))) if m.group(2) else ((val, 0) if m.group(3) == "angriff" else (0, val))
+            e.buff_per = ("minions" if m.group(4).startswith("jeden") else "hand", atk, hp)
+            e.unknown = False
+            continue
+        m = _HERO_BUFF.match(s)
+        if m:                                           # Held +N Angriff in diesem Zug (ggf. mit Ruestung)
+            e.hero_atk_buff = int(m.group(1))
+            e.armor += int(m.group(2) or 0)
+            e.unknown = False
+            continue
+        m = _TEAM_BUFF.match(s)
+        if m:                                           # alle eigenen Diener staerken
+            e.team_buff = (int(m.group(1)), int(m.group(2) or 0), bool(m.group(3)))
+            e.unknown = False
+            continue
+        m = _MINION_BUFF.match(s)
+        if m:                                           # einen befreundeten Diener staerken
+            e.buff = (int(m.group(2)), int(m.group(3) or 0), bool(m.group(1) or m.group(4)))
+            e.unknown = False
+            continue
+        if "bringt einen diener zum schweigen" in s:
+            e.silence, e.unknown = "target", False
+            continue
+        if "bringt alle feindlichen diener zum schweigen" in s and "vernichtet" not in s:
+            e.silence, e.unknown = "aoe", False
+            continue
+        if re.search(r"lasst einen feindlichen diener auf (?:seine|eure) hand zurückkehren", s):
+            e.bounce, e.unknown = "target", False
+            continue
+        if "entfernt einen diener aus dem spiel" in s:                 # wie Vernichten (Lebenslaenglich)
+            e.destroy, e.destroy_target, e.unknown = "target", "enemy_minion", False
+            continue
+        if "vernichtet die feindlichen diener, die sich ganz links und ganz rechts befinden" in s:
+            e.destroy_ends, e.unknown = True, False
+            continue
+        m = _RAMP.search(s)
+        if m:
+            e.ramp += _num(m.group(1))
             e.unknown = False
             continue
 
@@ -215,7 +284,7 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.transform = (int(m.group(2)), int(m.group(3)))
             e.unknown = False
 
-        m = re.search(r"stellt (\d+) leben wieder her", s)
+        m = _HEAL_HERO.search(s) or re.search(r"stellt (\d+) leben wieder her", s)
         if m:
             e.heal = int(m.group(1))
             e.unknown = False
@@ -244,6 +313,13 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             w = m.group(1)
             kind = "spell" if w.startswith("zauber") else ("minion" if w.startswith("diener") else RACE_WORDS.get(w, "minion"))
             e.discount = (kind, int(m.group(2)))
+            e.unknown = False
+
+        m = re.search(r"nächste[rnms]?\s+(\w+)[^.]*?kostet\s*\(0\)", s)
+        if m:                                           # "Euer naechster Zauber kostet (0)"
+            w = m.group(1)
+            kind = "spell" if w.startswith("zauber") else ("minion" if w.startswith("diener") else RACE_WORDS.get(w, "minion"))
+            e.discount = (kind, 99)
             e.unknown = False
 
         m = re.search(r"ruft (?:einen |eine |zwei |drei )?.*?\((\d+)/(\d+)\)", s)
