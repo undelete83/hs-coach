@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, bosses, config, detect, glossary, settings, tips, update, version, winstyle
+from . import analysis, bosses, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -17,9 +17,21 @@ from .state import build_state, render_events
 
 log = logging.getLogger("hscoach.gui")
 
-BG, BG2 = "#0d0d1a", "#111130"
-GREEN, RED, YELLOW, BLUE = "#66ff88", "#ff6666", "#ffdd44", "#66aaff"
-GRAY, GOLD, TEXTBG = "#888899", "#ffd700", "#080818"
+_THEME_KEYS = ("ROOT", "BG", "BG2", "TEXTBG", "HDR", "LINE", "BTN", "BTN_ACTIVE", "DIMFG", "VS", "GREEN", "RED", "YELLOW",
+               "BLUE", "GRAY", "GOLD", "BORDER", "BORDER_W", "PARCH", "WOOD", "PLANK", "FRAME_PAD", "TAGS", "CAPTION",
+               "CAPTION_TEXT", "CAPTION_BORDER")
+
+
+def apply_theme(name):
+    """Farben des gewaehlten Designs als Modul-Konstanten setzen (vor dem Aufbau des Fensters)."""
+    t = theme.get(name)
+    g = globals()
+    for k in _THEME_KEYS:
+        g[k] = t[k]
+    return t
+
+
+apply_theme("klassisch")
 SETTLE_MAX_S = 45.0   # Sicherheitsnetz: so lange wartet der Zugbeginn hoechstens auf den Bildschirm
 KW_RE = re.compile("|".join(re.escape(k) for k in glossary.KEYWORDS))
 
@@ -111,11 +123,15 @@ class App(tk.Tk):
         self._closed = False
         self._geo_job = None
         self._img_job = None
+        self._wood_job = None
+        self._wood_key = None
+        self._wood_photo = None
         self._updating = False
         self._update_msg = ""
         self._logcfg_state = detect.check_log_config()
         self.title(f"HS Coach {self.build.label}")
-        self.configure(bg=BG)
+        apply_theme(self.cfg.get("design"))
+        self.configure(bg=ROOT)
         self._apply_geometry()
         self.minsize(1100, 760)
 
@@ -164,7 +180,8 @@ class App(tk.Tk):
         self.bind("<F5>", lambda e: self._replan(force=True))
         self.report_callback_exception = lambda *a: log.error("Tk-Callback-Fehler", exc_info=a)
         self.after(150, self._drain)
-        self.after(30, lambda: winstyle.style_titlebar(self))
+        self.after(30, lambda: winstyle.style_titlebar(self, CAPTION, CAPTION_TEXT, CAPTION_BORDER))
+        self.after(60, self._wood_refresh)
         self.after(600, self._first_run)
         self.bind("<Configure>", self._on_configure, add="+")
         self.lbl_status.bind("<Button-1>", self._open_release)
@@ -175,15 +192,17 @@ class App(tk.Tk):
     def _apply_geometry(self):
         self.geometry(resolve_geometry(self.cfg["geometry"], virtual_screen()))
 
-    def _text(self, parent, height, fg, max_height=None, **pack):
-        t = tk.Text(parent, bg=TEXTBG, fg=fg, height=height, font=("Consolas", 11), relief="flat", bd=6,
-                    state="disabled", wrap="word", cursor="arrow", highlightthickness=0)
+    def _text(self, parent, height, fg, max_height=None, parchment=False, **pack):
+        bg = PARCH if parchment else TEXTBG
+        t = tk.Text(parent, bg=bg, fg=fg, height=height, font=("Consolas", 11), relief="flat", bd=6,
+                    state="disabled", wrap="word", cursor="arrow", highlightthickness=BORDER_W,
+                    highlightbackground=BORDER or bg, highlightcolor=BORDER or bg)
         t.pack(fill=pack.get("fill", "x"), expand=pack.get("expand", False), padx=10, pady=(0, 4))
         t._min_h, t._max_h = height, max_height or height          # waechst bei langem Inhalt bis max_height mit
         if t._max_h > t._min_h:
             t.bind("<Configure>", lambda e, w=t: self._autosize(w), add="+")
         bold = ("Consolas", 11, "bold")
-        for name, kw in {
+        tags = {
             "ready": dict(foreground=GREEN, font=bold), "sleep": dict(foreground="#666677"),
             "taunt": dict(foreground=YELLOW, font=bold), "ds": dict(foreground="#66e0ff"),
             "frozen": dict(foreground="#99ccff"), "stealth": dict(foreground="#bb99ff"),
@@ -192,31 +211,46 @@ class App(tk.Tk):
             "info": dict(foreground="#7788aa"), "me": dict(foreground=GREEN), "opp": dict(foreground="#ff9999"),
             "dim": dict(foreground="#777788"), "step": dict(foreground="#e8e8ff"), "arrow": dict(foreground=BLUE),
             "head": dict(foreground=GOLD, font=bold), "kw": dict(underline=True, foreground="#aabbff"),
-        }.items():
+        }
+        for name, color in (theme.PARCHMENT_TAGS if parchment else TAGS).items():
+            if name in tags:
+                tags[name]["foreground"] = color
+        for name, kw in tags.items():
             t.tag_configure(name, **kw)
         return t
 
     def _section(self, parent, title, color):
-        tk.Frame(parent, bg="#222244", height=1).pack(fill="x", padx=10)
-        lbl = tk.Label(parent, text=title, bg=BG, fg=color, font=("Segoe UI", 11, "bold"))
-        lbl.pack(anchor="w", padx=12, pady=(6, 2))
+        tk.Frame(parent, bg=LINE, height=1).pack(fill="x", padx=10)
+        if PLANK:                                    # Spielbrett: Titel auf einer Holzleiste
+            lbl = tk.Label(parent, text=title, bg=HDR, fg=color, font=("Segoe UI", 11, "bold"), anchor="w", padx=8, pady=3)
+            lbl.pack(fill="x", padx=10, pady=(6, 3))
+        else:
+            lbl = tk.Label(parent, text=title, bg=BG, fg=color, font=("Segoe UI", 11, "bold"))
+            lbl.pack(anchor="w", padx=12, pady=(6, 2))
         return lbl
 
     def _build(self):
         # Statuszeile zuerst packen: sie behaelt ihren Platz auch bei kleinen Fenstern (dort steht der Update-Hinweis)
-        self.lbl_status = tk.Label(self, text="", bg=BG, fg="#555577", font=("Consolas", 8))
+        self.lbl_status = tk.Label(self, text="", bg=ROOT, fg=DIMFG, font=("Consolas", 8))
         self.lbl_status.pack(side="bottom", pady=3)
-        hdr = tk.Frame(self, bg="#1a1a3e", pady=6)
+        self._wood_label = None
+        if WOOD and textures.PIL_OK:                 # Holztextur als Rahmen: liegt hinter dem Inhalt, nur am Rand sichtbar
+            self._wood_label = tk.Label(self, bd=0, bg=ROOT)
+            self._wood_label.place(x=0, y=0, relwidth=1, relheight=1)
+            self._wood_label.lower()
+        self.body = tk.Frame(self, bg=BG)
+        self.body.pack(fill="both", expand=True, padx=FRAME_PAD, pady=(FRAME_PAD, 0))
+        hdr = tk.Frame(self.body, bg=HDR, pady=6)
         hdr.pack(fill="x")
-        tk.Label(hdr, text="⚔  HEARTHSTONE COACH", bg="#1a1a3e", fg=GOLD, font=("Segoe UI", 18, "bold")).pack()
-        self.lbl_turn = tk.Label(hdr, text="Warte auf Hearthstone...", bg="#1a1a3e", fg=GRAY, font=("Segoe UI", 13))
+        tk.Label(hdr, text="⚔  HEARTHSTONE COACH", bg=HDR, fg=GOLD, font=("Segoe UI", 18, "bold")).pack()
+        self.lbl_turn = tk.Label(hdr, text="Warte auf Hearthstone...", bg=HDR, fg=GRAY, font=("Segoe UI", 13))
         self.lbl_turn.pack()
 
-        bar = tk.Frame(self, bg=BG2, pady=3)
+        bar = tk.Frame(self.body, bg=BG2, pady=3)
         bar.pack(fill="x")
 
         def chk(text, var, cmd):
-            return tk.Checkbutton(bar, text=text, variable=var, command=cmd, bg=BG2, fg=GRAY, selectcolor="#1a1a3e",
+            return tk.Checkbutton(bar, text=text, variable=var, command=cmd, bg=BG2, fg=GRAY, selectcolor=HDR,
                                   activebackground=BG2, activeforeground=GOLD, font=("Segoe UI", 10), cursor="hand2")
 
         chk("Immer im Vordergrund", self.var_top, self._toggle_top).pack(side="left", padx=8)
@@ -224,8 +258,8 @@ class App(tk.Tk):
         chk("Claude API", self.var_claude, self._toggle_claude).pack(side="left", padx=8)
 
         def btn(text, cmd):
-            return tk.Button(bar, text=text, command=cmd, bg="#1a1a3e", fg=GOLD, relief="flat",
-                             font=("Segoe UI", 10), cursor="hand2", activebackground="#2a2a5e", activeforeground=GOLD)
+            return tk.Button(bar, text=text, command=cmd, bg=BTN, fg=GOLD, relief="flat",
+                             font=("Segoe UI", 10), cursor="hand2", activebackground=BTN_ACTIVE, activeforeground=GOLD)
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)
         self.btn_update = btn("⟳ Auf Update prüfen", self._check_update)
@@ -236,7 +270,7 @@ class App(tk.Tk):
         self.btn_ai.pack(side="right", padx=4)
         btn("🔄 Plan neu (F5)", lambda: self._replan(force=True)).pack(side="right", padx=4)
 
-        hp = tk.Frame(self, bg=BG2, pady=8)
+        hp = tk.Frame(self.body, bg=BG2, pady=8)
         hp.pack(fill="x")
         lf = tk.Frame(hp, bg=BG2)
         lf.pack(side="left", expand=True)
@@ -247,7 +281,7 @@ class App(tk.Tk):
         self.lbl_my_armor.pack()
         self.lbl_my_info = tk.Label(lf, text="", bg=BG2, fg=GRAY, font=("Segoe UI", 10))
         self.lbl_my_info.pack()
-        tk.Label(hp, text="vs", bg=BG2, fg="#444466", font=("Segoe UI", 18)).pack(side="left", padx=16)
+        tk.Label(hp, text="vs", bg=BG2, fg=VS, font=("Segoe UI", 18)).pack(side="left", padx=16)
         rf = tk.Frame(hp, bg=BG2)
         rf.pack(side="left", expand=True)
         self.lbl_opp_name = tk.Label(rf, text="GEGNER", bg=BG2, fg=RED, font=("Segoe UI", 12, "bold"))
@@ -259,7 +293,7 @@ class App(tk.Tk):
         self.lbl_opp_info = tk.Label(rf, text="", bg=BG2, fg=GRAY, font=("Segoe UI", 10))
         self.lbl_opp_info.pack()
 
-        res = tk.Frame(self, bg=BG)
+        res = tk.Frame(self.body, bg=BG)
         res.pack(pady=4)
         self.lbl_mana = tk.Label(res, text="💎  Mana: —", bg=BG, fg=BLUE, font=("Segoe UI", 15, "bold"))
         self.lbl_mana.pack(side="left", padx=10)
@@ -268,22 +302,22 @@ class App(tk.Tk):
         self.lbl_extra = tk.Label(res, text="", bg=BG, fg=GRAY, font=("Segoe UI", 11))
         self.lbl_extra.pack(side="left", padx=10)
 
-        self.lbl_opp_power = tk.Label(self, text="", bg=BG, fg="#ff9999", font=("Segoe UI", 10), wraplength=1500)
+        self.lbl_opp_power = tk.Label(self.body, text="", bg=BG, fg=TAGS["opp"], font=("Segoe UI", 10), wraplength=1500)
         self.lbl_opp_power.pack()
 
-        boards = tk.Frame(self, bg=BG)
+        boards = tk.Frame(self.body, bg=BG)
         boards.pack(fill="x")
         of = tk.Frame(boards, bg=BG)
         of.pack(side="left", fill="both", expand=True)
         self._section(of, "👹  GEGNER BOARD", RED)
         self.t_opp = self._text(of, 6, RED, 10)
-        tk.Frame(boards, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
+        tk.Frame(boards, bg=LINE, width=1).pack(side="left", fill="y", pady=4)
         mf = tk.Frame(boards, bg=BG)
         mf.pack(side="left", fill="both", expand=True)
         self._section(mf, "🛡  DEIN BOARD", GREEN)
         self.t_mine = self._text(mf, 6, GREEN, 10)
 
-        mid = tk.Frame(self, bg=BG)
+        mid = tk.Frame(self.body, bg=BG)
         mid.pack(fill="x")
         hf = tk.Frame(mid, bg=BG)
         hf.pack(side="left", fill="both", expand=True)
@@ -292,28 +326,28 @@ class App(tk.Tk):
         self.lbl_gloss = tk.Label(hf, text="", bg=BG, fg="#aabbff", font=("Segoe UI", 10), anchor="w", justify="left",
                                   wraplength=760)
         self.lbl_gloss.pack(fill="x", padx=12)
-        tk.Frame(mid, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
+        tk.Frame(mid, bg=LINE, width=1).pack(side="left", fill="y", pady=4)
         ef = tk.Frame(mid, bg=BG)
         ef.pack(side="left", fill="both", expand=True)
         self._section(ef, "📜  LETZTE SPIELZÜGE", GRAY)
         self.t_events = self._text(ef, 9, GRAY, 12)
 
-        tip = tk.Frame(self, bg=BG)
+        tip = tk.Frame(self.body, bg=BG)
         tip.pack(fill="x")
         pf = tk.Frame(tip, bg=BG)
         pf.pack(side="left", fill="both", expand=True)
         self._section(pf, "🧭  ZUGPLAN  (Regel-Engine, live)", GOLD)
-        self.t_plan = self._text(pf, 10, GOLD, 26)
+        self.t_plan = self._text(pf, 10, GOLD, 26, parchment=bool(PARCH))
         # Boss-Spalte: nur sichtbar, wenn ein bekannter Boss spielt (Spalte zwischen Plan und KI)
         self.boss_frame = tk.Frame(tip, bg=BG)
-        tk.Frame(self.boss_frame, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
+        tk.Frame(self.boss_frame, bg=LINE, width=1).pack(side="left", fill="y", pady=4)
         bcol = tk.Frame(self.boss_frame, bg=BG)
         bcol.pack(side="left", fill="both", expand=True)
         self.lbl_boss = self._section(bcol, "📖  BOSS-INFO", "#ffcc88")
         self.t_boss = self._text(bcol, 12, "#ffcc88", 18)
         self.ai_frame = tk.Frame(tip, bg=BG)
         self.ai_frame.pack(side="left", fill="both", expand=True)
-        tk.Frame(self.ai_frame, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
+        tk.Frame(self.ai_frame, bg=LINE, width=1).pack(side="left", fill="y", pady=4)
         af = tk.Frame(self.ai_frame, bg=BG)
         af.pack(side="left", fill="both", expand=True)
         self._section(af, "🤖  KI-TIPP  (Claude)", "#aaccff")
@@ -321,7 +355,7 @@ class App(tk.Tk):
         self.lbl_cost = tk.Label(af, text="", bg=BG, fg=GRAY, font=("Consolas", 8))
         self.lbl_cost.pack(anchor="e", padx=14)
 
-        self.img_frame = tk.Frame(self, bg=BG)
+        self.img_frame = tk.Frame(self.body, bg=BG)
         self.img_frame.pack(fill="x", padx=10, pady=(2, 4))
         self._set_ai_idle()
 
@@ -513,11 +547,36 @@ class App(tk.Tk):
         messagebox.showerror("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
                              parent=self)
 
+    def _schedule_wood(self):
+        if self._wood_label is not None and self._wood_job is None and not self._closed:
+            self._wood_job = self.after(250, self._wood_refresh)
+
+    def _wood_refresh(self):
+        """Holzrahmen fuer die aktuelle Fenstergroesse malen (in 64-Pixel-Stufen, damit nicht jedes Pixel neu gemalt wird)."""
+        self._wood_job = None
+        if self._closed or self._wood_label is None:
+            return
+        w, h = self.winfo_width(), self.winfo_height()
+        if w < 50 or h < 50:
+            return
+        key = ((w + 63) // 64 * 64, (h + 63) // 64 * 64)
+        if key == self._wood_key:
+            return
+        try:
+            from PIL import ImageTk
+            self._wood_photo = ImageTk.PhotoImage(textures.wood(*key))
+            self._wood_label.config(image=self._wood_photo)
+            self._wood_key = key
+        except Exception:
+            log.exception("Holztextur konnte nicht gemalt werden")
+            self._wood_label = None
+
     def _on_configure(self, event):
         """Fenster verschoben oder in der Groesse geaendert: nach kurzer Ruhe speichern (nicht erst beim Schliessen)."""
         if event.widget is not self or self._closed:
             return
         self._schedule_img_refresh()
+        self._schedule_wood()
         if self._geo_job:
             self.after_cancel(self._geo_job)
         self._geo_job = self.after(1500, self._save_geometry)
@@ -615,7 +674,7 @@ class App(tk.Tk):
             txt += f"   |   ⟳ NEUSTART EMPFOHLEN - neuer Stand {self._newer}"
         if self._release:
             txt += f"   |   ⬆ Neue Version {self._release[0]} verfügbar ({'Klick: jetzt aktualisieren' if self._auto_update else 'Klick: Download-Seite'})"
-        self.lbl_status.config(text=txt, fg="#ffaa44" if (self._newer or self._release) else "#555577",
+        self.lbl_status.config(text=txt, fg="#ffaa44" if (self._newer or self._release) else DIMFG,
                                cursor="hand2" if self._release else "")
 
     def _on_state(self, s):
@@ -882,7 +941,8 @@ class App(tk.Tk):
         try:
             if self.winfo_height() <= 1:                 # Fenster noch nicht angezeigt
                 return None
-            h = self.winfo_height() - self.img_frame.winfo_y() - self.lbl_status.winfo_height() - 20
+            top = self.img_frame.winfo_rooty() - self.winfo_rooty()        # Oberkante der Bilderleiste im Fenster
+            h = self.winfo_height() - top - self.lbl_status.winfo_height() - 20
         except tk.TclError:
             return None
         return max(0, h)
@@ -910,8 +970,9 @@ class App(tk.Tk):
             return
         n = max(1, len(cids))
         w = self.cfg["card_img_w"]
-        if n * (w + 8) > max(600, self.winfo_width() - 20):
-            w = max(90, (max(600, self.winfo_width() - 20)) // n - 8)
+        avail_w = self.winfo_width() - 20 - 2 * FRAME_PAD
+        if n * (w + 8) > max(600, avail_w):
+            w = max(90, (max(600, avail_w)) // n - 8)
         ratio = self.cfg["card_img_h"] / self.cfg["card_img_w"]
         space = self._img_space()
         if space is not None and space < 110:      # kaum Platz: lieber keine Karten als abgeschnittene Streifen
@@ -929,7 +990,7 @@ class App(tk.Tk):
             return
         self._rich_sig["imgs"] = key
         while len(self._img_labels) < len(cids):
-            lbl = tk.Label(self.img_frame, bg=BG, bd=0, fg="#555577", font=("Segoe UI", 9))
+            lbl = tk.Label(self.img_frame, bg=BG, bd=0, fg=DIMFG, font=("Segoe UI", 9))
             lbl.pack(side="left", padx=3)
             self._img_labels.append(lbl)
         missing = []

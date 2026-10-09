@@ -5,6 +5,12 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.10.0 - 09.10.2026
+- Neues, wählbares Design **Spielbrett** (Vorschau, erste Etappe): Holzrahmen mit selbst gemalter Maserung, Titel auf Holzleisten, Textfelder aus dunklem Stein mit Goldrand, der Zugplan auf Pergament. Umschalten unter ⚙ Einstellungen → Aussehen → Design (wirkt nach einem Neustart). Das bisherige dunkelblaue Design bleibt der Standard („klassisch“).
+- Die Titelleiste passt sich dem Design an (Holzbraun statt Dunkelblau).
+- Alle Flächen sind selbst gemalt; es werden keine Grafiken von Blizzard mitgeliefert. Die Textur wird einmal je Fenstergröße gemalt (ca. 0,15 s) und danach wiederverwendet, die Anzeige wird dadurch nicht langsamer.
+- Geplante weitere Etappen: Helden und Diener als Kacheln, Hand und Mana gezeichnet, Klassenfarben.
+
 ## 2.9.7 - 09.10.2026
 - Die Titelleiste des Fensters (und des Einstellungsdialogs) ist jetzt dunkel statt weiß und passt zur Oberfläche (Windows 10/11; auf älteren Systemen bleibt es, wie es war).
 

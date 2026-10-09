@@ -3,12 +3,12 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from . import config, detect, winstyle
+from . import config, detect, theme, winstyle
 
 BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 
 # Schluessel, deren Aenderung erst nach einem Neustart wirkt
-RESTART_KEYS = ("log_dir", "player_name", "card_source")
+RESTART_KEYS = ("log_dir", "player_name", "card_source", "design")
 
 LOG_CONFIG_TEXT = {
     "ok": ("✓ Hearthstone schreibt die Power.log (log.config ist in Ordnung).", "#66ff88"),
@@ -119,6 +119,16 @@ class SettingsDialog(tk.Toplevel):
             side="left", padx=4)
         tk.Label(f, text="auto = HearthstoneJSON (Internet), ersatzweise Hearthstone Deck Tracker", bg=BG, fg=GRAY,
                  font=("Segoe UI", 9)).pack(side="left", padx=6)
+
+        self._section("Aussehen")
+        f = tk.Frame(self, bg=BG)
+        f.pack(fill="x", padx=14, pady=2)
+        tk.Label(f, text="Design", bg=BG, fg=FG, width=22, anchor="w", font=("Segoe UI", 10)).pack(side="left")
+        var = tk.StringVar(value=self.cfg.get("design", "klassisch"))
+        self.vars["design"] = var
+        ttk.Combobox(f, textvariable=var, values=theme.CHOICES, width=20, state="readonly").pack(side="left", padx=4)
+        tk.Label(f, text="klassisch = dunkelblau, spielbrett = Holz, Stein und Pergament (wirkt nach Neustart)", bg=BG,
+                 fg=GRAY, font=("Segoe UI", 9)).pack(side="left", padx=6)
 
         self._section("Claude (optional)")
         tk.Label(self, text="Der Coach funktioniert vollständig ohne API-Key. Mit eigenem Key kommen KI-Tipps und "
