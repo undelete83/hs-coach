@@ -10,7 +10,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 from . import config
-from .effects import clean_text, parse_effect
+from .effects import clean_text, parse_effect_estimated
 from .extract import ensure_base_xml
 
 log = logging.getLogger("hscoach.carddb")
@@ -273,6 +273,6 @@ class CardDB:
         fx = self._fx.get(cid)
         if fx is None:
             i = self.info(cid)
-            fx = parse_effect(i.get("text", ""), i.get("cardtype", "SPELL"), secret=bool(i.get("secret")))
+            fx = parse_effect_estimated(i.get("text", ""), i.get("cardtype", "SPELL"), secret=bool(i.get("secret")))
             self._fx[cid] = fx
         return fx

@@ -573,6 +573,14 @@ def parse_effect(text, cardtype="SPELL", secret=False):
     return e
 
 
+def parse_effect_estimated(text, cardtype="SPELL", secret=False):
+    """Wie parse_effect, schaetzt aber zusaetzlich den Wert noch unbekannter Zauber grob (fuer Planer und Kartendatenbank)."""
+    e = parse_effect(text, cardtype, secret)
+    if e.unknown and cardtype == "SPELL":
+        _generic_estimate(e, text)
+    return e
+
+
 _LOSE_CRYSTAL = re.compile(r"zerstört (einen|eine|zwei|drei|\d+) eurer manakristalle?")
 _AURA_TURNS = re.compile(r"hält (\d+) züge? lang an")
 _AURA_STATS = re.compile(r"\((\d+)/(\d+)\)")
@@ -610,3 +618,91 @@ def effect_summary(e):
     if e.transform:
         parts.append("verwandelt")
     return ", ".join(parts)
+
+
+_NUM_W = r"(einen|eine|ein|zwei|drei|vier|fünf|\d+)"
+_GE_STATS = re.compile(r"\+(\d+)/\+(\d+)")
+_GE_HARM = re.compile(r"zerstört (?:einen |\d+ )?eurer manakristalle|setzt eure manakristalle auf 0|werft eure hand ab|erleidet erschöpfungsschaden|"
+                      r"zerstört die obersten|euer gegner übernimmt|übernimmt die kontrolle darüber|vertauscht (?:angriff und leben|kosten)|"
+                      r"mischt eure hand in euer deck|vernichtet eure |quest:|nebenquest:")
+
+
+def _generic_estimate(e, text):
+    """Grobe Wertschaetzung fuer Zauber, deren genauer Effekt nicht simuliert wird (Staerkung, Ziehen, Beschwoeren, Kopien ...).
+    Es werden nur eindeutig nuetzliche Bausteine addiert; alles mit erkennbarem Nachteil oder ohne bekannten Baustein bleibt 'unbekannt'."""
+    t = clean_text(text or "").lower()
+    if not t or _GE_HARM.search(t):
+        return
+    v = 0.0
+    parts = []
+    m = re.search(rf"zieht {_NUM_W} (?:karten?|diener|zauber|waffen?|murlocs?|dämonen|wildtiere?|piraten|mechs?|untote[nr]?|drachen|elementare?)", t)
+    if m:
+        n = _num(m.group(1)) or 1
+        v += 1.1 * n
+        parts.append(f"zieht {n}")
+    m = re.search(rf"erhaltet {_NUM_W} (?:kopien?|[a-zäöüß’' -]+ \(\d+/\d+\)|münzen?|karten)", t)
+    if m:
+        v += 1.2 * (_num(m.group(1)) or 1)
+        parts.append("Karten erhalten")
+    if not parts:
+        m = re.search(r"zieht (?:den|die|das|euer restliches) ", t)
+        if m:
+            v += 1.3
+            parts.append("zieht")
+    ma = re.search(r"verleiht [^.]*?\+(\d+) (angriff|leben)", t)
+    if ma and not _GE_STATS.search(t):
+        v += int(ma.group(1)) * 0.5 * (2.2 if re.search(r"allen|euren dienern|alle", t) else 1.0)
+        parts.append("Stärkung")
+    if re.search(r"verdoppelt (?:den angriff|das leben)|gleicht den angriff", t):
+        v += 2.0
+        parts.append("Wertverdopplung")
+    if re.search(r"verleiht [^.]*?todesröcheln|macht [^.]*? giftig", t):
+        v += 1.5
+        parts.append("Fähigkeit")
+    m = re.search(rf"belebt {_NUM_W}?(?: verschiedene)? [^.]*?wieder", t)
+    if m:
+        v += 2.0 * (_num(m.group(1) or "einen") or 1)
+        parts.append("belebt wieder")
+    if re.search(r"kopiert [^.]*?erhaltet die kopien", t):
+        v += 2.0
+        parts.append("Kopien")
+    mm = _GE_STATS.search(t)
+    if mm:
+        stats = int(mm.group(1)) + int(mm.group(2))
+        mult = 2.2 if re.search(r"allen|euren dienern|alle", t) else (1.4 if "auf eurer hand" in t else 1.0)
+        v += stats * 0.45 * mult
+        parts.append(f"Stärkung +{mm.group(1)}/+{mm.group(2)}")
+    for kw, val in (("gottesschild", 1.5), ("spott", 1.0), ("lebensentzug", 1.0), ("eifer", 1.2), ("ansturm", 1.2),
+                    ("windzorn", 1.5), ("giftig", 1.5), ("wiederkehr", 1.5), ("verstohlenheit", 0.8)):
+        if kw in t and "verleiht" in t:
+            v += val
+            parts.append(kw)
+    m = re.search(rf"ruft {_NUM_W}? ?[a-zäöüß’' -]*?(?:\((\d+)/(\d+)\))?[a-zäöüß’' -]* herbei", t)
+    if m and "herbei" in t:
+        cnt = _num(m.group(1) or "einen") or 1
+        st = re.search(r"\((\d+)/(\d+)\)", t)
+        v += ((int(st.group(1)) + int(st.group(2))) * 0.5 if st else 2.5) * cnt
+        parts.append("beschwört")
+    m = re.search(rf"erhaltet {_NUM_W} manakristalle?", t)
+    if m:
+        v += 1.2 * (_num(m.group(1)) or 1)
+        parts.append("Mana")
+    if re.search(r"kostet?n? .*?\(\d+\) weniger|verringert .* kosten", t):
+        v += 1.0
+        parts.append("Rabatt")
+    if "zurückkehren" in t and ("feindlichen" in t or "gegners" in t):
+        v += 2.5
+        parts.append("Rückkehr auf die Hand")
+    m = re.search(r"stellt .*? (\d+) leben wieder her", t)
+    if m:
+        v += int(m.group(1)) * 0.25
+        parts.append("heilt")
+    if v <= 0:
+        return
+    if re.search(r"stirbt am ende|sterben am ende|stirbt dann|sterben dann|stirbt er", t):
+        v *= 0.5                                  # nur kurzfristig nuetzlich
+    e.est_value = round(min(v, 6.0), 1)
+    e.est_label = "Schätzung"
+    note = clean_text(text or "")
+    e.est_note = note[:150] + ("…" if len(note) > 150 else "")
+    e.unknown = False

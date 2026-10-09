@@ -196,3 +196,31 @@ class TestManaCrystalLoss(unittest.TestCase):
             self.assertIn("Teufelswache", late.steps[0].text)           # bei 10 Mana kostet der Kristall nichts mehr
         finally:
             del CARDS["TEUFELSWACHE"], CARDS["GRUNT"]
+
+
+class TestGenericEstimate(unittest.TestCase):
+    def est(self, text):
+        from hscoach.effects import parse_effect_estimated
+        return parse_effect_estimated(text, "SPELL")
+
+    def test_useful_cards_get_an_estimate(self):
+        for t in ("Zieht 3 Diener. Verleiht Dienern auf Eurer Hand +2/+2.",
+                  "Verleiht einem befreundeten Diener +3/+3 und Eifer.",
+                  "Verdoppelt den Angriff eines Dieners.",
+                  "Belebt 2 verschiedene befreundete Diener wieder."):
+            e = self.est(t)
+            self.assertFalse(e.unknown, t)
+            self.assertGreater(e.est_value, 0, t)
+            self.assertLessEqual(e.est_value, 6.0)
+
+    def test_short_lived_buff_is_worth_less(self):
+        full = self.est("Verleiht einem befreundeten Diener +3/+3 und Eifer.").est_value
+        temp = self.est("Verleiht einem befreundeten Diener +3/+3 und Eifer. Er stirbt am Ende des Zuges.").est_value
+        self.assertLess(temp, full)
+
+    def test_drawbacks_and_quests_stay_unknown(self):
+        for t in ("Setzt Eure Manakristalle auf 0. Setzt die Kosten aller Karten auf Eurer Hand auf (1).",
+                  "Quest: Ruft 20 Diener herbei. Belohnung: Kriegsmaske des Pharaos.",
+                  "Zerstört einen Eurer Manakristalle. Erhaltet in 2 Zügen 2 Manakristalle.",
+                  "Vernichtet Eure Untoten. Ruft sie erneut herbei."):
+            self.assertTrue(self.est(t).unknown, t)

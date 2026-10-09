@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.3 - 10.10.2026
+- **Weniger „Effekt unbekannt“**: Von rund 550 sammelbaren Zaubern ohne bekannten Effekt bekommen jetzt etwa die Hälfte eine grobe Wertschätzung (Karten ziehen, Stärkungen, Schlüsselwörter wie Gottesschild/Spott, Beschwörungen, Mana, Rabatte, Wiederbelebung, Kopien). Der Plan kann sie damit vorschlagen und kennzeichnet sie als „Schätzung“. Zauber mit erkennbarem Nachteil (Manakristalle verlieren, Hand abwerfen …) und Quests bleiben bewusst „unbekannt“.
+
 ## 2.14.2 - 10.10.2026
 - **Manakristalle zerstören** (Teufelswache: „Kampfschrei: Zerstört einen Eurer Manakristalle“): Der Planer ignorierte diesen dauerhaften Nachteil. Jetzt wird er bewertet (früh im Spiel teuer, bei 10 Mana kostenlos) und im Plan als „zerstört 1 deiner Manakristalle“ angezeigt, damit man bewusst entscheidet.
 
