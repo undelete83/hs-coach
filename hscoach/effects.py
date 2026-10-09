@@ -80,6 +80,7 @@ class Effect:
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
     missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
+    draw_buff: tuple = None       # gezogene Karten bekommen +A/+L (Auf in die Lueften, Diebesgut): nur als Wert geschaetzt
     copy_friendly: bool = False   # ruft eine Kopie eines befreundeten Dieners herbei (Verschmelzung)
     copy_taunt: bool = False
     buff_scale_minions: bool = False   # Ziel-Staerkung gilt je eigenem Diener (Geschenk des Waldes)
@@ -373,6 +374,16 @@ def _parse_core(text, cardtype="SPELL", secret=False):
                 e.team_race = race
                 e.unknown = False
                 continue
+        md = re.match(r"zieht (einen|eine|zwei|drei|\d+) (?:diener|drachen|wildtiere?|mechs?|dämonen|murlocs?|piraten|elementare?|untote[nr]?)(?: mit spott)?$", s)
+        if md and len(sents) == 2 and re.match(r"verleiht (?:ihnen|ihm) \+(\d+)/\+(\d+)$", sents[1]):
+            mb = re.match(r"verleiht (?:ihnen|ihm) \+(\d+)/\+(\d+)$", sents[1])
+            n = _num(md.group(1))
+            e.draw += n
+            e.draw_buff = (int(mb.group(1)), int(mb.group(2)), n)
+            e.unknown = False
+            continue
+        if e.draw_buff and re.match(r"verleiht (?:ihnen|ihm) \+\d+/\+\d+$", s):
+            continue
         if s == "ruft eine kopie eines befreundeten dieners herbei":     # Verschmelzung
             e.copy_friendly, e.unknown = True, False
             continue

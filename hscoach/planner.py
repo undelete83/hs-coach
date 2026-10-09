@@ -456,6 +456,8 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         ss.util += fx.armor * 0.3
     if fx.draw:
         ss.util += fx.draw * 1.5
+        if fx.draw_buff:
+            ss.util += 0.25 * (fx.draw_buff[0] + fx.draw_buff[1]) * fx.draw_buff[2]      # Staerkung der gezogenen Karten (grob)
         if log is not None:
             log.append(f"zieht {fx.draw} Karte(n)")
     if fx.mana_refill:

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.3 - 09.10.2026
+- Neu verstanden: „Zieht N Diener (Drachen, Wildtiere, Mechs … / mit Spott). Verleiht ihnen +X/+X.“ (Auf in die Lüfte, Diebesgut). Der Planer zählt die gezogenen Karten und rechnet die Stärkung grob als Wert ein, weil er die Handkarten nicht einzeln weiterführt. Varianten mit Bedingung (z. B. „wenn Ihr mind. 10 Mana habt“) oder Zusatzeffekt (Finale) bleiben „unbekannt“.
+
 ## 2.9.2 - 09.10.2026
 - Neu verstanden: „Ruft eine Kopie eines befreundeten Dieners herbei“ (Verschmelzung), auf Wunsch mit Spott für die Kopie. Der Planer sucht den besten eigenen Diener zum Kopieren aus; die Kopie kann in diesem Zug nicht angreifen, und ohne Diener oder bei vollem Brett wird die Karte nicht gespielt. Kopien feindlicher Diener und Kopien mit Zusatzregeln bleiben „unbekannt“.
 
