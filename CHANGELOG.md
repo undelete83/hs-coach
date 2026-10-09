@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.7 - 09.10.2026
+- Erstes Paket der bisher unverstandenen Zauber: Schaden nach Wert wird jetzt geplant. „Das Licht! Es brennt!“ (Schaden = Angriff des Ziels), „Lichtbombe“ (jeder Diener, beide Seiten, bekommt Schaden in Höhe seines Angriffs), „Unbändigkeit“ (Schaden = Angriff deines Helden) und „Rundumschlag“ (verbraucht die ganze Rüstung, ebenso viel Schaden an alle Diener). Ohne nutzbaren Wert (kein Angriff, keine Rüstung) spielt der Plan die Karte nicht.
+- „Strangulieren“ vernichtet den feindlichen Diener mit dem höchsten Angriff (bei Gleichstand rechnet der Plan mit dem mit dem meisten Leben, im echten Spiel entscheidet der Zufall).
+- Der Anteil der unverstandenen sammelbaren Zauber sinkt damit auf 45 %. Die übrigen Zauber folgen in weiteren kleinen Paketen.
+
 ## 2.7.6 - 09.10.2026
 - Mehr Karten werden verstanden und geplant, statt als „Effekt unbekannt“ zu enden: Arkane Geschosse und ähnliche Zufalls-Geschosse (ohne gegnerische Diener exakt, sonst als Erwartungswert), Heilen des eigenen Helden, Schweigen, Gegner-Diener zurück auf die Hand oder „aus dem Spiel entfernen“, leere Manakristalle, „Füllt Eure Seite des Schlachtfelds“ (Fokussierungsiris), Selbststärkung je anderem Diener bzw. je Handkarte (Frostwolfkriegsfürst, Zwielichtdrache), Shandris Mondfeder (linker und rechter Gegner-Diener), „Euer nächster Zauber kostet (0), wenn Ihr einen Drachen auf der Hand habt“ sowie Stärkungszauber (+X/+Y auf einen Diener oder alle, Held +Angriff in diesem Zug).
 - Bei Karten, die der Planer weiterhin nicht simulieren kann (Entdecken, zufällige Karten, Quests ...), zeigt der Plan jetzt den Kartentext direkt an, statt nur „Kartentext lesen“.

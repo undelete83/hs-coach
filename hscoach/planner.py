@@ -220,6 +220,40 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         del ss.opp[i]
         if log is not None:
             log.append(f"{m.name} wird vernichtet")
+    if fx.destroy_highest:                       # Strangulieren: hoechster Angriff (bei Gleichstand der mit dem meisten Leben)
+        if not ss.opp:
+            return False
+        top = max(ss.opp, key=lambda m: (m.atk, m.hp))
+        i = _find(ss.opp, top.uid)
+        del ss.opp[i]
+        if log is not None:
+            log.append(f"{top.name} wird vernichtet (höchster Angriff)")
+    if fx.dmg_scale == "target_atk" and tgt_uid is not None:
+        m = ss.opp[_find(ss.opp, tgt_uid)]
+        if m.atk <= 0:
+            return False
+        _damage_minion(ss, True, tgt_uid, m.atk, log)
+    if fx.dmg_scale == "hero_atk" and tgt_uid is not None:
+        if ss.hero_atk <= 0:
+            return False
+        _damage_minion(ss, True, tgt_uid, ss.hero_atk, log)
+    if fx.dmg_scale == "own_atk":                # Lichtbombe: jeder Diener bekommt Schaden in Hoehe seines Angriffs
+        if not (ss.opp or ss.mine):
+            return False
+        for side_opp, lst in ((True, list(ss.opp)), (False, list(ss.mine))):
+            for m in lst:
+                _damage_minion(ss, side_opp, m.uid, m.atk, log)
+    if fx.dmg_scale == "armor":                  # Rundumschlag: gesamte Ruestung verbrauchen, ebenso viel Schaden an alle Diener
+        n = ss.my_armor
+        if n <= 0:
+            return False
+        ss.my_armor = 0
+        if log is not None:
+            log.append(f"verbraucht {n} Rüstung: {n} Schaden an allen Dienern")
+        for m in list(ss.opp):
+            _damage_minion(ss, True, m.uid, n, log)
+        for m in list(ss.mine):
+            _damage_minion(ss, False, m.uid, n, log)
     if fx.buff and tgt and tgt[0] == "f":
         i = _find(ss.mine, tgt[1])
         if i < 0:

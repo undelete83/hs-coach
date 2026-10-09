@@ -26,6 +26,13 @@ _HEAL_HERO = re.compile(r"stellt bei (?:eurem helden|jedem helden|allen befreund
 _RAMP = re.compile(r"erhaltet (einen|zwei|drei|\d+) leeren? manakristall")
 _FILL = re.compile(r"füllt eure seite des schlachtfelds mit (?:\w+ )?(\w+) \((\d+)/(\d+)\)")
 _HOLD_REJECT =re.compile(r"zufällig|verletzt|legendär|anderen|mind|oder mehr|\bmit\b(?!\s+(max|\d+ oder weniger))")
+_SCALED_DMG = [   # wertabhaengiger Schaden: (Muster, Art, Ziel/Geltungsbereich)
+    (re.compile(r"^fügt einem diener schaden zu, der seinem angriff entspricht$"), "target_atk", "minion"),
+    (re.compile(r"^fügt einem diener schaden zu, der dem angriff eures helden entspricht$"), "hero_atk", "minion"),
+    (re.compile(r"^fügt jedem diener schaden zu, der seinem angriff entspricht$"), "own_atk", ""),
+    (re.compile(r"^verbraucht eure gesamte rüstung\. fügt allen dienern ebenso viel schaden zu$"), "armor", ""),
+]
+_DESTROY_HIGHEST = re.compile(r"^vernichtet den feindlichen diener mit dem höchsten angriff$")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
 
@@ -65,6 +72,8 @@ class Effect:
     ramp: int = 0                 # leere Manakristalle (wirken ab der naechsten Runde)
     fill_summon: bool = False     # summon fuellt die eigene Seite des Schlachtfelds
     destroy_ends: bool = False    # vernichtet den linken und den rechten feindlichen Diener
+    dmg_scale: str = ""           # wertabhaengiger Schaden: target_atk | hero_atk (Einzelziel), own_atk | armor (alle Diener)
+    destroy_highest: bool = False # vernichtet den feindlichen Diener mit dem hoechsten Angriff (kein Ziel noetig)
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
@@ -73,7 +82,8 @@ class Effect:
     @property
     def target_kind(self):
         """Welche Art von Ziel braucht die Karte? '' = kein Ziel."""
-        for k in (self.dmg_target if self.dmg else "", self.freeze_target if self.freeze == "target" else "",
+        for k in (self.dmg_target if self.dmg else "", "minion" if self.dmg_scale in ("target_atk", "hero_atk") else "",
+                  self.freeze_target if self.freeze == "target" else "",
                   self.destroy_target if self.destroy == "target" else "",
                   "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
                   "friendly_minion" if self.buff else "",
@@ -153,6 +163,17 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.unknown = False
             return e
         t = t.split("kampfschrei:", 1)[1].strip()
+
+    flat = t.rstrip(".").strip()
+    for rx, kind, tk in _SCALED_DMG:                   # ganzer Text ist genau so ein Zauber (z. B. Lichtbombe, Rundumschlag)
+        if rx.match(flat):
+            e.dmg_scale = kind
+            e.dmg_target = tk
+            e.unknown = False
+            return e
+    if _DESTROY_HIGHEST.match(flat):                   # Strangulieren
+        e.destroy_highest, e.unknown = True, False
+        return e
 
     last_scope = ""
     for s in re.split(r"(?<=[.!?])\s+", t):
@@ -344,7 +365,9 @@ def effect_summary(e):
         parts.append(f"{e.aoe_dmg} Schaden an allen")
     if e.freeze:
         parts.append("friert ein")
-    if e.destroy:
+    if e.dmg_scale:
+        parts.append("Schaden nach Wert")
+    if e.destroy or e.destroy_highest:
         parts.append("vernichtet")
     if e.transform:
         parts.append("verwandelt")
