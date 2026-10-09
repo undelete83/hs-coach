@@ -138,7 +138,7 @@ def _evaluate(ss):
     sc -= 0.12 * inc2
     sc += 0.6 * ss.spent + ss.util
     if ss.weapon:
-        sc += 0.8 * ss.weapon[0] * min(ss.weapon[1], 3)
+        sc += 0.25 * ss.weapon[0] * min(ss.weapon[1], 3)       # Waffen sind zum Schwingen da: Haltbarkeit zaehlt nur wenig
     return sc
 
 

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.8 - 10.10.2026
+- **Heldenangriff mit Waffe**: Der Plan ließ den Helden nicht zuschlagen, wenn kein Gegner-Diener da war - die Waffe wurde zu hoch bewertet („Haltbarkeit verbrauchen“ kostete mehr, als der Gesichtsschaden brachte). Jetzt zählt die Haltbarkeit viel weniger, und der Plan lautet z. B. „Lege Inspirierender Hammer an, dann Held greift das Gesicht an (2 Schaden)“. Angriffe in Diener bleiben wie bisher.
+
 ## 2.14.7 - 10.10.2026
 - **Geschützter Überlebender, Auswahl der Karte**: Der Coach schlug in einer gewonnenen Partie vor, die Manifestierten Zeitwege (4 Mana, die Hauptschadenskarte des Decks) zurückzumischen, nur weil sie früh noch nicht spielbar waren. Jetzt zählt der Eigenwert der Karte (Werte, Schlüsselwörter, Effekt); teure Karten bleiben auf der Hand, solange sie in absehbarer Zeit spielbar werden (erst ab 4 Mana über deinem Maximum gilt „noch lange nicht spielbar“). Nicht spielbare Karten (volle Geheimniszone) kommen weiterhin zuerst.
 

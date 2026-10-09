@@ -282,3 +282,28 @@ class TestSilenceBattlecryHint(unittest.TestCase):
         txt = " ".join(st.text for st in p.steps)
         self.assertIn("Welpling", txt)
         self.assertIn("einer deiner Diener", txt)
+
+
+class TestHeroAttack(unittest.TestCase):
+    """Mit Waffe und ohne Gegner-Diener soll der Held ins Gesicht schlagen (frueher blieb der Plan leer)."""
+
+    def test_hero_swings_at_face(self):
+        s = gs(mana=1, my_weapon=None, opp=[])
+        from hscoach.state import Weapon
+        s.my_weapon = Weapon(name="Hammer", cid="", atk=2, durability=2)
+        s.my_hero_atk = 2
+        s.my_hero_can_attack = True
+        s.my_hero_attacks_left = 1
+        p = Planner(fake_db(), 1.0).plan(s, None)
+        self.assertTrue(any("Held" in st.text and "Gesicht" in st.text for st in p.steps), [st.text for st in p.steps])
+
+    def test_equip_then_swing(self):
+        from tests.helpers import CARDS
+        CARDS["HAMMER"] = dict(name="Inspirierender Hammer", cardtype="WEAPON", cost=2, text="Todesröcheln: Löst den Effekt am Ende des Zuges eines zufälligen befreundeten Dieners aus.")
+        try:
+            p = Planner(fake_db(), 1.0).plan(gs(mana=3, hand=[card(1, "HAMMER", atk=2, hp=2)], my_hero_attacks_left=1), None)
+            texts = [st.text for st in p.steps]
+            self.assertTrue(any("Lege" in t for t in texts), texts)
+            self.assertTrue(any("Held" in t and "Gesicht" in t for t in texts), texts)
+        finally:
+            del CARDS["HAMMER"]
