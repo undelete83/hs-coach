@@ -59,7 +59,7 @@ class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
                  "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp",
-                 "secret_p", "bait")
+                 "secret_p", "bait", "aura")
 
     def clone(self):
         n = SS.__new__(SS)
@@ -74,6 +74,7 @@ class SS:
         n.reserve, n.hp_bonus, n.def_k = self.reserve, self.hp_bonus, self.def_k
         n.temp = self.temp
         n.secret_p, n.bait = self.secret_p, self.bait
+        n.aura = self.aura
         return n
 
 
@@ -610,6 +611,8 @@ def _resolve(ss, c, cards):
         n = len(ss.mine)
         a, h, t = fx.buff
         return c._replace(fx=dataclasses.replace(fx, buff=(a * n, h * n, t), buff_scale_minions=False))
+    if fx.cond_aura and fx.cond_fx is not None:       # Kampfschrei nur mit Aura im Spiel (auch eine im selben Zug gelegte)
+        return c._replace(fx=fx.cond_fx) if ss.aura else c._replace(fx=Effect(unknown=False))
     if not fx.cond_hold or fx.cond_fx is None:
         return c
     if any(o.idx not in ss.used and o.idx != c.idx and (o.race == fx.cond_hold or o.race == "ALL") for o in cards):
@@ -667,6 +670,8 @@ def _play_card(ss, c, tgt, log=None, opt=None):
         if fx.concrete and not _apply_fx(n, fx, tgt, False, c.name, log):
             return None
     else:
+        if fx.est_label == "Aura":
+            n.aura = True
         if c.secret:
             n.util += 2.5 + _secret_value(n, fx.payload)
         elif fx.concrete:
@@ -796,6 +801,7 @@ class Planner:
         ss.prio = dict(bias.get("priority", {}))
         ss.reserve = dict(bias.get("reserve", {}))
         # Unbekannte gegnerische Geheimnisse: der erste Zauber des Zuges kann abgefangen werden (Gegenzauber u. a.)
+        ss.aura = any('aura' in str(x).lower() for x in s.my_secrets)     # Aura im Spiel (liegt in der Geheimniszone)
         ss.secret_p = min(0.6, bias.get("secret_p", 0.25) * s.opp_secret_count) if s.opp_secret_count else 0.0
         ss.bait = False
         ss.opp_spawn_atk = 0

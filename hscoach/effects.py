@@ -50,6 +50,7 @@ _SET_ATK = re.compile(r"^setzt den angriff (eines dieners|aller diener) auf (\d+
 _SET_BOTH = re.compile(r"^setzt (?:die werte|angriff und leben) (eines dieners|aller diener) auf (?:(\d+)/(\d+)|(\d+))$")
 _STEAL = re.compile(r"^übernehmt die kontrolle über einen feindlichen diener$")
 _DESTROY_HIGHEST = re.compile(r"^vernichtet den feindlichen diener mit dem höchsten angriff$")
+_AURA_COND = re.compile(r"(.+?),? wenn ihr eine aura kontrolliert$")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
 
@@ -117,6 +118,7 @@ class Effect:
     destroy_highest: bool = False # vernichtet den feindlichen Diener mit dem hoechsten Angriff (kein Ziel noetig)
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
+    cond_aura: bool = False       # Kampfschrei wirkt nur, wenn man eine Aura kontrolliert (cond_fx = der Effekt dann)
     lose_crystal: int = 0         # zerstoert eigene Manakristalle (Teufelswache): dauerhafter Nachteil
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
     notes: list = field(default_factory=list)
@@ -325,6 +327,15 @@ def _parse_core(text, cardtype="SPELL", secret=False):
             if single and not (cf.aoe_dmg or cf.destroy == "aoe"):
                 e.conditional = True
                 e.cond_hold, e.cond_fx = RACE_WORDS[mh.group(1)], cf
+                e.notes.append(s)
+                continue
+        ma = _AURA_COND.match(s)
+        if ma:                                                    # Manifestierte Zeitwege: Schaden nur mit Aura im Spiel
+            cf = parse_effect(ma.group(1), "SPELL")
+            if cf.concrete:
+                e.cond_aura, e.cond_fx = True, cf
+                e.conditional = True
+                e.unknown = False
                 e.notes.append(s)
                 continue
         if _COND.search(s) and "bereits eingefroren" not in s:

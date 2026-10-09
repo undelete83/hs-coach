@@ -53,3 +53,11 @@ Diese Datei wird dem Claude-Modus als zusätzliches Wissen mitgegeben. Gern erg�
 - Explosive Runen bestrafen frisch gespielte Diener, Flammenfalle bestraft Angriffe mit Dienern: bei offenem Geheimnis nichts Wertvolles ins offene Feld legen und mit Zaubern vorsichtig sein.
 - Mana nicht verschenken: In Runde 15 blieben von 8 Mana nur 3 im Plan, obwohl 7-Mana-Karten spielbar waren. Zwei Pyroschlag (je 10 Mana) lagen die ganze Partie auf der Hand - teure Karten früher einplanen oder Platz in der Hand schaffen.
 
+## Aura-Paladin (Standard, Across the Timeways / Cataclysm)
+- Auren sind Zauber mit „Hält N Züge lang an“. Sie liegen in der Geheimniszone und teilen sich mit Geheimnissen 5 Plätze: bei voller Zone sind weitere Auren nicht spielbar (Fehler REQ_SECRET_ZONE_CAP).
+- Chronologische Aura (5): ruft am Ende deines Zuges einen Drachen 3/5 mit Spott herbei, 3 Züge lang - sehr stark, früh legen. Beschleunigungsaura (2): temporärer Manakristall zu Beginn deines Zuges, 3 Züge lang - gibt Tempo für den Rest der Hand. Sandwüteraura (3): Zugende-Effekte deiner Diener werden doppelt ausgelöst (lohnt nur mit solchen Dienern, z. B. Speerherzwächter).
+- Manifestierte Zeitwege (4): 3 Schaden an ALLE Feinde, aber nur wenn du eine Aura kontrollierst - also zuerst eine Aura legen, dann die Zeitwege (auch im selben Zug).
+- Gelbin von morgen / Anachronos (Top-End) wirken Auren aus dem Deck bzw. verlängern sie: nicht zu früh verbrauchen.
+- Aus Guides (HearthStudy, Vicious Syndicate): Gegen Aggro mit Spott/Gottesschild (Rechtschaffener Beschützer, Toreth) stabilisieren; gegen Kontrolle Wert generieren. Brettwischer fürchten: nicht überstrecken (sechs Diener auf einmal sind in einer Partie auf einen Schlag geräumt worden).
+- Teufelswache (Kampfschrei: zerstört einen deiner Manakristalle) in einem Mana-Rampen-Deck wie diesem meiden.
+

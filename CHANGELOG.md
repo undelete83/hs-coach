@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.4 - 10.10.2026
+- **Aura-Paladin**: Manifestierte Zeitwege („3 Schaden an alle Feinde, wenn Ihr eine Aura kontrolliert“) wird jetzt richtig berechnet - der Schaden zählt nur, wenn eine Aura liegt oder im selben Zug vorher gelegt wird; der Plan legt dann erst die Aura. Dazu ein neuer Abschnitt in `knowledge.md` (Auren, Geheimniszone, Zeitwege, Mulligan/Spielweise aus Guides), den der Claude-Modus mitliest.
+
 ## 2.14.3 - 10.10.2026
 - **Weniger „Effekt unbekannt“**: Von rund 550 sammelbaren Zaubern ohne bekannten Effekt bekommen jetzt etwa die Hälfte eine grobe Wertschätzung (Karten ziehen, Stärkungen, Schlüsselwörter wie Gottesschild/Spott, Beschwörungen, Mana, Rabatte, Wiederbelebung, Kopien). Der Plan kann sie damit vorschlagen und kennzeichnet sie als „Schätzung“. Zauber mit erkennbarem Nachteil (Manakristalle verlieren, Hand abwerfen …) und Quests bleiben bewusst „unbekannt“.
 

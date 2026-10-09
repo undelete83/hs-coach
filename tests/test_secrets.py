@@ -104,3 +104,37 @@ class TestSecretZoneCap(unittest.TestCase):
     def test_same_secret_cannot_be_played_twice(self):
         s = gs(mana=8, hand=[card(1, "EISBLOCK")], my_secrets=["Eisblock"])
         self.assertFalse(plan_for(s).steps)
+
+
+class TestAuraConditionalBattlecry(unittest.TestCase):
+    """Manifestierte Zeitwege: 3 Schaden an alle Feinde, aber nur mit einer Aura im Spiel."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["ZEITWEGE"] = dict(name="Manifestierte Zeitwege", cardtype="MINION", cost=4,
+                                 text="Kampfschrei: Fügt allen Feinden 3 Schaden zu, wenn Ihr eine Aura kontrolliert.")
+        CARDS["AURA"] = dict(name="Chronologische Aura", cardtype="SPELL", cost=5,
+                             text="Ruft am Ende Eures Zuges einen Drachen (3/5) mit Spott herbei. Hält 3 Züge lang an.")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["ZEITWEGE"], self.CARDS["AURA"]
+
+    def foes(self):
+        return [mm(10, "A", 2, 3), mm(11, "B", 2, 3), mm(12, "C", 1, 2)]
+
+    def test_damage_only_with_aura_in_play(self):
+        hand = [card(1, "ZEITWEGE", atk=3, hp=3)]
+        no = plan_for(gs(mana=4, opp=self.foes(), hand=hand))
+        yes = plan_for(gs(mana=4, opp=self.foes(), hand=hand, my_secrets=["Chronologische Aura"]))
+        self.assertNotIn("Schaden an allen", no.steps[0].text)
+        self.assertIn("3 Schaden an allen Feinden", yes.steps[0].text)
+        self.assertIn("0 Diener", yes.summary.split("|")[0])
+
+    def test_aura_then_minion_in_same_turn(self):
+        hand = [card(1, "AURA"), card(2, "ZEITWEGE", atk=3, hp=3)]
+        p = plan_for(gs(mana=9, opp=self.foes(), hand=hand))
+        names = [st.text for st in p.steps]
+        self.assertTrue(any("Aura" in n for n in names), names)
+        self.assertTrue(any("Zeitwege" in n for n in names), names)
+        self.assertLess(next(i for i, n in enumerate(names) if "Aura" in n), next(i for i, n in enumerate(names) if "Zeitwege" in n))
