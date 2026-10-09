@@ -8,6 +8,7 @@ privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 ## 2.9.6 - 09.10.2026
 - Behoben: Fensterposition und -größe wurden nicht wiederhergestellt, wenn das Fenster auf einem Monitor links vom Hauptmonitor lag. Tk schreibt solche Positionen als „+-2223“, und das wurde beim Laden nicht erkannt; der Coach startete dann immer mit der Standardgröße. Die Position wird jetzt richtig gelesen und geprüft: Liegt sie nach einer Monitoränderung außerhalb des Desktops, bleibt nur die Größe erhalten.
 - Das Fenster merkt sich Position und Größe jetzt schon beim Verschieben bzw. Vergrößern (kurz nach der letzten Änderung), nicht erst beim Beenden. Es geht also auch dann nichts verloren, wenn der Coach beendet wird, ohne ihn zu schließen.
+- Kartenbilder werden nicht mehr abgeschnitten: Sie passen sich der Höhe an, die unter den Textfeldern übrig ist (in Stufen, auch beim Ziehen am Fenster oder wenn der Plan länger wird). Ist fast kein Platz, bleiben sie lieber ganz weg, statt als schmale Streifen zu erscheinen.
 
 ## 2.9.5 - 09.10.2026
 - Die Textfelder (Zugplan, Hand, Board, Spielzüge, Boss-Info, KI-Tipp) wachsen jetzt mit ihrem Inhalt bis zu einer Obergrenze mit. Bisher wurden lange Pläne (z. B. 9 Schritte plus Alternativen) nach etwa 10 Zeilen abgeschnitten, die letzten Schritte waren nur durch Scrollen im Feld zu sehen.

@@ -110,6 +110,7 @@ class App(tk.Tk):
         self._auto_update = False     # darf sich diese Installation selbst aktualisieren?
         self._closed = False
         self._geo_job = None
+        self._img_job = None
         self._updating = False
         self._update_msg = ""
         self._logcfg_state = detect.check_log_config()
@@ -337,6 +338,7 @@ class App(tk.Tk):
         want = max(lo, min(hi, int(n)))
         if int(widget.cget("height")) != want:
             widget.config(height=want)
+            self._schedule_img_refresh()
 
     def _set_rich(self, key, widget, segments):
         sig = tuple(segments)
@@ -514,6 +516,7 @@ class App(tk.Tk):
         """Fenster verschoben oder in der Groesse geaendert: nach kurzer Ruhe speichern (nicht erst beim Schliessen)."""
         if event.widget is not self or self._closed:
             return
+        self._schedule_img_refresh()
         if self._geo_job:
             self.after_cancel(self._geo_job)
         self._geo_job = self.after(1500, self._save_geometry)
@@ -873,6 +876,25 @@ class App(tk.Tk):
             self._tips_log.append((s.turn, "Plan", tips.render_plan(s, plan)))
 
     # -- Kartenbilder -------------------------------------------------------------------------------------------
+    def _img_space(self):
+        """Hoehe, die unter den Textfeldern fuer Kartenbilder bleibt (None = Fenster noch nicht angezeigt)."""
+        try:
+            if self.winfo_height() <= 1:                 # Fenster noch nicht angezeigt
+                return None
+            h = self.winfo_height() - self.img_frame.winfo_y() - self.lbl_status.winfo_height() - 20
+        except tk.TclError:
+            return None
+        return max(0, h)
+
+    def _schedule_img_refresh(self):
+        if self._img_job is None and not self._closed:
+            self._img_job = self.after(250, self._img_refresh_now)
+
+    def _img_refresh_now(self):
+        self._img_job = None
+        if not self._closed:
+            self._refresh_images()
+
     def _refresh_images(self, force=False):
         s = self._state
         if self.var_hand_img.get() and s is not None and not s.mulligan:
@@ -889,7 +911,17 @@ class App(tk.Tk):
         w = self.cfg["card_img_w"]
         if n * (w + 8) > max(600, self.winfo_width() - 20):
             w = max(90, (max(600, self.winfo_width() - 20)) // n - 8)
-        h = int(w * self.cfg["card_img_h"] / self.cfg["card_img_w"])
+        ratio = self.cfg["card_img_h"] / self.cfg["card_img_w"]
+        space = self._img_space()
+        if space is not None and space < 110:      # kaum Platz: lieber keine Karten als abgeschnittene Streifen
+            for lbl in self._img_labels:
+                lbl.pack_forget()
+            self._rich_sig.pop("imgs", None)
+            return
+        if space is not None:                      # nicht hoeher als der Platz unter den Textfeldern, sonst wird abgeschnitten
+            w = min(w, max(70, int((space - 6) / ratio)))
+        w = max(70, (w // 8) * 8)                  # in Stufen, damit beim Ziehen am Fenster nicht jedes Pixel neu gerendert wird
+        h = int(w * ratio)
         key = (tuple(cids), w)
         if not force and self._rich_sig.get("imgs") == key and not any(
                 self.images.have(c) and lbl.cget("image") == "" for c, lbl in zip(cids, self._img_labels)):
