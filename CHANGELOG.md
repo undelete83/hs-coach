@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.11.1 - 09.10.2026
+- Behoben: Das Selbst-Update scheiterte stillschweigend, wenn ein zweites Coach-Fenster aus demselben Ordner lief (zum Beispiel ein altes Fenster nach früheren Updates). Das zweite Fenster hielt die Programmdateien fest, der Austausch ging nicht, und die alte Version startete wieder. Jetzt beendet das Update-Skript weitere Coach-Fenster aus diesem Ordner, versucht das Umbenennen bei gesperrten Dateien mehrmals und stellt im Notfall die alte Version sauber wieder her.
+- Neues Protokoll `%LOCALAPPDATA%\hs_coach\update.log` mit allen Schritten des letzten Updates. Scheitert ein Update, meldet der Coach das beim nächsten Start mit einem Hinweis und dem Pfad des Protokolls.
+- Hinweis zur Fehlersuche: Wer von einer Version ohne diese Korrektur aktualisiert, sollte vorher alle Coach-Fenster bis auf eines schließen; ab dieser Version erledigt das das Update selbst.
+
 ## 2.11.0 - 09.10.2026
 - **Spielbrett-Ansicht** (Etappe 2) und neues Standard-Design: Helden als runde Porträts mit Leben, Rüstung, Handkarten- und Deckzahl, Diener als Kacheln in zwei Reihen (Gegner oben, du unten) mit Kartenmotiv, Name, Angriff und Leben. Spott, Gottesschild, Gift, Lebensraub, Windzorn, Eifer/Ansturm und Tarnung erscheinen als Rahmen oder Chips, eingefrorene Diener unter einer Eisschicht, angriffsbereite mit grünem Rand, verletzte Diener mit orangem Lebenswert.
 - **Der Zugplan wird aufs Brett gezeichnet:** grüne Pfeile mit Schrittnummer vom Angreifer zum Ziel, rote Nummern an Zielen von Zaubern und Heldenkraft. Die Nummern entsprechen der Schrittliste im Plan.

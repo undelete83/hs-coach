@@ -186,6 +186,7 @@ class App(tk.Tk):
         self.after(30, lambda: winstyle.style_titlebar(self, CAPTION, CAPTION_TEXT, CAPTION_BORDER))
         self.after(60, self._wood_refresh)
         self.after(600, self._first_run)
+        self.after(1800, self._check_update_failure)
         self.bind("<Configure>", self._on_configure, add="+")
         self.lbl_status.bind("<Button-1>", self._open_release)
         update.check_async(self.cfg, lambda found: self.post(lambda: self._on_release(found)))
@@ -478,6 +479,15 @@ class App(tk.Tk):
         if settings.needs_restart(changed):
             self._set_rich("ai", self.t_ai, [("Gespeichert. Log-Ordner, Spielername und Kartenquelle wirken nach einem "
                                               "Neustart des Coaches.", "info")])
+
+    def _check_update_failure(self):
+        path = update.take_failure()
+        if not path:
+            return
+        from tkinter import messagebox
+        messagebox.showwarning("Update", "Das letzte Update konnte nicht installiert werden - der Coach läuft weiter in der "
+                               "alten Version.\n\nMeist hilft es, alle Coach-Fenster zu schließen, nur eines zu starten und das "
+                               f"Update erneut zu versuchen.\n\nProtokoll: {path}", parent=self)
 
     def _first_run(self):
         if config.is_first_run():

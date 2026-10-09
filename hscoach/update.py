@@ -23,6 +23,7 @@ import zipfile
 from collections import namedtuple
 
 from . import __version__
+from .config import APP_DIR
 
 log = logging.getLogger("hscoach.update")
 
@@ -211,14 +212,25 @@ def extract(zip_path, dest_dir):
 _SYS32 = "%SystemRoot%\\System32\\"      # absolute Pfade: ein anderes `find` im PATH (z. B. von Git) darf nicht stoeren
 
 
-def build_script(directory, new_dir, work_dir, pid, exe_name=EXE_NAME, proc_name=None):
-    """Batch-Skript: wartet auf das Ende des Coaches, tauscht die Dateien aus (mit Rueckfall) und startet neu."""
+def build_script(directory, new_dir, work_dir, pid, exe_name=EXE_NAME, proc_name=None, log_path=None,
+                 rename_retries=6, retry_wait=3):
+    """Batch-Skript: wartet auf das Ende des Coaches, beendet weitere Coach-Fenster aus demselben Ordner (sie halten die
+    Programmdateien fest), tauscht die Dateien aus (mit Wiederholungen und Rueckfall auf die alte Version) und startet neu.
+    Alles Wichtige steht im Protokoll `log_path`; bei einem Fehlschlag entsteht zusaetzlich `<log>.failed`."""
+    log = log_path or os.path.join(work_dir, "update.log")
+    exe_path = os.path.join(directory, exe_name)
+    kill = (f'"{_SYS32}WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -NonInteractive -Command '
+            '"Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:HSC_EXE } | '
+            'Stop-Process -Force -ErrorAction SilentlyContinue"')
     return "\r\n".join([
         "@echo off",
         "chcp 65001 >nul",
         f'set "APP={directory}"',
         f'set "NEW={new_dir}"',
         f'set "WORK={work_dir}"',
+        f'set "LOG={log}"',
+        f'set "HSC_EXE={exe_path}"',
+        'echo [%date% %time%] Update gestartet >> "%LOG%"',
         "set /a n=0",
         ":wait",
         f'"{_SYS32}tasklist.exe" /FI "PID eq {int(pid)}" /NH 2>nul | "{_SYS32}find.exe" /I "{proc_name or exe_name}" >nul',
@@ -228,16 +240,31 @@ def build_script(directory, new_dir, work_dir, pid, exe_name=EXE_NAME, proc_name
         f'"{_SYS32}ping.exe" -n 2 127.0.0.1 >nul',
         "goto wait",
         ":swap",
+        'echo [%date% %time%] Coach beendet, beende weitere Coach-Fenster aus diesem Ordner >> "%LOG%"',
+        kill + ' >> "%LOG%" 2>&1',
+        f'"{_SYS32}ping.exe" -n 3 127.0.0.1 >nul',
+        "set /a r=0",
+        ":ren",
         'if exist "%APP%\\_internal.bak" rmdir /S /Q "%APP%\\_internal.bak"',
-        'rename "%APP%\\_internal" _internal.bak',
-        "if errorlevel 1 goto start",
-        f'"{_SYS32}robocopy.exe" "%NEW%" "%APP%" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >nul',
+        'rename "%APP%\\_internal" _internal.bak 2>>"%LOG%"',
+        "if not errorlevel 1 goto copy",
+        "set /a r+=1",
+        'echo [%date% %time%] Umbenennen gescheitert (Versuch %r%), Dateien sind noch in Benutzung >> "%LOG%"',
+        f"if %r% GEQ {int(rename_retries)} goto failed",
+        f'"{_SYS32}ping.exe" -n {int(retry_wait) + 1} 127.0.0.1 >nul',
+        "goto ren",
+        ":copy",
+        f'"{_SYS32}robocopy.exe" "%NEW%" "%APP%" /E /R:5 /W:2 /NFL /NDL /NJH /NJS /NP >> "%LOG%" 2>&1',
         "if errorlevel 8 goto rollback",
         'rmdir /S /Q "%APP%\\_internal.bak"',
+        'echo [%date% %time%] Update erfolgreich >> "%LOG%"',
         "goto start",
         ":rollback",
+        'echo [%date% %time%] Kopieren gescheitert (robocopy-Code %errorlevel%), alte Version wird wiederhergestellt >> "%LOG%"',
         'if exist "%APP%\\_internal" rmdir /S /Q "%APP%\\_internal"',
         'rename "%APP%\\_internal.bak" _internal',
+        ":failed",
+        'echo Update fehlgeschlagen > "%LOG%.failed"',
         ":start",
         f'start "" "%APP%\\{exe_name}"',
         ":abort",
@@ -265,9 +292,34 @@ def prepare(release, repo, work_dir, progress=None, opener=urllib.request.urlope
     return extract(zip_path, os.path.join(work_dir, "new"))
 
 
+def log_file():
+    """Protokoll des letzten Update-Versuchs (bleibt nach dem Update erhalten)."""
+    return os.path.join(APP_DIR, "update.log")
+
+
+def take_failure():
+    """Hat das letzte Update nicht geklappt? Gibt dann den Pfad des Protokolls zurueck (und loescht die Markierung)."""
+    flag = log_file() + ".failed"
+    if not os.path.exists(flag):
+        return ""
+    try:
+        os.remove(flag)
+    except OSError:
+        pass
+    return log_file()
+
+
 def install_and_restart(new_dir, work_dir, directory=None, pid=None):
     """Schreibt und startet das Austausch-Skript. Danach muss sich der Coach sofort beenden."""
     script = os.path.join(work_dir, "update.cmd")
+    log = log_file()
+    os.makedirs(os.path.dirname(log), exist_ok=True)
+    with open(log, "w", encoding="utf-8") as f:
+        f.write(f"HS Coach {__version__}: Update-Protokoll\n")
+    try:
+        os.remove(log + ".failed")
+    except OSError:
+        pass
     with open(script, "w", encoding="utf-8", newline="") as f:
-        f.write(build_script(directory or app_dir(), new_dir, work_dir, pid or os.getpid()))
+        f.write(build_script(directory or app_dir(), new_dir, work_dir, pid or os.getpid(), log_path=log))
     launch(script)

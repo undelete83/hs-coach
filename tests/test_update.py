@@ -150,6 +150,21 @@ class TestUpdateButtonHandler(unittest.TestCase):
         info.assert_not_called()
 
 
+class TestFailureFlag(unittest.TestCase):
+    def test_take_failure_reads_and_clears_the_flag(self):
+        with tempfile.TemporaryDirectory() as d:
+            old = update.APP_DIR
+            update.APP_DIR = d
+            try:
+                self.assertEqual(update.take_failure(), "")
+                with open(update.log_file() + ".failed", "w") as f:
+                    f.write("x")
+                self.assertEqual(update.take_failure(), update.log_file())
+                self.assertEqual(update.take_failure(), "")
+            finally:
+                update.APP_DIR = old
+
+
 class TestDownload(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -279,11 +294,11 @@ class TestRealSwap(unittest.TestCase):
                 return
             time.sleep(0.3)
 
-    def run_script(self, new_dir):
+    def run_script(self, new_dir, **kw):
         waiter = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2)"])
         script = os.path.join(self.work, "update.cmd")
         with open(script, "w", encoding="utf-8", newline="") as f:
-            f.write(update.build_script(self.app, new_dir, self.work, waiter.pid, proc_name="python.exe"))
+            f.write(update.build_script(self.app, new_dir, self.work, waiter.pid, proc_name="python.exe", **kw))
         t0 = time.time()
         update.launch(script)
         return waiter, t0
@@ -306,6 +321,35 @@ class TestRealSwap(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.app, "_internal", "old.dll")))
         self.assertTrue(os.path.exists(os.path.join(self.app, "_internal", "new.dll")))
         self.assertFalse(os.path.exists(os.path.join(self.app, "_internal.bak")))
+
+    @unittest.skipUnless(os.path.basename(sys.executable).lower() == "python.exe", "braucht python.exe als Prozessname")
+    def test_second_instance_from_same_folder_is_closed(self):
+        """Ein zweites Coach-Fenster aus demselben Ordner haelt die Dateien fest - das Skript beendet es und tauscht dann."""
+        ping = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "ping.exe")
+        shutil.copy(ping, os.path.join(self.app, "HSCoach.exe"))
+        other = subprocess.Popen([os.path.join(self.app, "HSCoach.exe"), "-n", "300", "127.0.0.1"], stdout=subprocess.DEVNULL)
+        self.addCleanup(lambda: other.poll() is None and other.kill())
+        log = os.path.join(self.root, "update.log")
+        self.run_script(self.new, log_path=log)
+        self.assertTrue(self.wait_for(lambda: os.path.exists(os.path.join(self.app, "VERSION.txt"))), "Austausch muss gelingen")
+        self.assertTrue(self.wait_for(lambda: other.poll() is not None), "das zweite Fenster muss beendet sein")
+        self.assertTrue(self.wait_for(lambda: "erfolgreich" in open(log, encoding="utf-8", errors="replace").read()))
+        self.assertFalse(os.path.exists(log + ".failed"))
+
+    @unittest.skipUnless(os.path.basename(sys.executable).lower() == "python.exe", "braucht python.exe als Prozessname")
+    def test_locked_files_end_in_a_clean_failure(self):
+        """Haelt ein fremder Prozess Dateien im Ordner fest, bleibt die alte Version intakt und es gibt eine Fehlermarke."""
+        held = os.path.join(self.app, "_internal", "old.dll")
+        holder = subprocess.Popen([sys.executable, "-c", f"import time; f = open({held!r}, 'rb'); time.sleep(60)"])
+        self.addCleanup(lambda: holder.poll() is None and holder.kill())
+        time.sleep(1.0)
+        log = os.path.join(self.root, "update.log")
+        self.run_script(self.new, log_path=log, rename_retries=2, retry_wait=1)
+        self.assertTrue(self.wait_for(lambda: os.path.exists(log + ".failed"), 30), "Fehlermarke fehlt")
+        self.assertTrue(os.path.exists(held), "alte Version muss erhalten bleiben")
+        self.assertFalse(os.path.exists(os.path.join(self.app, "VERSION.txt")))
+        self.assertFalse(os.path.exists(os.path.join(self.app, "_internal.bak")))
+        self.assertIn("gescheitert", open(log, encoding="utf-8", errors="replace").read())
 
     @unittest.skipUnless(os.path.basename(sys.executable).lower() == "python.exe", "braucht python.exe als Prozessname")
     def test_rollback_when_copy_fails(self):
