@@ -29,7 +29,11 @@ ADVENTURES = [
     (r"BOTA", "Das Boomsday-Projekt"),
     (r"TUTR", "Tutorial"),
     (r"BOM_", "Book of Mercenaries"),
+    (r"Story_", "Book of Heroes"),         # genauer Abschnitt: siehe STORY unten
 ]
+STORY = {"01": "Jaina", "02": "Rexxar", "03": "Garrosh", "04": "Uther", "05": "Anduin", "06": "Valeera", "07": "Thrall",
+         "08": "Malfurion", "09": "Gul'dan", "10": "Illidan", "11": "Die Versunkene Stadt"}
+HERO_WORD = {"01": "Jaina", "02": "Rexxar", "03": "Garrosh", "04": "Uther", "05": "Anduin"}
 CACHE = os.path.expandvars(r"%LOCALAPPDATA%\hs_coach\cards_deDE.json")
 OUT = os.path.join(os.path.dirname(HERE), "hscoach", "bosses_auto.py")
 
@@ -57,6 +61,15 @@ def main():
                 break
         if not adv:
             continue
+        m = re.match(r"Story_(\d\d)_", c["id"])
+        if m:
+            if c["id"].endswith("hp"):                 # Spieler-Helden der Kapitel (hp = hero player)
+                continue
+            num = m.group(1)
+            word = HERO_WORD.get(num)
+            if word and clean(c.get("name")).startswith(word) and "Corrupt" not in c["id"]:
+                continue                               # Held des Kapitels selbst (Spieler)
+            adv = "Book of Heroes: " + STORY.get(num, num)
         hp = by_dbf.get(c.get("heroPowerDbfId"))
         power = ""
         if hp:
