@@ -53,7 +53,7 @@ class Plan:
 class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
-                 "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k")
+                 "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp")
 
     def clone(self):
         n = SS.__new__(SS)
@@ -66,6 +66,7 @@ class SS:
         n.opp_inc_bonus, n.opp_spawn_atk = self.opp_inc_bonus, self.opp_spawn_atk
         n.win_hp, n.face_k, n.prio = self.win_hp, self.face_k, self.prio
         n.reserve, n.hp_bonus, n.def_k = self.reserve, self.hp_bonus, self.def_k
+        n.temp = self.temp
         return n
 
 
@@ -106,7 +107,7 @@ def _evaluate(ss):
     my_total = ss.my_hp + ss.my_armor
     if my_total <= 0:
         return -100000.0
-    sc = 0.0
+    sc = -1.0 * ss.temp                         # Angriff, der nur in diesem Zug gilt, zaehlt nicht fuer das Board danach
     for m in ss.mine:
         sc += _mval(m)
     for m in ss.opp:
@@ -259,14 +260,36 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         if i < 0:
             return False
         a, h, taunt = fx.buff
-        ss.mine[i] = _buffed(ss.mine[i], (a, h, "spott" if taunt else ""))
+        before = ss.mine[i]
+        ss.mine[i] = _grant(_buffed(before, (a, h, "spott" if taunt else "")), fx.buff_kw)
+        if ss.mine[i] == before:                 # nichts Neues (z. B. hat schon Gottesschild): Karte waere verschwendet
+            return False
         if log is not None:
-            log.append(f"{ss.mine[i].name} wird zu {ss.mine[i].atk}/{ss.mine[i].hp}" + (" mit Spott" if taunt else ""))
-    if fx.team_buff:
-        a, h, taunt = fx.team_buff
-        ss.mine[:] = [_buffed(m, (a, h, "spott" if taunt else "")) for m in ss.mine]
-        if log is not None and ss.mine:
-            log.append(f"alle deine Diener +{a}/+{h}" + (" und Spott" if taunt else ""))
+            extra = "".join(f" mit {k.capitalize()}" for k in (["spott"] if taunt else []) + list(fx.buff_kw))
+            log.append(f"{ss.mine[i].name} wird zu {ss.mine[i].atk}/{ss.mine[i].hp}" + extra)
+    if fx.team_buff or fx.team_kw:
+        a, h, taunt = fx.team_buff or (0, 0, False)
+        sel = {m.uid for m in ss.mine if m.taunt or not fx.team_taunt_only}
+        if not sel:
+            return False
+        new = [_grant(_buffed(m, (a, h, "spott" if taunt else "")), fx.team_kw) if m.uid in sel else m for m in ss.mine]
+        if new == ss.mine:
+            return False
+        ss.mine[:] = new
+        if log is not None:
+            who = "alle deine Diener mit Spott" if fx.team_taunt_only else "alle deine Diener"
+            extra = "".join(f" und {k.capitalize()}" for k in ((["spott"] if taunt else []) + list(fx.team_kw)))
+            log.append(f"{who} +{a}/{h}{extra}" if (a or h) else f"{who}:{extra[4:]}")
+    if fx.temp_atk:
+        can_hero = fx.temp_hero and ss.hero_att > 0
+        if not can_hero and not any(m.att > 0 and not m.frozen for m in ss.mine):
+            return False                         # niemand koennte in diesem Zug angreifen
+        ss.mine[:] = [m._replace(atk=m.atk + fx.temp_atk) for m in ss.mine]
+        ss.temp += fx.temp_atk * len(ss.mine)
+        if fx.temp_hero:
+            ss.hero_atk += fx.temp_atk
+        if log is not None:
+            log.append(f"deine Diener{' und der Held' if fx.temp_hero else ''} +{fx.temp_atk} Angriff in diesem Zug")
     if fx.hero_atk_buff:
         ss.hero_atk += fx.hero_atk_buff
         if log is not None:
@@ -431,6 +454,16 @@ def _card_cost(ss, c):
 
 def _silenced(m):
     return m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
+
+
+def _grant(m, kws):
+    """Schluesselwoerter aus Stärkungszaubern: Gottesschild, Lebensentzug."""
+    for kw in kws:
+        if kw == "gottesschild":
+            m = m._replace(ds=True)
+        elif kw == "lebensentzug":
+            m = m._replace(lifesteal=True)
+    return m
 
 
 def _buffed(m, buff):
@@ -620,6 +653,7 @@ class Planner:
         ss.prio = dict(bias.get("priority", {}))
         ss.reserve = dict(bias.get("reserve", {}))
         ss.opp_spawn_atk = 0
+        ss.temp = 0
         ohp = s.opp_hero_power
         if ohp and ohp.cid and ohp.cost <= s.opp_max_mana + 1:
             summ = self.db.effect(ohp.cid).summon

@@ -19,9 +19,12 @@ _MISSILES_SPLIT = re.compile(r"verursacht (\d+) schaden, der zufällig auf alle 
 _MISSILES_SHOT = re.compile(r"verschießt (\d+) geschosse auf zufällige feinde, die je (\d+) schaden verursachen")
 _SELF_BUFF = re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
 _BUFF_PER = re.compile(r"erhält \+(\d+)(?:/\+(\d+)| (angriff|leben)) für (jeden anderen befreundeten diener auf dem schlachtfeld|jede karte auf eurer hand)$")
-_HERO_BUFF = re.compile(r"verleiht eurem helden \+(\d+) angriff in diesem zug(?: und (\d+) rüstung)?$")
-_TEAM_BUFF = re.compile(r"verleiht euren dienern \+(\d+)(?:/\+(\d+)| angriff)(?: und (spott))?$")
-_MINION_BUFF = re.compile(r"verleiht einem (?:befreundeten )?diener (?:(spott) und )?\+(\d+)(?:/\+(\d+)| angriff)(?: und (spott))?$")
+_HERO_BUFF = re.compile(r"verleiht eurem helden (?:in diesem zug )?\+(\d+) angriff(?: in diesem zug)?(?: und (\d+) rüstung)?(?: und immunität)?$")
+_TEAM_BUFF = re.compile(r"verleiht euren (dienern|charakteren)(?: (mit spott))? (.+)$")
+_MINION_BUFF = re.compile(r"verleiht einem (?:befreundeten )?diener (.+)$")
+_TEMP_ATK = re.compile(r"\+(\d+) angriff in diesem zug$")
+_BUFF_STATS = re.compile(r"\+(\d+)(?:/\+(\d+)| (angriff|leben))")
+_BUFF_KW = ("spott", "gottesschild", "lebensentzug")
 _HEAL_HERO = re.compile(r"stellt bei (?:eurem helden|jedem helden|allen befreundeten charakteren|allen charakteren) (\d+) leben wieder her")
 _RAMP = re.compile(r"erhaltet (einen|zwei|drei|\d+) leeren? manakristall")
 _FILL = re.compile(r"füllt eure seite des schlachtfelds mit (?:\w+ )?(\w+) \((\d+)/(\d+)\)")
@@ -65,7 +68,12 @@ class Effect:
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
+    buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
     team_buff: tuple = None       # (angriff, leben, spott) auf alle eigenen Diener
+    team_kw: tuple = ()           # Schluesselwoerter fuer alle eigenen Diener: gottesschild | lebensentzug
+    team_taunt_only: bool = False # Staerkung nur fuer eigene Diener mit Spott
+    temp_atk: int = 0             # +Angriff in diesem Zug fuer alle eigenen Diener
+    temp_hero: bool = False       # ... und fuer den Helden ("Charaktere")
     hero_atk_buff: int = 0        # Held erhaelt +N Angriff in diesem Zug
     silence: str = ""             # "" | target | aoe (feindliche Diener)
     bounce: str = ""              # "" | target: feindlichen Diener auf die Hand zurueck
@@ -108,6 +116,31 @@ def clean_text(raw):
     t = re.sub(r"\|4\(([^,)]*),[^)]*\)", r"\1", t)
     t = t.replace("_", " ")
     return re.sub(r"\s+", " ", t).strip()
+
+
+def _parse_buff_tail(rest):
+    """'+2/+3 und Spott' / '+3 Angriff und Gottesschild' / 'Gottesschild' -> (angriff, leben, schluesselwoerter, schlicht) oder None; 'schlicht' = nur +X/+Y, +X Angriff, Spott.
+    Bleibt etwas Unbekanntes uebrig (z. B. 'Zauberschaden +1', 'Todesroecheln ...'), wird nichts erkannt."""
+    r = rest.strip().rstrip(".")
+    atk = hp = 0
+    m = _BUFF_STATS.search(r)
+    if m:
+        if m.group(2) is not None:
+            atk, hp = int(m.group(1)), int(m.group(2))
+        elif m.group(3) == "angriff":
+            atk = int(m.group(1))
+        else:
+            hp = int(m.group(1))
+        r = r[:m.start()] + " " + r[m.end():]
+    kws = [k for k in _BUFF_KW if re.search(rf"\b{k}\b", r)]
+    for k in kws:
+        r = re.sub(rf"\b{k}\b", " ", r)
+    if re.sub(r"\b(und)\b|[,\s]", "", r):
+        return None
+    if not m and not kws:
+        return None
+    plain = not [k for k in kws if k != "spott"] and not (m and m.group(3) == "leben")
+    return atk, hp, tuple(kws), plain
 
 
 def _num(word):
@@ -175,6 +208,10 @@ def parse_effect(text, cardtype="SPELL", secret=False):
         e.destroy_highest, e.unknown = True, False
         return e
 
+    sents = [x.strip().rstrip(".") for x in re.split(r"(?<=[.!?])\s+", t)
+             if x.strip() and not x.strip().startswith(("zwillingszauber", "("))]
+    solo = len(sents) == 1                              # die Karte besteht nur aus diesem einen Satz
+
     last_scope = ""
     for s in re.split(r"(?<=[.!?])\s+", t):
         s = s.strip().rstrip(".")
@@ -225,21 +262,34 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.unknown = False
             continue
         m = _HERO_BUFF.match(s)
-        if m:                                           # Held +N Angriff in diesem Zug (ggf. mit Ruestung)
+        if m and ("immunität" not in s or solo):        # Held +N Angriff in diesem Zug (ggf. mit Ruestung)
             e.hero_atk_buff = int(m.group(1))
             e.armor += int(m.group(2) or 0)
             e.unknown = False
             continue
         m = _TEAM_BUFF.match(s)
-        if m:                                           # alle eigenen Diener staerken
-            e.team_buff = (int(m.group(1)), int(m.group(2) or 0), bool(m.group(3)))
-            e.unknown = False
-            continue
+        if m:                                           # eigene Diener (oder Charaktere) staerken
+            tail = m.group(3)
+            mt = _TEMP_ATK.fullmatch(tail)
+            if mt and not m.group(2) and solo:          # "+N Angriff in diesem Zug"
+                e.temp_atk, e.temp_hero = int(mt.group(1)), m.group(1) == "charakteren"
+                e.unknown = False
+                continue
+            pb = _parse_buff_tail(tail) if m.group(1) == "dienern" else None
+            if pb and (pb[3] or solo):
+                e.team_buff = (pb[0], pb[1], "spott" in pb[2])
+                e.team_kw = tuple(k for k in pb[2] if k != "spott")
+                e.team_taunt_only = bool(m.group(2))
+                e.unknown = False
+                continue
         m = _MINION_BUFF.match(s)
-        if m:                                           # einen befreundeten Diener staerken
-            e.buff = (int(m.group(2)), int(m.group(3) or 0), bool(m.group(1) or m.group(4)))
-            e.unknown = False
-            continue
+        if m:                                           # einen Diener staerken
+            pb = _parse_buff_tail(m.group(1))
+            if pb and (pb[3] or solo):
+                e.buff = (pb[0], pb[1], "spott" in pb[2])
+                e.buff_kw = tuple(k for k in pb[2] if k != "spott")
+                e.unknown = False
+                continue
         if "bringt einen diener zum schweigen" in s:
             e.silence, e.unknown = "target", False
             continue

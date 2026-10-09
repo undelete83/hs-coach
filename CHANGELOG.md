@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.8 - 09.10.2026
+- Zweites Paket der bisher unverstandenen Zauber: Stärkungen mit Schlüsselwörtern. Gottesschild und Lebensentzug auf einen oder alle eigenen Diener (Hand des Schutzes, Rechtschaffenheit, Siegel des Champions, Segen des Pharaos, Apotheose, Lichtgeschmiedeter Segen), „Stärken“ (nur eigene Diener mit Spott) und Angriff nur für diesen Zug: „Kampfrausch“ (alle Diener), „Wildes Brüllen“ (Diener und Held), „Unerbittliche Jagd“ (Held, die Immunität rechnet der Plan nicht mit).
+- Angriff „nur in diesem Zug“ zählt nicht für das Board nach dem Zug, sodass der Plan solche Zauber nur spielt, wenn damit wirklich angegriffen wird. Ein Gottesschild auf einen Diener, der schon eins hat, wird nicht verschwendet.
+- Zauber mit mehreren Sätzen und unbekannten Zusätzen (z. B. „Segnen“, „Haltet die Brücke“, Zauberschaden-Stärkungen, Eifer/Ansturm) bleiben bewusst „unbekannt“, statt halb verstanden zu werden.
+
 ## 2.7.7 - 09.10.2026
 - Erstes Paket der bisher unverstandenen Zauber: Schaden nach Wert wird jetzt geplant. „Das Licht! Es brennt!“ (Schaden = Angriff des Ziels), „Lichtbombe“ (jeder Diener, beide Seiten, bekommt Schaden in Höhe seines Angriffs), „Unbändigkeit“ (Schaden = Angriff deines Helden) und „Rundumschlag“ (verbraucht die ganze Rüstung, ebenso viel Schaden an alle Diener). Ohne nutzbaren Wert (kein Angriff, keine Rüstung) spielt der Plan die Karte nicht.
 - „Strangulieren“ vernichtet den feindlichen Diener mit dem höchsten Angriff (bei Gleichstand rechnet der Plan mit dem mit dem meisten Leben, im echten Spiel entscheidet der Zufall).
