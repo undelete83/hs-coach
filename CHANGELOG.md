@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.5 - 09.10.2026
+- Die Textfelder (Zugplan, Hand, Board, Spielzüge, Boss-Info, KI-Tipp) wachsen jetzt mit ihrem Inhalt bis zu einer Obergrenze mit. Bisher wurden lange Pläne (z. B. 9 Schritte plus Alternativen) nach etwa 10 Zeilen abgeschnitten, die letzten Schritte waren nur durch Scrollen im Feld zu sehen.
+
 ## 2.9.4 - 09.10.2026
 - Neu verstanden: Karten auf die Hand. „Erhaltet N Token (a/b) auf die Hand“ (Hexenwaldapfel), „Wählt einen Diener. Erhaltet eine Kopie davon auf die Hand“ (Geisterbeschwörung, eigene und feindliche Ziele) sowie „Kopie jedes (verletzten) befreundeten Dieners“ (Echo von Medivh, Blutkrieger). Der Planer rechnet das als Kartenwert ein (stärkere Diener sind mehr wert); er führt die neuen Handkarten nicht weiter aus.
 - Varianten mit Zusatzregeln (Finale, „kostet (1)“, mehrere Ziele) bleiben „unbekannt“.

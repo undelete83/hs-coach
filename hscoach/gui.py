@@ -145,10 +145,13 @@ class App(tk.Tk):
             geo = f"{m.group(1)}x{m.group(2)}"
         self.geometry(geo)
 
-    def _text(self, parent, height, fg, **pack):
+    def _text(self, parent, height, fg, max_height=None, **pack):
         t = tk.Text(parent, bg=TEXTBG, fg=fg, height=height, font=("Consolas", 11), relief="flat", bd=6,
                     state="disabled", wrap="word", cursor="arrow", highlightthickness=0)
         t.pack(fill=pack.get("fill", "x"), expand=pack.get("expand", False), padx=10, pady=(0, 4))
+        t._min_h, t._max_h = height, max_height or height          # waechst bei langem Inhalt bis max_height mit
+        if t._max_h > t._min_h:
+            t.bind("<Configure>", lambda e, w=t: self._autosize(w), add="+")
         bold = ("Consolas", 11, "bold")
         for name, kw in {
             "ready": dict(foreground=GREEN, font=bold), "sleep": dict(foreground="#666677"),
@@ -243,19 +246,19 @@ class App(tk.Tk):
         of = tk.Frame(boards, bg=BG)
         of.pack(side="left", fill="both", expand=True)
         self._section(of, "👹  GEGNER BOARD", RED)
-        self.t_opp = self._text(of, 6, RED)
+        self.t_opp = self._text(of, 6, RED, 10)
         tk.Frame(boards, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
         mf = tk.Frame(boards, bg=BG)
         mf.pack(side="left", fill="both", expand=True)
         self._section(mf, "🛡  DEIN BOARD", GREEN)
-        self.t_mine = self._text(mf, 6, GREEN)
+        self.t_mine = self._text(mf, 6, GREEN, 10)
 
         mid = tk.Frame(self, bg=BG)
         mid.pack(fill="x")
         hf = tk.Frame(mid, bg=BG)
         hf.pack(side="left", fill="both", expand=True)
         self._section(hf, "🃏  HAND  (★ = im Plan, unterstrichen = Begriff, Maus drüber für Erklärung)", YELLOW)
-        self.t_hand = self._text(hf, 9, YELLOW)
+        self.t_hand = self._text(hf, 9, YELLOW, 14)
         self.lbl_gloss = tk.Label(hf, text="", bg=BG, fg="#aabbff", font=("Segoe UI", 10), anchor="w", justify="left",
                                   wraplength=760)
         self.lbl_gloss.pack(fill="x", padx=12)
@@ -263,28 +266,28 @@ class App(tk.Tk):
         ef = tk.Frame(mid, bg=BG)
         ef.pack(side="left", fill="both", expand=True)
         self._section(ef, "📜  LETZTE SPIELZÜGE", GRAY)
-        self.t_events = self._text(ef, 9, GRAY)
+        self.t_events = self._text(ef, 9, GRAY, 12)
 
         tip = tk.Frame(self, bg=BG)
         tip.pack(fill="x")
         pf = tk.Frame(tip, bg=BG)
         pf.pack(side="left", fill="both", expand=True)
         self._section(pf, "🧭  ZUGPLAN  (Regel-Engine, live)", GOLD)
-        self.t_plan = self._text(pf, 10, GOLD)
+        self.t_plan = self._text(pf, 10, GOLD, 26)
         # Boss-Spalte: nur sichtbar, wenn ein bekannter Boss spielt (Spalte zwischen Plan und KI)
         self.boss_frame = tk.Frame(tip, bg=BG)
         tk.Frame(self.boss_frame, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
         bcol = tk.Frame(self.boss_frame, bg=BG)
         bcol.pack(side="left", fill="both", expand=True)
         self.lbl_boss = self._section(bcol, "📖  BOSS-INFO", "#ffcc88")
-        self.t_boss = self._text(bcol, 12, "#ffcc88")
+        self.t_boss = self._text(bcol, 12, "#ffcc88", 18)
         self.ai_frame = tk.Frame(tip, bg=BG)
         self.ai_frame.pack(side="left", fill="both", expand=True)
         tk.Frame(self.ai_frame, bg="#222244", width=1).pack(side="left", fill="y", pady=4)
         af = tk.Frame(self.ai_frame, bg=BG)
         af.pack(side="left", fill="both", expand=True)
         self._section(af, "🤖  KI-TIPP  (Claude)", "#aaccff")
-        self.t_ai = self._text(af, 10, "#aaccff")
+        self.t_ai = self._text(af, 10, "#aaccff", 16)
         self.lbl_cost = tk.Label(af, text="", bg=BG, fg=GRAY, font=("Consolas", 8))
         self.lbl_cost.pack(anchor="e", padx=14)
 
@@ -293,6 +296,20 @@ class App(tk.Tk):
         self._set_ai_idle()
 
     # -- Hilfen ----------------------------------------------------------------------------------
+    def _autosize(self, widget):
+        """Textfeld so hoch machen, dass der Inhalt (mit Zeilenumbruechen) sichtbar ist - hoechstens bis _max_h."""
+        lo, hi = getattr(widget, "_min_h", 0), getattr(widget, "_max_h", 0)
+        if hi <= lo or widget.winfo_width() < 60:
+            return
+        try:
+            res = widget.count("1.0", "end-1c", "displaylines")
+        except tk.TclError:
+            return
+        n = res[0] if isinstance(res, tuple) else (res or 1)
+        want = max(lo, min(hi, int(n)))
+        if int(widget.cget("height")) != want:
+            widget.config(height=want)
+
     def _set_rich(self, key, widget, segments):
         sig = tuple(segments)
         if self._rich_sig.get(key) == sig:
@@ -308,6 +325,7 @@ class App(tk.Tk):
             else:
                 widget.insert("end", text, (tag,) if tag else ())
         widget.config(state="disabled")
+        self._autosize(widget)
         widget.yview_moveto(top)
 
     def _bind_kw(self, widget, tag):
