@@ -14,14 +14,18 @@ RACE_WORDS = {
     "pirat": "PIRATE", "piraten": "PIRATE", "murloc": "MURLOC", "totem": "TOTEM", "untoter": "UNDEAD",
 }
 
+RACE_TARGET = {"wildtier": "BEAST", "wildtieren": "BEAST", "dämon": "DEMON", "dämonen": "DEMON", "drachen": "DRAGON",
+               "drache": "DRAGON", "mech": "MECHANICAL", "mechs": "MECHANICAL", "pirat": "PIRATE", "piraten": "PIRATE",
+               "murloc": "MURLOC", "murlocs": "MURLOC", "totem": "TOTEM", "totems": "TOTEM", "elementar": "ELEMENTAL",
+               "elementaren": "ELEMENTAL", "untoten": "UNDEAD", "naga": "NAGA", "nagas": "NAGA"}
 _HOLD = re.compile(r",?\s*wenn ihr einen (\w+) auf der hand habt$")
 _MISSILES_SPLIT = re.compile(r"verursacht (\d+) schaden, der zufällig auf alle (?:feinde|feindlichen charaktere) verteilt wird")
 _MISSILES_SHOT = re.compile(r"verschießt (\d+) geschosse auf zufällige feinde, die je (\d+) schaden verursachen")
 _SELF_BUFF = re.compile(r"erhält \+(\d+)(?: angriff|/\+(\d+))(?: und (spott|eifer|ansturm))?$")
 _BUFF_PER = re.compile(r"erhält \+(\d+)(?:/\+(\d+)| (angriff|leben)) für (jeden anderen befreundeten diener auf dem schlachtfeld|jede karte auf eurer hand)$")
 _HERO_BUFF = re.compile(r"verleiht eurem helden (?:in diesem zug )?\+(\d+) angriff(?: in diesem zug)?(?: und (\d+) rüstung)?(?: und immunität)?$")
-_TEAM_BUFF = re.compile(r"verleiht euren (dienern|charakteren)(?: (mit spott))? (.+)$")
-_MINION_BUFF = re.compile(r"verleiht einem (?:befreundeten )?diener (.+)$")
+_TEAM_BUFF = re.compile(r"verleiht euren (dienern|charakteren|[a-zäöüß]+)(?: (mit spott))? (.+)$")
+_MINION_BUFF = re.compile(r"verleiht einem (?:befreundeten )?(?:(verletzten) )?(diener|[a-zäöüß]+) (.+)$")
 _TEMP_ATK = re.compile(r"\+(\d+) angriff in diesem zug$")
 _BUFF_STATS = re.compile(r"\+(\d+)(?:/\+(\d+)| (angriff|leben))")
 _BUFF_KW = ("spott", "gottesschild", "lebensentzug")
@@ -41,6 +45,10 @@ _HEAL_MINION = re.compile(r"^stellt bei einem (?:befreundeten )?diener (\d+) leb
 _HEAL_FULL_TAUNT = re.compile(r"^stellt das volle leben eines dieners wieder her und verleiht ihm spott$")
 _DRAW_TYPED = re.compile(r"^zieht (einen|eine|zwei|drei|\d+) (?:zauber|diener)$|^zieht eure (?:teuerste karte|karte mit den niedrigsten kosten)$")
 _CHOOSE_SPLIT = re.compile(r";\s*oder\s+", re.I)
+_SET_HP = re.compile(r"^setzt das leben (eines dieners|aller diener) auf (\d+)$")
+_SET_ATK = re.compile(r"^setzt den angriff (eines dieners|aller diener) auf (\d+)$")
+_SET_BOTH = re.compile(r"^setzt (?:die werte|angriff und leben) (eines dieners|aller diener) auf (?:(\d+)/(\d+)|(\d+))$")
+_STEAL = re.compile(r"^übernehmt die kontrolle über einen feindlichen diener$")
 _DESTROY_HIGHEST = re.compile(r"^vernichtet den feindlichen diener mit dem höchsten angriff$")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
@@ -80,8 +88,14 @@ class Effect:
     est_note: str = ""            # Kartentext fuer die Anzeige
     choices: tuple = ()           # "Waehlt aus": je ein Effekt pro erkannter Option (die Karte spielt genau eine davon)
     choice_labels: tuple = ()     # Anzeigetexte dazu
+    set_stats: tuple = None       # (angriff | None, leben | None): Werte werden auf feste Zahlen gesetzt
+    set_scope: str = ""           # "target" (ein feindlicher Diener) | "all" (alle Diener, beide Seiten)
+    steal: bool = False           # uebernimmt dauerhaft einen feindlichen Diener (kann in diesem Zug nicht angreifen)
     heal_minion: int = 0          # heilt einen eigenen Diener um N (999 = volles Leben); zusammen mit `heal` auch den Helden
     heal_all_minions: int = 0     # heilt ALLE Diener (beide Seiten) um N
+    buff_hurt_only: bool = False  # Ziel muss verletzt sein ("verleiht einem verletzten Diener ...")
+    buff_race: str = ""           # Ziel muss dieses Volk sein ("verleiht einem Wildtier ...")
+    team_race: str = ""           # Staerkung nur fuer eigene Diener dieses Volks ("Euren Totems")
     team_buff: tuple = None       # (angriff, leben, spott) auf alle eigenen Diener
     team_kw: tuple = ()           # Schluesselwoerter fuer alle eigenen Diener: gottesschild | lebensentzug
     team_taunt_only: bool = False # Staerkung nur fuer eigene Diener mit Spott
@@ -107,6 +121,7 @@ class Effect:
                   self.freeze_target if self.freeze == "target" else "",
                   self.destroy_target if self.destroy == "target" else "",
                   "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
+                  "any_minion" if (self.set_stats and self.set_scope == "target") else ("enemy_minion" if self.steal else ""),
                   "friendly_minion" if (self.buff or self.heal_minion) else "",
                   "minion" if self.transform else ""):
             if k:
@@ -259,6 +274,22 @@ def _parse_core(text, cardtype="SPELL", secret=False):
     if _HEAL_FULL_TAUNT.match(flat):                   # Heilung der Ahnen
         e.heal_minion, e.buff, e.unknown = 999, (0, 0, True), False
         return e
+    for rx in (_SET_HP, _SET_ATK, _SET_BOTH):          # "Setzt ... auf N" (Dinogroesse, Demut, Gleichheit, Schrumpfstrahl ...)
+        m = rx.match(flat)
+        if m:
+            if rx is _SET_HP:
+                e.set_stats = (None, int(m.group(2)))
+            elif rx is _SET_ATK:
+                e.set_stats = (int(m.group(2)), None)
+            else:
+                a, h = (int(m.group(2)), int(m.group(3))) if m.group(2) else (int(m.group(4)), int(m.group(4)))
+                e.set_stats = (a, h)
+            e.set_scope = "all" if m.group(1) == "aller diener" else "target"
+            e.unknown = False
+            return e
+    if _STEAL.match(flat):                             # Gedankenkontrolle
+        e.steal, e.unknown = True, False
+        return e
     if _DESTROY_HIGHEST.match(flat):                   # Strangulieren
         e.destroy_highest, e.unknown = True, False
         return e
@@ -323,28 +354,35 @@ def _parse_core(text, cardtype="SPELL", secret=False):
             e.unknown = False
             continue
         m = _TEAM_BUFF.match(s)
-        if m:                                           # eigene Diener (oder Charaktere) staerken
+        if m:                                           # eigene Diener (oder Charaktere, Voelker) staerken
             tail = m.group(3)
+            race = RACE_TARGET.get(m.group(1), "")
             mt = _TEMP_ATK.fullmatch(tail)
-            if mt and not m.group(2) and solo:          # "+N Angriff in diesem Zug"
+            if mt and not m.group(2) and solo and m.group(1) in ("dienern", "charakteren"):   # "+N Angriff in diesem Zug"
                 e.temp_atk, e.temp_hero = int(mt.group(1)), m.group(1) == "charakteren"
                 e.unknown = False
                 continue
-            pb = _parse_buff_tail(tail) if m.group(1) == "dienern" else None
-            if pb and (pb[3] or solo):
+            pb = _parse_buff_tail(tail) if (m.group(1) == "dienern" or race) else None
+            if pb and (pb[3] or solo) and (not race or solo):
                 e.team_buff = (pb[0], pb[1], "spott" in pb[2])
                 e.team_kw = tuple(k for k in pb[2] if k != "spott")
                 e.team_taunt_only = bool(m.group(2))
+                e.team_race = race
                 e.unknown = False
                 continue
         m = _MINION_BUFF.match(s)
-        if m:                                           # einen Diener staerken
-            pb = _parse_buff_tail(m.group(1))
-            if pb and (pb[3] or solo):
-                e.buff = (pb[0], pb[1], "spott" in pb[2])
-                e.buff_kw = tuple(k for k in pb[2] if k != "spott")
-                e.unknown = False
-                continue
+        if m:                                           # einen Diener (verletzt / eines Volks) staerken
+            race = RACE_TARGET.get(m.group(2), "")
+            if m.group(2) == "diener" or race:
+                pb = _parse_buff_tail(m.group(3))
+                extra = bool(m.group(1) or race)         # Zielbedingung: nur bei Karten, die nur das tun
+                if pb and (pb[3] or solo) and (not extra or solo):
+                    e.buff = (pb[0], pb[1], "spott" in pb[2])
+                    e.buff_kw = tuple(k for k in pb[2] if k != "spott")
+                    e.buff_hurt_only = bool(m.group(1))
+                    e.buff_race = race
+                    e.unknown = False
+                    continue
         if "bringt einen diener zum schweigen" in s:
             e.silence, e.unknown = "target", False
             continue

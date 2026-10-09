@@ -197,6 +197,8 @@ def _targets(ss, kind):
         return [("face",)]
     if kind == "friendly_minion":
         return [("f", m.uid) for m in ss.mine]
+    if kind == "any_minion":                       # z. B. "Setzt die Werte eines Dieners auf 7/14": eigener oder feindlicher Diener
+        return opp_ok + [("f", m.uid) for m in ss.mine]
     return []
 
 
@@ -229,6 +231,37 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         del ss.opp[i]
         if log is not None:
             log.append(f"{top.name} wird vernichtet (höchster Angriff)")
+    if fx.steal and tgt_uid is not None:                 # Gedankenkontrolle: Diener wechselt die Seite, kann aber noch nicht angreifen
+        if len(ss.mine) >= MAX_BOARD:
+            return False
+        i = _find(ss.opp, tgt_uid)
+        m = ss.opp.pop(i)
+        ss.mine.append(m._replace(att=0, mine=True, frozen=m.frozen))
+        if log is not None:
+            log.append(f"{m.name} wechselt auf deine Seite (kann in diesem Zug nicht angreifen)")
+    if fx.set_stats:                                     # Werte auf feste Zahlen setzen (Leben setzt auch das Maximum)
+        a, h = fx.set_stats
+
+        def _set(m):
+            return m._replace(atk=m.atk if a is None else a, hp=m.hp if h is None else h, mhp=m.mhp if h is None else h)
+        if fx.set_scope == "target" and tgt and tgt[0] in ("m", "f"):
+            lst = ss.opp if tgt[0] == "m" else ss.mine
+            i = _find(lst, tgt[1])
+            if i < 0:
+                return False
+            new = _set(lst[i])
+            if new == lst[i]:
+                return False
+            lst[i] = new
+            if log is not None:
+                log.append(f"{new.name} wird zu {new.atk}/{new.hp}")
+        elif fx.set_scope == "all":
+            new_opp, new_mine = [_set(m) for m in ss.opp], [_set(m) for m in ss.mine]
+            if new_opp == ss.opp and new_mine == ss.mine:
+                return False
+            ss.opp[:], ss.mine[:] = new_opp, new_mine
+            if log is not None:
+                log.append("alle Diener (auch deine!) bekommen die neuen Werte")
     if fx.dmg_scale == "target_atk" and tgt_uid is not None:
         m = ss.opp[_find(ss.opp, tgt_uid)]
         if m.atk <= 0:
@@ -260,6 +293,10 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         if i < 0:
             return False
         orig = m = ss.mine[i]
+        if fx.buff_hurt_only and not _is_hurt(m):
+            return False
+        if not _race_ok(m, fx.buff_race):
+            return False
         if fx.heal_minion:
             m = _healed(m, fx.heal_minion)
         if fx.buff:
@@ -286,7 +323,7 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             log.append(f"alle Diener werden um {fx.heal_all_minions} geheilt (auch die des Gegners)")
     if fx.team_buff or fx.team_kw:
         a, h, taunt = fx.team_buff or (0, 0, False)
-        sel = {m.uid for m in ss.mine if m.taunt or not fx.team_taunt_only}
+        sel = {m.uid for m in ss.mine if (m.taunt or not fx.team_taunt_only) and _race_ok(m, fx.team_race)}
         if not sel:
             return False
         new = [_grant(_buffed(m, (a, h, "spott" if taunt else "")), fx.team_kw) if m.uid in sel else m for m in ss.mine]
@@ -475,6 +512,14 @@ def _card_cost(ss, c):
 
 def _silenced(m):
     return m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
+
+
+def _is_hurt(m):
+    return m.hp < max(m.mhp, m.hp)
+
+
+def _race_ok(m, race):
+    return not race or m.race == race or m.race == "ALL"
 
 
 def _healed(m, n):
@@ -735,6 +780,9 @@ class Planner:
                 kind = c.fx.target_kind if c.fx.concrete else ""
                 if kind:
                     opts = _targets(ss, kind)
+                    if c.fx.buff_hurt_only or c.fx.buff_race:
+                        opts = [t for t in opts if t[0] == "f" and (not c.fx.buff_hurt_only or _is_hurt(ss.mine[_find(ss.mine, t[1])]))
+                                and _race_ok(ss.mine[_find(ss.mine, t[1])], c.fx.buff_race)]
                     if c.fx.needs_frozen:
                         opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].frozen]
                     if c.fx.max_atk:

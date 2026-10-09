@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.0 - 09.10.2026
+- Neue verstandene Zauber: **Werte setzen** (z. B. Leben/Angriff eines Dieners auf einen festen Wert, Gleichheit, Schrumpfstrahl), **Kontrolle übernehmen** (Gedankenkontrolle & Co.: der feindliche Diener wechselt auf dein Brett) und Stärkungen mit **Zielbedingungen** („verletzter Diener“, „befreundeter Wildtier/Dämon/Mech …“, „Eure Totems“).
+- Der Planer wählt nur noch passende Ziele (verletzt, richtiges Volk) und spielt Karten nicht, wenn sie nichts bewirken würden. Neue Zielart „beliebiger Diener“ (eigene oder gegnerische), z. B. für Dinogröße.
+- Wie immer gilt: Karten mit zusätzlichen, nicht verstandenen Sätzen bleiben „unbekannt“, statt halb gerechnet zu werden.
+
 ## 2.8.1 - 09.10.2026
 - Zauber mit Entdecken oder Zufall, die der Coach nicht genau berechnen kann, bekommen jetzt einen pauschal geschätzten Wert (etwa eine Karte) statt „Effekt unbekannt“. Im Plan steht deutlich „Entdecken/Zufall: Wert pauschal geschätzt (kein genauer Effekt)“ samt Kartentext, damit du selbst entscheidest. Erkannte Effekte schlagen die Pauschale; teilweise erkannte Karten bekommen nichts zusätzlich geschätzt.
 - `scripts/audit_effects.py` weist jetzt getrennt aus, wie viele Zauber wirklich unbekannt und wie viele nur grob geschätzt sind.
