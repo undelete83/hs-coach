@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.1 - 09.10.2026
+- Neu verstanden: Stärkungen „je Diener, den Ihr kontrolliert“ (Geschenk des Waldes). Der Planer rechnet die Stärkung nach der Zahl deiner Diener zum Zeitpunkt des Ausspielens aus.
+
 ## 2.9.0 - 09.10.2026
 - Neue verstandene Zauber: **Werte setzen** (z. B. Leben/Angriff eines Dieners auf einen festen Wert, Gleichheit, Schrumpfstrahl), **Kontrolle übernehmen** (Gedankenkontrolle & Co.: der feindliche Diener wechselt auf dein Brett) und Stärkungen mit **Zielbedingungen** („verletzter Diener“, „befreundeter Wildtier/Dämon/Mech …“, „Eure Totems“).
 - Der Planer wählt nur noch passende Ziele (verletzt, richtiges Volk) und spielt Karten nicht, wenn sie nichts bewirken würden. Neue Zielart „beliebiger Diener“ (eigene oder gegnerische), z. B. für Dinogröße.

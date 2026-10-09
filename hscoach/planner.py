@@ -562,6 +562,10 @@ def _resolve(ss, c, cards):
         kind, a, h = fx.buff_per
         n = len(ss.mine) if kind == "minions" else sum(1 for o in cards if o.idx not in ss.used and o.idx != c.idx)
         return c._replace(fx=dataclasses.replace(fx, self_buff=(a * n, h * n, ""), buff_per=None))
+    if fx.buff_scale_minions and fx.buff:         # Geschenk des Waldes: Staerkung je eigenem Diener (zaehlt das Ziel mit)
+        n = len(ss.mine)
+        a, h, t = fx.buff
+        return c._replace(fx=dataclasses.replace(fx, buff=(a * n, h * n, t), buff_scale_minions=False))
     if not fx.cond_hold or fx.cond_fx is None:
         return c
     if any(o.idx not in ss.used and o.idx != c.idx and (o.race == fx.cond_hold or o.race == "ALL") for o in cards):

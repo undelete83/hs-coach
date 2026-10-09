@@ -80,6 +80,7 @@ class Effect:
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
     missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
+    buff_scale_minions: bool = False   # Ziel-Staerkung gilt je eigenem Diener (Geschenk des Waldes)
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
     buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
@@ -370,6 +371,11 @@ def _parse_core(text, cardtype="SPELL", secret=False):
                 e.team_race = race
                 e.unknown = False
                 continue
+        m = re.match(r"verleiht einem befreundeten diener \+(\d+)/\+(\d+) für jeden diener, den ihr kontrolliert$", s)
+        if m and solo:                                  # Geschenk des Waldes
+            e.buff = (int(m.group(1)), int(m.group(2)), False)
+            e.buff_scale_minions, e.unknown = True, False
+            continue
         m = _MINION_BUFF.match(s)
         if m:                                           # einen Diener (verletzt / eines Volks) staerken
             race = RACE_TARGET.get(m.group(2), "")
