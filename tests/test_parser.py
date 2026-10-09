@@ -191,3 +191,32 @@ D 1 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MA
                 caught_up = True
         self.assertTrue(lag_seen)
         self.assertTrue(caught_up)
+
+
+class TestMeDetectionAgainstHumans(unittest.TestCase):
+    """PvP: der Gegner heisst im Log 'UNKNOWN HUMAN PLAYER' - dann bin ich der andere Spieler (auch ohne gesetzten Namen)."""
+
+    def feed(self, tr, p1, p2):
+        tr._game(f"PlayerID=1, PlayerName={p1}")
+        tr._game(f"PlayerID=2, PlayerName={p2}")
+
+    def test_hidden_opponent_name_identifies_me_as_player_2(self):
+        from tests.helpers import new_tracker
+        tr = new_tracker()
+        tr.player_name = ""
+        self.feed(tr, "UNKNOWN HUMAN PLAYER", "Ich#4711")
+        self.assertEqual(tr.my_pid, 2)
+        self.assertTrue(tr.me_fixed)
+
+    def test_hidden_opponent_name_identifies_me_as_player_1(self):
+        from tests.helpers import new_tracker
+        tr = new_tracker()
+        tr.player_name = ""
+        self.feed(tr, "Ich#4711", "UNKNOWN HUMAN PLAYER")
+        self.assertEqual(tr.my_pid, 1)
+
+    def test_configured_name_still_wins(self):
+        from tests.helpers import new_tracker
+        tr = new_tracker()
+        self.feed(tr, "Spieler#1234", "UNKNOWN HUMAN PLAYER")
+        self.assertEqual(tr.my_pid, 1)

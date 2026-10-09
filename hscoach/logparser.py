@@ -316,6 +316,19 @@ class Tracker:
             self.my_pid = pid
             self.me_fixed = True
         self._guess_me()
+        self._me_from_hidden_name()
+
+    def _me_from_hidden_name(self):
+        """Gegen echte Spieler zeigt das Log den Gegner als 'UNKNOWN HUMAN PLAYER', nur der eigene Name steht da: damit ist klar,
+        wer man selbst ist (zuverlaessiger als die Zahl aufgedeckter Handkarten)."""
+        if self.me_fixed or len(self.pid_name) < 2:
+            return
+        hidden = [p for p, n in self.pid_name.items() if "UNKNOWN" in (n or "").upper()]
+        if len(hidden) == 1:
+            others = [p for p in self.pid_name if p != hidden[0]]
+            if len(others) == 1:
+                self.my_pid = others[0]
+                self.me_fixed = True
 
     def _guess_me(self):
         """Fallback, wenn der konfigurierte Spielername nicht vorkommt."""

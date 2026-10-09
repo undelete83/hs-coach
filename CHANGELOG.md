@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.6 - 10.10.2026
+- **Gegen echte Spieler wusste der Coach nicht mehr, wer dran ist** (und meldete ständig „Effekt dem Planer unbekannt: ???“): Ohne eingetragenen Spielernamen hat er „ich“ und „Gegner“ nach der Zahl aufgedeckter Handkarten erraten - das kippt, sobald der Gegner eine Karte offenlegt und man selbst nur noch eine Karte hat; der Coach hielt dann die verdeckten Gegnerkarten für die eigene Hand. Jetzt gilt: Zeigt das Log den Gegner als „UNKNOWN HUMAN PLAYER“, ist man selbst der andere Spieler. Das ist eindeutig und bleibt für die ganze Partie.
+
 ## 2.14.5 - 10.10.2026
 - **Geschützter Überlebender** („Wählt eine Karte auf Eurer Hand und mischt sie in Euer Deck“): Der Plan nennt jetzt die Karte, die zurück ins Deck soll - die, die gerade nicht spielbar oder noch zu teuer ist, sonst die am wenigsten gebrauchte; nie eine Karte, die im selben Plan noch gespielt wird.
 - **Bibliothekar des Königs** („Bringt einen Diener zum Schweigen“): Der Kampfschrei verlangt immer ein Ziel. Wenn Schweigen nichts bringt, nennt der Plan das harmloseste Pflichtziel (ein feindlicher Diener; eigene nur, wenn kein Feind da ist, dann den ohne Stärkungen).
