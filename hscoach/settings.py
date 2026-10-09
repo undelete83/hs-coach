@@ -3,7 +3,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from . import config, detect
+from . import config, detect, winstyle
 
 BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 
@@ -68,6 +68,7 @@ class SettingsDialog(tk.Toplevel):
         x = app.winfo_rootx() + max(0, (app.winfo_width() - self.winfo_width()) // 2)
         y = app.winfo_rooty() + 60
         self.geometry(f"+{x}+{y}")
+        winstyle.style_titlebar(self)
         self.grab_set()
 
     # -- Aufbau ----------------------------------------------------------------------------------------

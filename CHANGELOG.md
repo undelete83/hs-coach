@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.7 - 09.10.2026
+- Die Titelleiste des Fensters (und des Einstellungsdialogs) ist jetzt dunkel statt weiß und passt zur Oberfläche (Windows 10/11; auf älteren Systemen bleibt es, wie es war).
+
 ## 2.9.6 - 09.10.2026
 - Behoben: Fensterposition und -größe wurden nicht wiederhergestellt, wenn das Fenster auf einem Monitor links vom Hauptmonitor lag. Tk schreibt solche Positionen als „+-2223“, und das wurde beim Laden nicht erkannt; der Coach startete dann immer mit der Standardgröße. Die Position wird jetzt richtig gelesen und geprüft: Liegt sie nach einer Monitoränderung außerhalb des Desktops, bleibt nur die Größe erhalten.
 - Das Fenster merkt sich Position und Größe jetzt schon beim Verschieben bzw. Vergrößern (kurz nach der letzten Änderung), nicht erst beim Beenden. Es geht also auch dann nichts verloren, wenn der Coach beendet wird, ohne ihn zu schließen.

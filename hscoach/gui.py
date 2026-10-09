@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, bosses, config, detect, glossary, settings, tips, update, version
+from . import analysis, bosses, config, detect, glossary, settings, tips, update, version, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -164,6 +164,7 @@ class App(tk.Tk):
         self.bind("<F5>", lambda e: self._replan(force=True))
         self.report_callback_exception = lambda *a: log.error("Tk-Callback-Fehler", exc_info=a)
         self.after(150, self._drain)
+        self.after(30, lambda: winstyle.style_titlebar(self))
         self.after(600, self._first_run)
         self.bind("<Configure>", self._on_configure, add="+")
         self.lbl_status.bind("<Button-1>", self._open_release)
