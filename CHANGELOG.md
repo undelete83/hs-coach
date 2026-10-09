@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.13.0 - 10.10.2026
+- **Auswahl-Hilfe für „Entdecken“ / „Wählt aus“**: Das Log verrät offene Auswahlen (z. B. drei Geheimnisse der Arkanen Schlüsselmacherin). Der Coach zeigt jetzt statt des Plans eine **Empfehlung mit Begründung** und die Karten als Bilder. Geheimnisse werden nach Auslöser (Angriff auf deinen Helden, Gegner spielt Diener/Zauber …), Wahrscheinlichkeit (Gegner-Handkarten, angriffsfähige Diener, dein Brett) und Wirkung bewertet, Diener nach Werten und Schlüsselwörtern, Zauber nach ihrem Effekt auf das aktuelle Brett. Auch Claude bekommt die offene Auswahl im Prompt.
+
 ## 2.12.2 - 10.10.2026
 - Pfeile im Spielbrett sind eindeutiger: Der Pfeil beginnt am Rand des Angreifers und endet **mittig am Rand der Zielkachel** (bisher stoppte er auf halber Strecke und konnte neben dem Nachbarn zu landen scheinen). Jede Kachel und jeder Held, die im Plan angegriffen oder als Ziel genannt werden, bekommen zusätzlich einen **roten Ring**; die Nummer am Ziel gehört zum Schritt im Plan.
 

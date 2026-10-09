@@ -70,6 +70,9 @@ def state_to_text(s, plan=None, boss=None):
     if s.opp_hero_power:
         L.append(f"Gegner-Heldenkraft: {s.opp_hero_power.name} ({s.opp_hero_power.cost} Mana) - {s.opp_hero_power.text}")
     L.append(f"Gegner: {s.opp_hand_count} Handkarten, {s.opp_deck_count} im Deck, {s.opp_secret_count} Geheimnis(se).")
+    if getattr(s, "choice", None):
+        L.append("OFFENE AUSWAHL" + (f" (durch {s.choice.source})" if s.choice.source else "") + ": "
+                 + " | ".join(f"{o.name} [{o.cardtype}] {o.text}" for o in s.choice.options))
     if s.opp_played:
         L.append("Gegner hat bisher gespielt: " + ", ".join(s.opp_played[-12:]))
     if s.events:

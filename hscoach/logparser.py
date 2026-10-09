@@ -22,6 +22,11 @@ _BLOCK = re.compile(r"BLOCK_START BlockType=(\w+) Entity=(\[.*?\]|\S+?) EffectCa
 _PLAYER = re.compile(r"Player EntityID=(\d+) PlayerID=(\d+) GameAccountId=\[hi=(\d+) lo=(\d+)\]")
 _PLAYERNAME = re.compile(r"PlayerID=(\d+), PlayerName=(.*)")
 
+_CHOICE = re.compile(r"id=(\d+) Player=(.*?) TaskList=(\d+) ChoiceType=(\w+) CountMin=(\d+) CountMax=(\d+)")
+_CHOICE_SRC = re.compile(r"Source=\[entityName=(.*?) id=(\d+) .*?cardId=(\S*) player=(\d+)\]")
+_CHOICE_ENT = re.compile(r"Entities\[(\d+)\]=\[entityName=(.*?) id=(\d+) zone=\w+ zonePos=\d+ cardId=(\S*) player=(\d+)\]")
+_CHOSEN = re.compile(r"id=(\d+) Player=.*? EntitiesCount=")
+
 CREATE_MARK = b"GameState.DebugPrintPower() - CREATE_GAME"
 EVENT_CAP = 600
 
@@ -68,6 +73,7 @@ class Tracker:
         self.me_fixed = False        # True, wenn der Spielername aus der Config im Log gefunden wurde
         self.game_type = ""
         self.cur = None
+        self.choice = None           # offene Auswahl (Entdecken / "Waehlt aus"): dict oder None
         self.ui_step = ""            # Schritt laut PowerTaskList = was auf dem Bildschirm schon abgespielt wurde
         self.ui_current_pid = None
 
@@ -144,6 +150,31 @@ class Tracker:
             self._power(rest)
         elif src == "GameState.DebugPrintGame()":
             self._game(rest)
+        elif src == "GameState.DebugPrintEntityChoices()":
+            self._choice(rest)
+        elif src == "GameState.DebugPrintEntitiesChosen()":
+            m = _CHOSEN.match(rest.strip())
+            if m and self.choice and self.choice["id"] == int(m.group(1)):
+                self.choice = None                     # die Auswahl wurde getroffen
+
+    def _choice(self, rest):
+        """Offene Kartenauswahl (Entdecken, 'Waehlt aus'): Quelle und angebotene Karten merken. Mulligan wird ignoriert."""
+        s = rest.strip()
+        m = _CHOICE.match(s)
+        if m:
+            cid_, player, _task, ctype, mn, mx = m.groups()
+            self.choice = None if ctype == "MULLIGAN" else dict(
+                id=int(cid_), player=player, type=ctype, count_min=int(mn), count_max=int(mx), source=None, options=[])
+            return
+        if not self.choice:
+            return
+        m = _CHOICE_SRC.match(s)
+        if m:
+            self.choice["source"] = dict(name=m.group(1), eid=int(m.group(2)), cid=m.group(3))
+            return
+        m = _CHOICE_ENT.match(s)
+        if m:
+            self.choice["options"].append(dict(name=m.group(2), eid=int(m.group(3)), cid=m.group(4)))
 
     def _ui(self, rest):
         m = _TAGCHANGE.match(rest.lstrip())

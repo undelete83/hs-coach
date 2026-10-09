@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, board, bosses, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
+from . import analysis, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -951,7 +951,17 @@ class App(tk.Tk):
     def _plan_stale(self, s):
         return self._plan is None or self._plan_sig != s.signature()
 
+    def _render_choice(self, s):
+        text, _ranked = choices.render(s.choice, s, self.db)
+        segs = []
+        for i, line in enumerate(text.split("\n")):
+            segs.append((line + "\n", "lethal" if line.startswith("★") else "warn" if i == 0 else "dim"))
+        self._set_rich("plan", self.t_plan, segs)
+
     def _render_plan(self, s, plan):
+        if s.choice and not s.mulligan and not s.result:
+            self._render_choice(s)
+            return
         if s.mulligan:
             self._set_rich("plan", self.t_plan, [(tips.mulligan_advice(s, self.db, self.boss), "step")])
             return
@@ -991,6 +1001,14 @@ class App(tk.Tk):
             return
         if force:
             self._rich_sig.pop("plan", None)
+        if s.choice and not s.mulligan and not s.result:       # offene Auswahl (Entdecken): erst die waehlen
+            self._plan = None
+            self._plan_visible = True
+            self._render_choice(s)
+            ranked = choices.advise(s.choice, s, self.db)
+            self._img_cids = [a.cid for a in ranked if a.cid]
+            self._refresh_images()
+            return
         if s.mulligan or s.result or not s.my_active:
             self._plan = None
             self._render_plan(s, None)

@@ -132,6 +132,29 @@ class HeroPower:
 
 
 @dataclass
+class ChoiceOption:
+    eid: int
+    cid: str
+    name: str
+    cardtype: str = ""
+    cost: int = 0
+    atk: int = 0
+    hp: int = 0
+    text: str = ""
+    race: str = ""
+    secret: bool = False
+
+
+@dataclass
+class Choice:
+    """Offene Kartenauswahl (Entdecken, 'Waehlt aus')."""
+    id: int
+    source: str                      # Name der Karte, die die Auswahl ausloest
+    options: list = field(default_factory=list)
+    count: int = 1
+
+
+@dataclass
 class GameState:
     game_no: int = 0
     turn: int = 0
@@ -175,6 +198,7 @@ class GameState:
     ui_known: bool = False            # liegen PowerTaskList-Zugmarker vor?
     ui_my_turn: bool = False          # zeigt der Bildschirm schon meinen Zug?
     ui_step: str = ""
+    choice: Choice = None             # offene Kartenauswahl (nur meine)
 
     def signature(self):
         return (
@@ -186,6 +210,7 @@ class GameState:
             (self.my_weapon.atk, self.my_weapon.durability) if self.my_weapon else None,
             (self.opp_weapon.atk, self.opp_weapon.durability) if self.opp_weapon else None,
             self.my_hero_power.used if self.my_hero_power else None, self.opp_secret_count,
+            self.choice.id if self.choice else None,
         )
 
 
@@ -372,7 +397,25 @@ def build_state(tr, db):
     s.my_hand.sort(key=lambda c: c.zpos)
     s.my_spellpower = sum(m.spellpower for m in s.my_minions)
     _build_events(s, tr, db, me)
+    s.choice = _build_choice(tr, db, me)
     return s
+
+
+def _build_choice(tr, db, me):
+    """Offene Kartenauswahl des Spielers (Entdecken, 'Waehlt aus') mit den Kartendaten der Optionen."""
+    ch = getattr(tr, "choice", None)
+    if not ch or not ch["options"] or ch["type"] == "MULLIGAN":
+        return None
+    if ch["player"] != tr.pid_name.get(me, ch["player"]):          # Auswahl des Gegners interessiert nicht
+        return None
+    opts = []
+    for o in ch["options"]:
+        i = db.info(o["cid"]) if o["cid"] else {}
+        opts.append(ChoiceOption(o["eid"], o["cid"], i.get("name") or o["name"], i.get("cardtype", ""), i.get("cost", 0) or 0,
+                                 i.get("atk", 0) or 0, i.get("health", 0) or 0, i.get("text", ""), i.get("race", ""),
+                                 bool(i.get("secret"))))
+    src = ch.get("source") or {}
+    return Choice(ch["id"], src.get("name", ""), opts, ch.get("count_max", 1))
 
 
 def render_events(tr, db, me):
