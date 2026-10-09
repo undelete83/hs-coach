@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.7 - 10.10.2026
+- **Geschützter Überlebender, Auswahl der Karte**: Der Coach schlug in einer gewonnenen Partie vor, die Manifestierten Zeitwege (4 Mana, die Hauptschadenskarte des Decks) zurückzumischen, nur weil sie früh noch nicht spielbar waren. Jetzt zählt der Eigenwert der Karte (Werte, Schlüsselwörter, Effekt); teure Karten bleiben auf der Hand, solange sie in absehbarer Zeit spielbar werden (erst ab 4 Mana über deinem Maximum gilt „noch lange nicht spielbar“). Nicht spielbare Karten (volle Geheimniszone) kommen weiterhin zuerst.
+
 ## 2.14.6 - 10.10.2026
 - **Gegen echte Spieler wusste der Coach nicht mehr, wer dran ist** (und meldete ständig „Effekt dem Planer unbekannt: ???“): Ohne eingetragenen Spielernamen hat er „ich“ und „Gegner“ nach der Zahl aufgedeckter Handkarten erraten - das kippt, sobald der Gegner eine Karte offenlegt und man selbst nur noch eine Karte hat; der Coach hielt dann die verdeckten Gegnerkarten für die eigene Hand. Jetzt gilt: Zeigt das Log den Gegner als „UNKNOWN HUMAN PLAYER“, ist man selbst der andere Spieler. Das ist eindeutig und bleibt für die ganze Partie.
 

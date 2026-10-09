@@ -1046,9 +1046,26 @@ class Planner:
         m = min(ss.mine, key=lambda x: (x.atk + x.hp, x.name))
         return f"Kein feindlicher Diener da: Pflichtziel zum Schweigen ist einer deiner Diener - nimm den ohne Stärkungen/Effekte (z. B. {m.name})"
 
+    def _card_power(self, hc):
+        """Grober Eigenwert einer Handkarte (unabhaengig davon, wie viel Mana gerade da ist)."""
+        fx = self.db.effect(hc.cid) if hc.cid else Effect()
+        if hc.cardtype == "MINION":
+            v = (hc.atk + hc.hp) * 0.9 + 1.5 * bool(hc.taunt) + 1.5 * bool(hc.divine_shield) + 1.0 * bool(hc.lifesteal)
+            if fx.concrete and (fx.dmg or fx.aoe_dmg or fx.draw or fx.destroy or fx.silence or fx.heal):
+                v += 2.0
+            if (hc.text or "").strip():
+                v += 0.8
+            return v
+        if hc.cardtype == "WEAPON":
+            return hc.atk * hc.hp * 0.8 + 1.5
+        if fx.est_value:
+            return fx.est_value + 1.0
+        return 4.0 if fx.concrete else 2.0
+
     def _shuffle_pick(self, s, source, played):
-        """Geschuetzter Ueberlebender: welche Handkarte ins Deck gemischt werden sollte - die am wenigsten brauchbare.
-        Nicht in Frage kommen die Karte selbst und Karten, die der Plan in diesem Zug noch spielt."""
+        """Geschuetzter Ueberlebender: welche Handkarte ins Deck gemischt werden sollte - die mit dem geringsten Eigenwert.
+        Karten, die gerade nicht spielbar sind (Geheimniszone voll), kommen zuerst; teure Karten bleiben auf der Hand, solange
+        sie in absehbarer Zeit spielbar werden. Nie in Frage kommen die Karte selbst und Karten, die der Plan noch spielt."""
         blocked = {n: why for n, why in getattr(self, "_blocked", [])}
         best = None
         for i, hc in enumerate(s.my_hand):
@@ -1058,12 +1075,15 @@ class Planner:
                 continue
             if hc.name in blocked:
                 keep, why = -10.0, "gerade nicht spielbar"
-            elif hc.cost > s.max_mana + 1:
-                keep, why = 3.0 - 0.8 * (hc.cost - (s.max_mana + 1)), f"mit {hc.cost} Mana noch zu teuer"
             else:
-                keep, why = 3.0 + 0.4 * min(hc.cost, 6), "am wenigsten gebraucht"
+                keep = self._card_power(hc)
+                why = "schwächste Karte auf der Hand"
+                far = hc.cost - (s.max_mana + 4)
+                if far > 0:
+                    keep -= 1.5 * far
+                    why = f"mit {hc.cost} Mana noch lange nicht spielbar"
             if hc.is_coin:
-                keep += 2.0
+                keep += 3.0
             if best is None or keep < best[0]:
                 best = (keep, hc.name, why)
         return (best[1], best[2]) if best else None
