@@ -8,7 +8,7 @@ Live-Coach für **Hearthstone** (Windows). Der Coach liest die Logdatei, die Hea
 
 - **Spielstand live**: Leben, Rüstung, Mana, Boards (bereit / eingefroren / Spott / Gottesschild), deine Hand mit Kartentext, Waffe, Heldenkraft, Geheimnisse, letzte Spielzüge.
 - **Zugplan (kostenlos, ohne Internet-Dienst)**: Eine Regel-Engine simuliert Karten, Angriffe, Heldenkraft, Rabatte, Einfrieren, Spott und Lethal und zeigt die Schritte in Reihenfolge – inklusive Warnung bei drohendem Tod.
-- **Boss-Wissen** für die Solo-Abenteuer (Book of Heroes): Ziel, Heldenkraft, Tipps und Gefahren des Bosses in einer eigenen Spalte, nur während eines Boss-Kampfs.
+- **Boss-Wissen** für alle Solo-Abenteuer (Book of Heroes, Eine Nacht in Karazhan, Galakronds Erwachen, Dalaran-Raubzug, Gräber des Terrors, Naxxramas, Schwarzfels, Forscherliga, Kobolde & Katakomben, Hexenwald, Rastakhans Rumble, Eiskrone, Book of Mercenaries u. a.): Name, Leben und Heldenkraft des Bosses stehen überall; für viele Bosse gibt es zusätzlich Ziel, Tipps und Gefahren (eigene Spalte, nur während eines Boss-Kampfs).
 - **Spielbrett-Ansicht**: Helden als Porträts, Diener als Kacheln (mit Kartenmotiv, Spott, Schilden, Frost ...), der Zugplan als Pfeile mit Schrittnummern direkt auf dem Brett. Ein Knopf neben den Einstellungen schaltet auf die reine Textansicht um.
 - **Mulligan-Hilfe** und **Glossar** (Maus über unterstrichene Begriffe).
 - **Optional mit eigenem Anthropic-API-Key**: KI-Tipps pro Zug (Streaming, Kostenanzeige) und eine Spielanalyse nach der Partie. Ohne Key sind diese Funktionen aus – alles andere funktioniert voll.

@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.0 - 10.10.2026
+- **Alle Solo-Abenteuer**: Der Coach erkennt jetzt die Gegner (Bosse) von Naxxramas, Schwarzfels, Forscherliga, Kobolde & Katakomben, Hexenwald, Rastakhans Rumble, Dalaran-Raubzug, Gräber des Terrors, Galakronds Erwachen, Eiskrone, Boomsday, Book of Mercenaries und allen Kapiteln von Book of Heroes. Für rund 630 Gegner zeigt er Name, Leben und Heldenkraft aus den Kartendaten (erzeugt mit `scripts/gen_bosses_auto.py`), bei Dalaran und den Gräbern des Terrors zusätzlich die Kapitel-Sonderregeln.
+- **Handgepflegte Boss-Guides** (Icy Veins): Book of Heroes mit Rexxar (8), Garrosh (5), Uther (4) und Moira; Galakronds Erwachen mit allen Hauptbossen (Chenvaala, Dr. Bumm, Reno, Finley, Dämmerschlag, Lazul/Go'rath, Hagatha, Askaara, Forscher, Nithogg, Talritha, Drachenschwärme, Wanderer). Bei Misha gilt die Bärenfalle als Ziel, bei den Drachenschwärmen sind 10 Runden zu überleben.
+
 ## 2.13.1 - 10.10.2026
 - **Eine Nacht in Karazhan**: Boss-Wissen für die Bosse des Abenteuers (Malchezaar, Böse Hexe/Dorothee, Großer böser Wolf, Julianne/Romulo, Kurator, Nethergroll, Siechhuf, Nightbane, Arans Schemen, Nazra, Tafelsilbergolem, Zauberspiegel, Schachkönige). Der Coach erkennt sie am Helden, zeigt Boss-Heldenkraft, Ziel und Tipps und richtet die Planung aus (z. B. Romulo zuerst, bei Siechhuf kein Schaden ins Leere, bei der Hexe Dorothee schützen). Quelle: die Icy-Veins-Guides zu „One Night in Karazhan“ (Leben, Heldenkräfte, Strategie für Normal und Heroic) und die Kartentexte.
 

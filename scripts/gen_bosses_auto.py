@@ -34,6 +34,17 @@ ADVENTURES = [
 STORY = {"01": "Jaina", "02": "Rexxar", "03": "Garrosh", "04": "Uther", "05": "Anduin", "06": "Valeera", "07": "Thrall",
          "08": "Malfurion", "09": "Gul'dan", "10": "Illidan", "11": "Die Versunkene Stadt"}
 HERO_WORD = {"01": "Jaina", "02": "Rexxar", "03": "Garrosh", "04": "Uther", "05": "Anduin"}
+# Abenteuer-weite Regeln (Icy Veins): gelten je nach Kapitel fuer alle Bosse; erscheinen als Tipps in der Boss-Info
+NOTES = {
+    "Der Dalaran-Raubzug": [
+        "Jedes Kapitel hat eine Sonderregel: 1 Bank = ein 0/3-Tresor beim Boss, der beim Töten jedem 2 Münzen gibt; 2 Violet Hold = je ein Diener aus beiden Decks ist eingesperrt und wird nach so vielen Zügen frei, wie er Mana kostet; "
+        "3 Straßen = 3 unangreifbare Marker pro Seite begrenzen das Brett; 4 Unterwelt = Angriff und Leben aller Diener sind vertauscht; 5 Kirin-Tor-Zitadelle = 4 zusätzliche Boss-Kämpfe.",
+    ],
+    "Gräber des Terrors": [
+        "Jedes Kapitel hat eine Seuche: 1 Murlocs (viele 'Überraschung! Murlocs!' in beiden Decks); 2 Wahnsinn (der rechteste Diener jedes Spielers greift am Zugende zufällig an); "
+        "3 Tod (beide starten mit einem Ewigen Grab); 4 Zorn (ein Diener bekommt nach Schaden +1 Angriff).",
+    ],
+}
 CACHE = os.path.expandvars(r"%LOCALAPPDATA%\hs_coach\cards_deDE.json")
 OUT = os.path.join(os.path.dirname(HERE), "hscoach", "bosses_auto.py")
 
@@ -88,7 +99,10 @@ def main():
     lines = ['"""Automatisch erzeugt von scripts/gen_bosses_auto.py - nicht von Hand aendern (Handwissen: bosses_data.py)."""',
              "", "AUTO = ["]
     for (adv, name, power), g in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2])):
-        lines.append("    " + repr(dict(match=sorted(g["match"]), name=name, chapter=adv, start_hp=g["hp"] or None, boss_power=power)) + ",")
+        entry = dict(match=sorted(g["match"]), name=name, chapter=adv, start_hp=g["hp"] or None, boss_power=power)
+        if NOTES.get(adv):
+            entry["tips"] = list(NOTES[adv])
+        lines.append("    " + repr(entry) + ",")
     lines.append("]")
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
