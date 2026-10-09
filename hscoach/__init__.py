@@ -4,7 +4,7 @@ import logging.handlers
 import os
 import sys
 
-__version__ = "2.7.9"
+__version__ = "2.8.0"
 if getattr(sys, "frozen", False):          # als .exe (PyInstaller)
     REPO_DIR = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
 else:

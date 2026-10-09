@@ -39,6 +39,8 @@ _HEAL_ALL_MINIONS = re.compile(r"^stellt bei allen dienern (\d+) leben wieder he
 _HEAL_MINION_HERO = re.compile(r"^stellt bei einem diener und eurem helden (\d+) leben wieder her$")
 _HEAL_MINION = re.compile(r"^stellt bei einem (?:befreundeten )?diener (\d+) leben wieder her$")
 _HEAL_FULL_TAUNT = re.compile(r"^stellt das volle leben eines dieners wieder her und verleiht ihm spott$")
+_DRAW_TYPED = re.compile(r"^zieht (einen|eine|zwei|drei|\d+) (?:zauber|diener)$|^zieht eure (?:teuerste karte|karte mit den niedrigsten kosten)$")
+_CHOOSE_SPLIT = re.compile(r";\s*oder\s+", re.I)
 _DESTROY_HIGHEST = re.compile(r"^vernichtet den feindlichen diener mit dem höchsten angriff$")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
@@ -73,6 +75,8 @@ class Effect:
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
     buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
+    choices: tuple = ()           # "Waehlt aus": je ein Effekt pro erkannter Option (die Karte spielt genau eine davon)
+    choice_labels: tuple = ()     # Anzeigetexte dazu
     heal_minion: int = 0          # heilt einen eigenen Diener um N (999 = volles Leben); zusammen mit `heal` auch den Helden
     heal_all_minions: int = 0     # heilt ALLE Diener (beide Seiten) um N
     team_buff: tuple = None       # (angriff, leben, spott) auf alle eigenen Diener
@@ -181,6 +185,29 @@ def _scope(s):
     return ""
 
 
+def _parse_choose_one(text, e):
+    """'Waehlt aus: A; oder B.' -> jede erkannte Option als eigener Effekt (der Planer waehlt die bessere)."""
+    ct = clean_text(text)
+    body = re.sub(r"^wählt aus:\s*", "", ct, flags=re.I)
+    body = re.sub(r"\.\s*\([^()]*\)$", ".", body).rstrip(".").strip()      # Hinweis in Klammern am Ende entfernen
+    parts = [p.strip() for p in _CHOOSE_SPLIT.split(body)]
+    if len(parts) < 2:
+        return e
+    mp = re.match(r"(verleiht [^+]*?)\s*(?=\+)", parts[0].lower())
+    good, labels = [], []
+    for p in parts:
+        q = p.lower().replace("max. ", "max ").replace("mind. ", "mind ")
+        if q.startswith("+") and mp:                   # "+4 Leben und Spott" erbt das Verb der ersten Option
+            q = mp.group(1) + " " + q
+        o = parse_effect(q, "SPELL")
+        if o.concrete and not o.choices:
+            good.append(o)
+            labels.append(p[:1].upper() + p[1:])
+    if good:
+        e.choices, e.choice_labels, e.unknown = tuple(good), tuple(labels), False
+    return e
+
+
 def parse_effect(text, cardtype="SPELL", secret=False):
     """Parst den (bereinigten) Text. Bei Dienern/Waffen nur den Kampfschrei."""
     e = Effect()
@@ -202,6 +229,9 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.unknown = False
             return e
         t = t.split("kampfschrei:", 1)[1].strip()
+
+    if cardtype == "SPELL" and t.startswith("wählt aus:"):
+        return _parse_choose_one(text, e)
 
     flat = t.rstrip(".").strip()
     for rx, kind, tk in _SCALED_DMG:                   # ganzer Text ist genau so ein Zauber (z. B. Lichtbombe, Rundumschlag)
@@ -382,6 +412,11 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.heal = int(m.group(1))
             e.unknown = False
 
+        m = _DRAW_TYPED.match(s) if solo else None
+        if m:                                           # "Zieht einen Zauber" / "Zieht Eure teuerste Karte": je 1 Karte
+            e.draw += _num(m.group(1)) if m.group(1) else 1
+            e.unknown = False
+            continue
         m = re.search(r"\bzieht (\d+|eine|einen|zwei|drei) karte", s)
         if m:
             e.draw += _num(m.group(1))

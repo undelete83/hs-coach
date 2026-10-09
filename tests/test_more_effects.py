@@ -74,7 +74,8 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(parse_effect("Verleiht Euren Dienern +2/+2 und Spott.", "SPELL").team_buff, (2, 2, True))
         e = parse_effect("Verleiht Eurem Helden +2 Angriff in diesem Zug und 2 Rüstung.", "SPELL")
         self.assertEqual((e.hero_atk_buff, e.armor), (2, 2))
-        self.assertTrue(parse_effect("Wählt aus: Verleiht einem Diener +4 Angriff; oder +4 Leben und Spott.", "SPELL").unknown)
+        e = parse_effect("Wählt aus: Verleiht einem Diener +4 Angriff; oder +4 Leben und Spott.", "SPELL")    # Waehlt aus: je Option ein Effekt
+        self.assertEqual([o.buff for o in e.choices], [(4, 0, False), (0, 4, True)])
 
     def test_newer_missile_wording(self):
         e = parse_effect("Verursacht 3 Schaden, der zufällig auf alle feindlichen Charaktere verteilt wird.", "SPELL")

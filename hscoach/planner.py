@@ -520,7 +520,14 @@ def _resolve(ss, c, cards):
     return c
 
 
-def _play_card(ss, c, tgt, log=None):
+def _variants(c):
+    """'Waehlt aus': jede erkannte Option ist eine eigene Spielvariante der Karte; sonst nur die Karte selbst."""
+    if c.fx.choices:
+        return [(i, c._replace(fx=o)) for i, o in enumerate(c.fx.choices)]
+    return [(None, c)]
+
+
+def _play_card(ss, c, tgt, log=None, opt=None):
     """Spielt Karte `c` (C-Tuple) mit Ziel `tgt`. Gibt neuen Zustand oder None zurueck."""
     cost, di = _card_cost(ss, c)
     if cost > ss.mana:
@@ -568,7 +575,7 @@ def _play_card(ss, c, tgt, log=None):
             n.util += 1.2
         if c.coin:
             n.util -= 0.3
-    n.path = (ss.path, ("play", c.idx, tgt))
+    n.path = (ss.path, ("play", c.idx, tgt, opt))
     return n
 
 
@@ -713,36 +720,37 @@ class Planner:
             if cost > ss.mana:
                 continue
             c = _resolve(ss, c, cards)
-            key = (c.cid, c.name)
-            if key in seen_names:      # identische Karten in der Hand nur einmal expandieren
-                continue
-            seen_names.add(key)
-            if _discount_only(c.fx) and not any(
-                    o.idx not in ss.used and o.idx != c.idx and _discount_matches(o, c.fx.discount[0]) for o in cards):
-                continue            # reiner Rabatt-Zauber ohne passende Karte in der Hand waere wirkungslos
-            kind = c.fx.target_kind if c.fx.concrete else ""
-            if kind:
-                opts = _targets(ss, kind)
-                if c.fx.needs_frozen:
-                    opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].frozen]
-                if c.fx.max_atk:
-                    opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].atk <= c.fx.max_atk]
-                if c.fx.silence == "target" and not (c.fx.dmg or c.fx.destroy or c.fx.freeze or c.fx.transform):
-                    opts = [t for t in opts if t[0] == "m" and _silenced(ss.opp[_find(ss.opp, t[1])]) != ss.opp[_find(ss.opp, t[1])]]
-                if c.fx.freeze == "target" and c.fx.dmg == 0 and c.fx.cond_frozen_dmg == 0 and c.fx.destroy == "":
-                    opts = [t for t in opts if t[0] == "m"]
-                for t in opts:
-                    n = _play_card(ss, c, t)
+            for opt_i, c in _variants(c):
+                key = (c.cid, c.name, opt_i)
+                if key in seen_names:      # identische Karten in der Hand nur einmal expandieren
+                    continue
+                seen_names.add(key)
+                if _discount_only(c.fx) and not any(
+                        o.idx not in ss.used and o.idx != c.idx and _discount_matches(o, c.fx.discount[0]) for o in cards):
+                    continue            # reiner Rabatt-Zauber ohne passende Karte in der Hand waere wirkungslos
+                kind = c.fx.target_kind if c.fx.concrete else ""
+                if kind:
+                    opts = _targets(ss, kind)
+                    if c.fx.needs_frozen:
+                        opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].frozen]
+                    if c.fx.max_atk:
+                        opts = [t for t in opts if t[0] == "m" and ss.opp[_find(ss.opp, t[1])].atk <= c.fx.max_atk]
+                    if c.fx.silence == "target" and not (c.fx.dmg or c.fx.destroy or c.fx.freeze or c.fx.transform):
+                        opts = [t for t in opts if t[0] == "m" and _silenced(ss.opp[_find(ss.opp, t[1])]) != ss.opp[_find(ss.opp, t[1])]]
+                    if c.fx.freeze == "target" and c.fx.dmg == 0 and c.fx.cond_frozen_dmg == 0 and c.fx.destroy == "":
+                        opts = [t for t in opts if t[0] == "m"]
+                    for t in opts:
+                        n = _play_card(ss, c, t, None, opt_i)
+                        if n:
+                            out.append(n)
+                    if c.ctype == "MINION" and not opts:
+                        n = _play_card(ss, c, None, None, opt_i)
+                        if n:
+                            out.append(n)
+                else:
+                    n = _play_card(ss, c, None, None, opt_i)
                     if n:
                         out.append(n)
-                if c.ctype == "MINION" and not opts:
-                    n = _play_card(ss, c, None)
-                    if n:
-                        out.append(n)
-            else:
-                n = _play_card(ss, c, None)
-                if n:
-                    out.append(n)
         if not ss.hp_used and s.my_hero_power and s.my_hero_power.cost <= ss.mana:
             hp = s.my_hero_power
             kind = hp_fx.target_kind if hp_fx.concrete else ""
@@ -819,7 +827,12 @@ class Planner:
             if act[0] == "play":
                 c0 = by_idx[act[1]]
                 c = _resolve(ss, c0, cards)
-                nxt = _play_card(ss, c, act[2], log)
+                opt = act[3] if len(act) > 3 else None
+                label = ""
+                if opt is not None and c.fx.choices:
+                    label = c.fx.choice_labels[opt]
+                    c = c._replace(fx=c.fx.choices[opt])
+                nxt = _play_card(ss, c, act[2], log, opt)
                 if nxt is None:
                     break
                 if c is not c0 and c0.fx.cond_hold:
@@ -834,7 +847,7 @@ class Planner:
                     head = f"Lege {c.name} an ({c.atk}/{c.hp})"
                     kind = "weapon"
                 else:
-                    head = f"Spiele {c.name}"
+                    head = f"Spiele {c.name}" + (f" – Wahl: {label}" if label else "")
                     kind = "spell"
                     if not c.fx.concrete and not c.secret:
                         plan.unknown_cards.append(c.name)

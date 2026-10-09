@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.8.0 - 09.10.2026
+- „Wählt aus“ (Druiden-Zauber) wird geplant: Der Coach spielt jede erkannte Option durch und nimmt die bessere. Im Plan steht, welche Option er empfiehlt, z. B. „Spiele Mal der Natur – Wahl: Verleiht einem Diener +4 Angriff“. Erkannt werden „Mal der Natur“, „Dunkle Einflüsterung“ (nur die Stärkungs-Option), „Aufforstung“, „Eisbeißermine einnehmen“ und „Geheimzutat“ (nur die Held-Option).
+- Optionen, die der Coach nicht versteht (Entdecken, Zufall, Beschwören ohne Werte), bleiben außen vor, statt geraten zu werden. Besteht eine Karte nur aus solchen Optionen, bleibt sie „unbekannt“.
+- Karten, die einen bestimmten Typ ziehen („Zieht einen Zauber“, „Zieht Eure teuerste Karte“), zählen als eine gezogene Karte, aber nur, wenn die Karte nichts weiter tut.
+
 ## 2.7.9 - 09.10.2026
 - Drittes Paket der bisher unverstandenen Zauber: Diener heilen. Der Plan kennt jetzt das Maximalleben der Diener und heilt nie darüber hinaus (auch nicht nach einer Stärkung mit +Leben). „Kreis der Heilung“ (alle Diener, auch die des Gegners), „Verbindende Heilung“ (ein Diener und der eigene Held) und „Heilung der Ahnen“ (volles Leben und Spott) werden geplant.
 - Der Plan spielt Heilzauber nur, wenn sie wirklich etwas heilen. Er darf dafür auch erst angreifen und danach heilen, etwa bei einem 0-Mana-Zauber wie dem Kreis der Heilung.
