@@ -100,9 +100,12 @@ BOSSES = [
          goal="Früh Tempo machen, sein Board einfrieren/räumen, spät mit Feuerball/Pyroblast abschließen",
          tips=["Seine Geheimnisse (Gegenzauber, Explosive Runen, Flame Ward) in der Mitte des Spiels auslösen, damit der Wolkenprinz nie aktiv wird.",
                "Spät: Meteor oder Flammenstoß; Druck mit Erzmagier Kalec, Violet Warden, Arkanriese oder Staff of Antonidas.",
-               "Vermeide unnötigen Schaden - die 2 Heldenkraft-Schaden pro Runde sind unvermeidlich."],
-         mulligan=[], dangers=["späte Feuerbälle von oben gezogen", "Wolkenprinz"],
-         bias=dict(), source=SRC_TOP),
+               "Vermeide unnötigen Schaden - die 2 Heldenkraft-Schaden pro Runde sind unvermeidlich.",
+               "Köder: Hat er ein Geheimnis, zuerst einen billigen Zauber wirken (der Gegenzauber fängt den ersten Zauber ab), erst dann Flammenstoß oder Pyroschlag. In einer verlorenen Partie hat ein Gegenzauber den Flammenstoß (7 Mana) verschluckt und das Spiel gekippt.",
+               "Explosive Runen bestrafen frisch gespielte Diener: bei offenem Geheimnis lieber nichts Wertvolles legen."],
+         mulligan=[], dangers=["späte Feuerbälle von oben gezogen", "Wolkenprinz",
+                               "Gegenzauber fängt den ersten Zauber des Zuges ab", "Explosive Runen gegen deine Diener"],
+         bias=dict(secret_p=0.5), source=SRC_TOP + ", eigene Partie-Auswertung"),
 
     # ---------------------------------------------------------------- Garrosh (Krieger), Story_03 (nur Teilwissen)
     dict(id="garrosh_anduin", match=["Story_03_Anduin"], name="Prinz Anduin Wrynn", chapter="Garrosh", order=7,

@@ -46,3 +46,10 @@ Diese Datei wird dem Claude-Modus als zusätzliches Wissen mitgegeben. Gern erg�
 - Mit leerem Brett gegen mehrere Gegner-Diener keine zwei kleinen Diener hinlegen, die sofort sterben (Runde 17: Bücherwyrm + Schuppenreiterin starben ohne Gegenwert). Erst stabilisieren.
 - Thralls Spätspiel: Gewittersturm räumt das Board, der Frostwolfkriegsfürst wächst bis 9/9, Geist der Luft gibt weitere Angriffe. Nicht alle Karten vor dem Sturm ausspielen; Zauber für den Brunnen aufheben.
 - Begriffe: Eifer = sofort angreifen, nur Diener; Ansturm = sofort angreifen, auch den Helden.
+
+## Verlorene Partie gegen Aethas (Jaina), Runde 18
+- Wendepunkt Runde 13: Der Gegner hatte 5 Diener, ich 7 Mana und Flammenstoß. Ein unbekanntes Geheimnis (Gegenzauber) fing den Zauber ab, alle fünf Diener blieben stehen, in der nächsten Runde fielen 29 auf 15 Leben.
+- Lektion: Hat der Gegner ein Geheimnis, wird der ERSTE Zauber des Zuges abgefangen, wenn es ein Gegenzauber ist. Erst einen billigen Zauber (Froststrahl, Frostblitz, Münze) als Köder wirken, dann den teuren. Heldenkraft löst keinen Gegenzauber aus.
+- Explosive Runen bestrafen frisch gespielte Diener, Flammenfalle bestraft Angriffe mit Dienern: bei offenem Geheimnis nichts Wertvolles ins offene Feld legen und mit Zaubern vorsichtig sein.
+- Mana nicht verschenken: In Runde 15 blieben von 8 Mana nur 3 im Plan, obwohl 7-Mana-Karten spielbar waren. Zwei Pyroschlag (je 10 Mana) lagen die ganze Partie auf der Hand - teure Karten früher einplanen oder Platz in der Hand schaffen.
+

@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.12.1 - 10.10.2026
+- Lehre aus einer verlorenen Partie gegen Aethas: Ein unbekanntes gegnerisches Geheimnis (Gegenzauber) hat den Flammenstoß verschluckt. Der Planer rechnet jetzt damit, dass der **erste Zauber des Zuges** abgefangen werden kann, solange der Gegner Geheimnisse hat: Er bewertet ihn mit Abschlag und stellt, wenn möglich, einen billigen Zauber als **Köder** davor. Siegzüge (Lethal) bleiben davon unberührt. Aethas rechnet mit höherem Risiko (Boss-Tipp „Köder“ und Gefahren ergänzt).
+- Neue Hinweise im Plan: „Gegner hat ein Geheimnis ...: <Zauber> wird als erster Zauber gewirkt und könnte abgefangen werden - ein billiger Zauber davor wäre ein guter Köder“ sowie „Nur X von Y Mana im Plan - noch spielbar wären: ...“, wenn mehr als die Hälfte des Manas ungenutzt bleibt.
+- `knowledge.md` enthält die Lektionen für den KI-Tipp.
+
 ## 2.12.0 - 10.10.2026
 - **Handkarten als Kartenreihe** (Etappe 3): Jede Karte zeigt Kartenmotiv, Kosten (blaue Raute), Name und bei Dienern/Waffen Angriff und Leben. Karten, die du nicht spielen kannst (zu wenig Mana oder nicht dein Zug), sind abgedunkelt; Karten des Plans tragen die Nummer des Schritts und einen grünen Rand.
 - **Manakristalle** links von der Hand: gefüllte und leere Kristalle mit „Mana x / y“.

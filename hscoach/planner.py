@@ -55,7 +55,8 @@ class Plan:
 class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
-                 "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp")
+                 "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp",
+                 "secret_p", "bait")
 
     def clone(self):
         n = SS.__new__(SS)
@@ -69,6 +70,7 @@ class SS:
         n.win_hp, n.face_k, n.prio = self.win_hp, self.face_k, self.prio
         n.reserve, n.hp_bonus, n.def_k = self.reserve, self.hp_bonus, self.def_k
         n.temp = self.temp
+        n.secret_p, n.bait = self.secret_p, self.bait
         return n
 
 
@@ -667,6 +669,11 @@ def _play_card(ss, c, tgt, log=None, opt=None):
             n.util += 1.2
         if c.coin:
             n.util -= 0.3
+        if ss.secret_p and not ss.bait:
+            n.bait = True                         # ab jetzt ist der "Koeder" gespielt - weitere Zauber sind sicherer
+            gain = min(60.0, _evaluate(n) - _evaluate(ss))
+            if gain > 0:                          # der erste Zauber wirkt nur mit Wahrscheinlichkeit (1 - secret_p)
+                n.util -= ss.secret_p * gain
     n.path = (ss.path, ("play", c.idx, tgt, opt))
     return n
 
@@ -773,6 +780,9 @@ class Planner:
         ss.face_k = bias.get("face", 0.25 if defensive else 1.0)
         ss.prio = dict(bias.get("priority", {}))
         ss.reserve = dict(bias.get("reserve", {}))
+        # Unbekannte gegnerische Geheimnisse: der erste Zauber des Zuges kann abgefangen werden (Gegenzauber u. a.)
+        ss.secret_p = min(0.6, bias.get("secret_p", 0.25) * s.opp_secret_count) if s.opp_secret_count else 0.0
+        ss.bait = False
         ss.opp_spawn_atk = 0
         ss.temp = 0
         ohp = s.opp_hero_power
@@ -987,8 +997,33 @@ class Planner:
                 ss = n
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)
-        plan.warnings = self._warnings(s, end)
+        plan.warnings = self._warnings(s, end) + self._extra_warnings(s, plan, cards)
         return plan
+
+    @staticmethod
+    def _extra_warnings(s, plan, cards):
+        """Hinweise, die den Plan als Ganzes betreffen: Koeder gegen Geheimnisse, ungenutztes Mana."""
+        w = []
+        by_cid = {}
+        for c in cards:
+            by_cid.setdefault(c.cid, c)
+        spell_steps = [st for st in plan.steps if st.kind == "spell" and st.cid in by_cid]
+        if s.opp_secret_count and spell_steps:
+            first = by_cid[spell_steps[0].cid]
+            used = {st.cid for st in plan.steps if st.cid}
+            cheaper = [c for c in cards if c.ctype == "SPELL" and c.cid not in used and c.cost < first.cost and c.cost <= s.my_mana - first.cost]
+            if first.cost >= 5:
+                hint = f" - ein billiger Zauber davor ({cheaper[0].name}) wäre ein guter Köder" if cheaper else \
+                    " - wenn möglich vorher einen billigen Zauber als Köder wirken"
+                w.append(f"Gegner hat ein Geheimnis (z. B. Gegenzauber): \u201e{first.name}\u201c ({first.cost} Mana) wird als erster "
+                         f"Zauber gewirkt und könnte abgefangen werden{hint}.")
+        if s.my_mana >= 4 and plan.mana_used * 2 < s.my_mana:
+            used = {st.cid for st in plan.steps if st.cid}
+            left = [c for c in cards if c.cid not in used and c.ctype in ("MINION", "SPELL", "WEAPON") and c.cost <= s.my_mana]
+            if left:
+                names = ", ".join(sorted({c.name for c in left}, key=lambda n: n)[:3])
+                w.append(f"Nur {plan.mana_used} von {s.my_mana} Mana im Plan - noch spielbar wären: {names}.")
+        return w
 
     @staticmethod
     def _tname(ss, tgt):
