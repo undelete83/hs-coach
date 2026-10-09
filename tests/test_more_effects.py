@@ -318,3 +318,30 @@ class TestRafaamClock(unittest.TestCase):
     def test_no_warning_for_a_few(self):
         p = Planner(fake_db(), 1.0).plan(gs(mana=3, hand=[], opp_played=["Grüner Rafaam", "Feuerball"]), None)
         self.assertFalse(any("RAFAAM" in w for w in p.warnings), p.warnings)
+
+
+class TestSilenceResetsBuffs(unittest.TestCase):
+    """Schweigen setzt gestaerkte Diener auf ihre Grundwerte zurueck (Speerherzwaechter 7/5 -> 3/4)."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["BIBLIO"] = dict(name="Bibliothekar des Königs", cardtype="MINION", cost=4, text="Handelbar Kampfschrei: Bringt einen Diener zum Schweigen.")
+        CARDS["BUFFED"] = dict(name="Wächter", cardtype="MINION", cost=4, atk=3, health=4, text="")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["BIBLIO"], self.CARDS["BUFFED"]
+
+    def test_silence_target_is_the_buffed_minion(self):
+        foes = [mm(10, "Wächter", 7, 5, cid="BUFFED"), mm(11, "Plain", 2, 2)]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=4, hand=[card(1, "BIBLIO", atk=4, hp=4)], opp=foes), None)
+        txt = " ".join(st.text for st in p.steps)
+        self.assertIn("auf Wächter", txt)
+
+    def test_base_stats_applied(self):
+        from hscoach import planner
+        planner.BASE_STATS["BUFFED"] = (3, 4)
+        m = planner.M(10, "Wächter", "BUFFED", 7, 5, True, False, False, False, False, False, 1, 0, True, False, 0, "", False, False, 5)
+        r = planner._silenced(m)
+        self.assertEqual((r.atk, r.hp), (3, 4))
+        planner.BASE_STATS.clear()

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.10 - 10.10.2026
+- **Schweigen setzt Stärkungen zurück**: Der Planer behandelte Schweigen nur als „Spott/Schilde weg“. Tatsächlich fallen auch Angriff und Leben auf die Grundwerte (Speerherzwächter 7/5 → 3/4). Dadurch fand er in einer verlorenen Partie keinen Grund, mit dem Bibliothekar des Königs den gestärkten Speerherzwächter zum Schweigen zu bringen, und erkannte die Gefahr nicht. Jetzt wird das Ziel richtig gewählt und im Plan angezeigt („Werte 7/5 → 3/1“).
+
 ## 2.14.9 - 10.10.2026
 - **Rafaam-Uhr**: Gegen das Rafaam-Deck (Zeitdieb Rafaam zerstört deinen Helden, sobald alle übrigen Rafaams gespielt sind) warnt der Plan ab 6 gespielten verschiedenen Rafaams: nicht mehr auf Wertspiel setzen, sondern auf Tempo und Gesichtsschaden. Dazu ein Abschnitt in `knowledge.md` (Erzmagier Rafaam macht Schafe, Verhängnisvoller Rafaam räumt das Brett).
 

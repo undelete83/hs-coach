@@ -393,9 +393,12 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             log.append(f"Held +{fx.hero_atk_buff} Angriff in diesem Zug")
     if fx.silence == "target" and tgt_uid is not None:
         i = _find(ss.opp, tgt_uid)
-        ss.opp[i] = _silenced(ss.opp[i])
+        before = ss.opp[i]
+        ss.opp[i] = _silenced(before)
         if log is not None:
-            log.append(f"{ss.opp[i].name} verliert Spott/Schilde/Effekte")
+            now = ss.opp[i]
+            reset = f", Werte {before.atk}/{before.hp} → {now.atk}/{now.hp}" if (now.atk, now.hp) != (before.atk, before.hp) else ""
+            log.append(f"{now.name} verliert Spott/Schilde/Effekte{reset}")
     if fx.silence == "aoe":
         ss.opp[:] = [_silenced(m) for m in ss.opp]
         if log is not None and ss.opp:
@@ -555,8 +558,16 @@ def _card_cost(ss, c):
     return c.cost, -1
 
 
+BASE_STATS = {}          # cid -> (Angriff, Leben) laut Kartendaten; wird beim Planen gefuellt (Schweigen setzt Werte zurueck)
+
+
 def _silenced(m):
-    return m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
+    r = m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
+    base = BASE_STATS.get(m.cid)
+    if base and (m.atk > base[0] or m.hp > base[1]):          # Stärkungen verfallen: Werte fallen auf die Grundwerte
+        dmg = max(0, max(m.mhp, m.hp) - m.hp)
+        r = r._replace(atk=min(m.atk, base[0]), mhp=base[1], hp=max(1, min(m.hp, base[1] - dmg)))
+    return r
 
 
 def _is_hurt(m):
@@ -781,6 +792,11 @@ class Planner:
         for m in s.opp_minions:
             ss.opp.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
                             m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False, False, m.max_hp))
+        BASE_STATS.clear()
+        for m in list(s.my_minions) + list(s.opp_minions):
+            inf = self.db.info(m.cid) if m.cid else {}
+            if inf.get("atk") is not None and inf.get("health") is not None:
+                BASE_STATS[m.cid] = (inf["atk"], inf["health"])
         ss.used = ()
         ss.weapon = (s.my_weapon.atk, s.my_weapon.durability) if s.my_weapon else None
         ss.hero_atk = s.my_hero_atk
