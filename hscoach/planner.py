@@ -52,6 +52,9 @@ class Plan:
 
 # -- Simulation ----------------------------------------------------------------------------
 
+SECRET_ZONE_CAP = 5            # Geheimnisse und Auren teilen sich 5 Plaetze (Fehler REQ_SECRET_ZONE_CAP im Log)
+
+
 class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
@@ -738,10 +741,18 @@ class Planner:
     # -- Aufbau -----------------------------------------------------------------------
     def _cards(self, s):
         cards = []
+        self._blocked = []                 # Karten, die gerade nicht spielbar sind (Geheimniszone voll / Geheimnis schon aktiv)
         for i, c in enumerate(s.my_hand):
             fx = self.db.effect(c.cid) if c.cid else Effect()
             if c.is_coin and not fx.concrete:
                 fx = Effect(temp_mana=1, unknown=False)
+            if c.cardtype == "SPELL" and (c.secret or fx.secret or fx.est_label == "Aura"):
+                if len(s.my_secrets) >= SECRET_ZONE_CAP:
+                    self._blocked.append((c.name, f"die Geheimniszone ist voll ({len(s.my_secrets)} von {SECRET_ZONE_CAP}: Geheimnisse und Auren teilen sich die Plätze)"))
+                    continue
+                if (c.secret or fx.secret) and c.name in s.my_secrets:
+                    self._blocked.append((c.name, "dieses Geheimnis ist schon aktiv"))
+                    continue
             cards.append(C(i, c.name, c.cid, c.cost, c.cardtype, c.text, c.atk, c.hp, c.race, c.taunt,
                            c.divine_shield, c.charge, c.rush, c.stealth, c.windfury, c.poisonous, c.lifesteal,
                            c.secret or fx.secret, fx, c.is_coin))
@@ -998,6 +1009,8 @@ class Planner:
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)
         plan.warnings = self._warnings(s, end) + self._extra_warnings(s, plan, cards)
+        for name, why in getattr(self, "_blocked", []):
+            plan.warnings.append(f"{name} ist gerade nicht spielbar: {why}.")
         return plan
 
     @staticmethod

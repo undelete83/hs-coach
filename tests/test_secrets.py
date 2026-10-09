@@ -82,3 +82,25 @@ class TestWarnings(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSecretZoneCap(unittest.TestCase):
+    """Auren und Geheimnisse teilen sich 5 Plaetze: bei voller Zone sind weitere nicht spielbar (REQ_SECRET_ZONE_CAP)."""
+
+    def test_aura_not_played_when_zone_is_full(self):
+        from tests.helpers import CARDS
+        CARDS["AURA"] = dict(name="Chronologische Aura", cardtype="SPELL", cost=5,
+                             text="Ruft am Ende Eures Zuges einen Drachen (3/5) mit Spott herbei. Hält 3 Züge lang an.")
+        try:
+            hand = [card(1, "AURA")]
+            full = plan_for(gs(mana=8, hand=hand, my_secrets=["a", "b", "c", "d", "e"]))
+            self.assertFalse(full.steps, [st.text for st in full.steps])
+            self.assertTrue(any("nicht spielbar" in w for w in full.warnings), full.warnings)
+            free = plan_for(gs(mana=8, hand=hand, my_secrets=["a"]))
+            self.assertEqual(len(free.steps), 1)
+        finally:
+            del CARDS["AURA"]
+
+    def test_same_secret_cannot_be_played_twice(self):
+        s = gs(mana=8, hand=[card(1, "EISBLOCK")], my_secrets=["Eisblock"])
+        self.assertFalse(plan_for(s).steps)

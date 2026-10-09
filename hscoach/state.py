@@ -209,7 +209,7 @@ class GameState:
             tuple((c.eid, c.cost) for c in self.my_hand),
             (self.my_weapon.atk, self.my_weapon.durability) if self.my_weapon else None,
             (self.opp_weapon.atk, self.opp_weapon.durability) if self.opp_weapon else None,
-            self.my_hero_power.used if self.my_hero_power else None, self.opp_secret_count,
+            self.my_hero_power.used if self.my_hero_power else None, self.opp_secret_count, len(self.my_secrets),
             self.choice.id if self.choice else None,
         )
 

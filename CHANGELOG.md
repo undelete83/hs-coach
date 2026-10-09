@@ -7,6 +7,7 @@ privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
 ## 2.14.1 - 10.10.2026
 - **Auren** („Hält N Züge lang an“, z. B. Chronologische Aura, Sandwüteraura): Der Planer kannte sie nicht („Effekt unbekannt“, teils „Kein sinnvoller Zug gefunden“, obwohl eine Aura auf der Hand lag). Auren bekommen jetzt einen geschätzten Wert, bei beschwörenden Auren aus den Werten des Dieners und der Dauer.
+- **Geheimniszone voll**: Geheimnisse und Auren teilen sich 5 Plätze (das Spiel meldet sonst `REQ_SECRET_ZONE_CAP`). Der Plan schlägt keine weitere Aura/kein weiteres Geheimnis vor, wenn die Zone voll ist oder dasselbe Geheimnis schon liegt, und sagt im Plan, warum die Karte gerade nicht spielbar ist.
 
 ## 2.14.0 - 10.10.2026
 - **Alle Solo-Abenteuer**: Der Coach erkennt jetzt die Gegner (Bosse) von Naxxramas, Schwarzfels, Forscherliga, Kobolde & Katakomben, Hexenwald, Rastakhans Rumble, Dalaran-Raubzug, Gräber des Terrors, Galakronds Erwachen, Eiskrone, Boomsday, Book of Mercenaries und allen Kapiteln von Book of Heroes. Für rund 630 Gegner zeigt er Name, Leben und Heldenkraft aus den Kartendaten (erzeugt mit `scripts/gen_bosses_auto.py`), bei Dalaran und den Gräbern des Terrors zusätzlich die Kapitel-Sonderregeln.
