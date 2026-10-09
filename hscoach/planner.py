@@ -1092,6 +1092,11 @@ class Planner:
     def _extra_warnings(s, plan, cards):
         """Hinweise, die den Plan als Ganzes betreffen: Koeder gegen Geheimnisse, ungenutztes Mana."""
         w = []
+        raf = {n for n in getattr(s, "opp_played", []) if any(k in n.lower() for k in ("rafaam", "r’faam", "r'faam"))}
+        if len(raf) >= 6:
+            w.append(f"RAFAAM-UHR: Der Gegner hat schon {len(raf)} verschiedene Rafaams gespielt. Beim Rafaam-Deck zerstört "
+                     "Zeitdieb Rafaam (10 Mana) deinen Helden, sobald alle übrigen Rafaams gespielt sind - nicht mehr auf langes Wertspiel setzen, "
+                     "sondern auf Tempo und Schaden zum Gesicht.")
         by_cid = {}
         for c in cards:
             by_cid.setdefault(c.cid, c)

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.9 - 10.10.2026
+- **Rafaam-Uhr**: Gegen das Rafaam-Deck (Zeitdieb Rafaam zerstört deinen Helden, sobald alle übrigen Rafaams gespielt sind) warnt der Plan ab 6 gespielten verschiedenen Rafaams: nicht mehr auf Wertspiel setzen, sondern auf Tempo und Gesichtsschaden. Dazu ein Abschnitt in `knowledge.md` (Erzmagier Rafaam macht Schafe, Verhängnisvoller Rafaam räumt das Brett).
+
 ## 2.14.8 - 10.10.2026
 - **Heldenangriff mit Waffe**: Der Plan ließ den Helden nicht zuschlagen, wenn kein Gegner-Diener da war - die Waffe wurde zu hoch bewertet („Haltbarkeit verbrauchen“ kostete mehr, als der Gesichtsschaden brachte). Jetzt zählt die Haltbarkeit viel weniger, und der Plan lautet z. B. „Lege Inspirierender Hammer an, dann Held greift das Gesicht an (2 Schaden)“. Angriffe in Diener bleiben wie bisher.
 

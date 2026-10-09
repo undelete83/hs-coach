@@ -61,3 +61,8 @@ Diese Datei wird dem Claude-Modus als zusätzliches Wissen mitgegeben. Gern erg�
 - Aus Guides (HearthStudy, Vicious Syndicate): Gegen Aggro mit Spott/Gottesschild (Rechtschaffener Beschützer, Toreth) stabilisieren; gegen Kontrolle Wert generieren. Brettwischer fürchten: nicht überstrecken (sechs Diener auf einmal sind in einer Partie auf einen Schlag geräumt worden).
 - Teufelswache (Kampfschrei: zerstört einen deiner Manakristalle) in einem Mana-Rampen-Deck wie diesem meiden.
 
+## Rafaam-Deck des Gegners (Warlock, Hero N’Zoth/„Rafaam“)
+- Zeitdieb Rafaam (10 Mana, 10/10): Sein Deck hat 40 Karten mit 10 Rafaams. Hat der Gegner die übrigen Rafaams gespielt, zerstört der Kampfschrei von Zeitdieb Rafaam deinen Helden sofort - Partie verloren. Das Deck ist also eine Uhr: auf Tempo und Gesichtsschaden spielen, nicht auf langes Wertspiel.
+- Erzmagier Rafaam (9 Mana, 9/9): Kampfschrei verwandelt alle Diener, die keine Rafaams sind, in Schafe (1/1) - kein breites Brett aufbauen. Verhängnisvoller Rafaam (6 Mana, 6/6): 6 Schaden an alle Nicht-Rafaam-Diener. Gedankenschinder R’faam (7/7 Spott) kommt oft doppelt.
+- Gegen dieses Deck zählt der Coach die gespielten Rafaams („RAFAAM-UHR“-Warnung ab 6 verschiedenen).
+

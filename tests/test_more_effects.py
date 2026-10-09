@@ -307,3 +307,14 @@ class TestHeroAttack(unittest.TestCase):
             self.assertTrue(any("Held" in t and "Gesicht" in t for t in texts), texts)
         finally:
             del CARDS["HAMMER"]
+
+
+class TestRafaamClock(unittest.TestCase):
+    def test_warns_after_many_rafaams(self):
+        names = ["Winziger Rafaam", "Entdecker Rafaam", "Murloc-Rafaam", "Riesiger Rafaam", "Verhängnisvoller Rafaam", "Gedankenschinder R’faam"]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=3, hand=[], opp_played=names), None)
+        self.assertTrue(any("RAFAAM-UHR" in w for w in p.warnings), p.warnings)
+
+    def test_no_warning_for_a_few(self):
+        p = Planner(fake_db(), 1.0).plan(gs(mana=3, hand=[], opp_played=["Grüner Rafaam", "Feuerball"]), None)
+        self.assertFalse(any("RAFAAM" in w for w in p.warnings), p.warnings)
