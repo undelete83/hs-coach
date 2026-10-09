@@ -161,3 +161,18 @@ class TestLifestealPriority(unittest.TestCase):
         self.assertGreaterEqual(b.bias.get("priority", {}).get("Wandelnder Brunnen", 1), 2)
         self.assertTrue(any("Brunnen" in d for d in b.dangers))
 
+
+
+class TestAuras(unittest.TestCase):
+    def test_summoning_aura_gets_an_estimated_value(self):
+        from hscoach.effects import parse_effect
+        e = parse_effect("Ruft am Ende Eures Zuges einen Drachen (3/5) mit Spott herbei. Hält 3 Züge lang an.", "SPELL")
+        self.assertFalse(e.unknown)
+        self.assertEqual(e.est_label, "Aura")
+        self.assertGreater(e.est_value, 8)
+
+    def test_generic_aura_is_not_unknown(self):
+        from hscoach.effects import parse_effect
+        e = parse_effect("Die Effekte am Ende des Zuges Eurer Diener werden zweimal ausgelöst. Hält 3 Züge lang an.", "SPELL")
+        self.assertFalse(e.unknown)
+        self.assertGreater(e.est_value, 0)

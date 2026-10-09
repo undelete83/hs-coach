@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.1 - 10.10.2026
+- **Auren** („Hält N Züge lang an“, z. B. Chronologische Aura, Sandwüteraura): Der Planer kannte sie nicht („Effekt unbekannt“, teils „Kein sinnvoller Zug gefunden“, obwohl eine Aura auf der Hand lag). Auren bekommen jetzt einen geschätzten Wert, bei beschwörenden Auren aus den Werten des Dieners und der Dauer.
+
 ## 2.14.0 - 10.10.2026
 - **Alle Solo-Abenteuer**: Der Coach erkennt jetzt die Gegner (Bosse) von Naxxramas, Schwarzfels, Forscherliga, Kobolde & Katakomben, Hexenwald, Rastakhans Rumble, Dalaran-Raubzug, Gräber des Terrors, Galakronds Erwachen, Eiskrone, Boomsday, Book of Mercenaries und allen Kapiteln von Book of Heroes. Für rund 630 Gegner zeigt er Name, Leben und Heldenkraft aus den Kartendaten (erzeugt mit `scripts/gen_bosses_auto.py`), bei Dalaran und den Gräbern des Terrors zusätzlich die Kapitel-Sonderregeln.
 - **Handgepflegte Boss-Guides** (Icy Veins): Book of Heroes mit Rexxar (8), Garrosh (5), Uther (4) und Moira; Galakronds Erwachen mit allen Hauptbossen (Chenvaala, Dr. Bumm, Reno, Finley, Dämmerschlag, Lazul/Go'rath, Hagatha, Askaara, Forscher, Nithogg, Talritha, Drachenschwärme, Wanderer). Bei Misha gilt die Bärenfalle als Ziel, bei den Drachenschwärmen sind 10 Runden zu überleben.

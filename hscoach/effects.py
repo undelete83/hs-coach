@@ -564,7 +564,29 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             note = clean_text(text or "")
             e.est_note = note[:150] + ("…" if len(note) > 150 else "")
             e.unknown = False
+    if e.unknown and cardtype == "SPELL":
+        _aura_estimate(e, text)
     return e
+
+
+_AURA_TURNS = re.compile(r"hält (\d+) züge? lang an")
+_AURA_STATS = re.compile(r"\((\d+)/(\d+)\)")
+
+
+def _aura_estimate(e, text):
+    """Auren ('Haelt N Zuege lang an') wirken ueber mehrere Zuege und lassen sich nicht einzeln simulieren: pauschaler Wert.
+    Beschwoert die Aura am Zugende einen Diener (A/L), zaehlt er N-mal mit etwa der Haelfte seines Bretteinflusses."""
+    t = clean_text(text or "").lower()
+    m = _AURA_TURNS.search(t)
+    if not m:
+        return
+    n = int(m.group(1))
+    st = _AURA_STATS.search(t)
+    e.est_value = round((int(st.group(1)) + int(st.group(2))) * n * 0.45, 1) if (st and "herbei" in t) else 1.2 * n
+    e.est_label = "Aura"
+    note = clean_text(text or "")
+    e.est_note = note[:150] + ("…" if len(note) > 150 else "")
+    e.unknown = False
 
 
 def effect_summary(e):
