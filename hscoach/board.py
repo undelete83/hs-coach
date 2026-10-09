@@ -5,7 +5,11 @@
 (Ausschnitte der von HearthstoneJSON geladenen Karten) kommen von aussen und sind optional.
 """
 import math
+import re
 from dataclasses import dataclass, field
+
+from .effects import clean_text
+from .glossary import GLOSSARY
 
 HEIGHT = 380
 LEFT = 200                 # linke Spalte fuer die Helden
@@ -37,6 +41,7 @@ class Tile:
     stealth: bool = False
     badges: tuple = ()
     marks: tuple = ()          # ((Schritt, "att" | "tgt"), ...)
+    text: str = ""             # Kartentext (fuer die Hover-Erklaerung)
 
 
 @dataclass
@@ -71,7 +76,7 @@ class Model:
     live: bool = True          # False: Spiel vorbei / noch kein Spiel
 
 
-def build_model(s, plan=None, goal=""):
+def build_model(s, plan=None, goal="", text_of=None):
     """Brett-Modell aus dem Spielstand `s` (state.GameState) und optional dem Zugplan (planner.Plan)."""
     marks = {}                 # eid | "face" -> [(Schritt, Art)]
     arrows = []
@@ -102,7 +107,7 @@ def build_model(s, plan=None, goal=""):
         badges = tuple(BADGES[f][0] for f in m.flags if f in BADGES and f != "EINGEFROREN")
         return Tile(m.eid, m.cid, m.name, m.atk, m.hp, m.max_hp, mine, ready=bool(mine and m.can_attack and not m.frozen),
                     frozen=m.frozen, taunt=m.taunt, ds=m.divine_shield, stealth=m.stealth, badges=badges,
-                    marks=tuple(marks.get(m.eid, ())))
+                    marks=tuple(marks.get(m.eid, ())), text=(text_of(m.cid) if text_of and m.cid else ""))
 
     def weapon(w):
         return f"{w.name} {w.atk}/{w.durability}" if w else ""
@@ -112,6 +117,107 @@ def build_model(s, plan=None, goal=""):
                cid=s.opp_hero_cid, weapon=weapon(s.opp_weapon), marks=tuple(n for n, _ in marks.get("face", ())), goal=goal)
     return Model(opp, me, tuple(tile(m, False) for m in s.opp_minions), tuple(tile(m, True) for m in s.my_minions),
                  tuple(arrows), live=not s.result)
+
+
+BADGE_GLOSS = {"Spott": "Spott", "Schild": "Gottesschild", "Gift": "Gift", "Tarnung": "Tarnung", "Windz.": "Windzorn",
+               "Lebensr.": "Lebensraub", "Eifer": "Eifer", "Ansturm": "Ansturm"}
+HAND_H = 150
+CARD_KINDS = {"MINION": "Diener", "SPELL": "Zauber", "WEAPON": "Waffe", "HERO": "Held", "LOCATION": "Ort"}
+
+
+@dataclass
+class HCard:
+    cid: str
+    name: str
+    cost: int
+    atk: int
+    hp: int
+    kind: str                  # MINION | SPELL | WEAPON | ...
+    text: str = ""
+    playable: bool = True      # genug Mana und mein Zug
+    marks: tuple = ()          # Schritte des Plans, in denen die Karte gespielt wird
+    coin: bool = False
+
+
+@dataclass
+class HandModel:
+    cards: tuple
+    mana: int
+    max_mana: int
+    my_turn: bool = False
+    overload: int = 0
+
+
+def build_hand(s, plan=None):
+    """Handkarten (nach Kosten sortiert, wie in der Textansicht) mit den Plan-Schritten, die sie spielen."""
+    order = sorted(s.my_hand, key=lambda c: (c.cost, c.zpos))
+    steps = {}
+    if plan is not None:
+        for n, st in enumerate(plan.steps, 1):
+            if st.kind in ("minion", "spell", "weapon") and st.cid:
+                steps.setdefault(st.cid, []).append(n)
+    cards = []
+    for c in order:
+        marks = (steps[c.cid].pop(0),) if steps.get(c.cid) else ()
+        cards.append(HCard(c.cid, c.name, c.cost, c.atk, c.hp, c.cardtype, clean_text(c.text or ""),
+                           playable=bool(s.my_active and c.cost <= s.my_mana), marks=marks, coin=bool(c.is_coin)))
+    return HandModel(tuple(cards), s.my_mana, s.max_mana, my_turn=bool(s.my_active and not s.result))
+
+
+def gloss_lines(text, extra=()):
+    """Erklaerungen der Fachbegriffe, die im Text vorkommen (oder in `extra` genannt sind)."""
+    out, seen = [], set()
+    for key in list(extra) + [k for k in GLOSSARY if re.search(re.escape(k), text or "", re.I)]:
+        if key in GLOSSARY and key not in seen and key.lower() not in ("einfrieren", "friert"):
+            seen.add(key)
+            out.append(f"{key}: {GLOSSARY[key]}")
+    return out[:4]
+
+
+def tile_tip(t):
+    title = f"{t.name}   {t.atk}/{t.hp}" + (f"  (max. {t.max_hp})" if t.hp < t.max_hp else "")
+    extra = [BADGE_GLOSS[b] for b in t.badges if b in BADGE_GLOSS] + (["Eingefroren"] if t.frozen else [])
+    parts = ([clean_text(t.text)] if t.text else []) + gloss_lines(t.text, extra)
+    return title, "\n".join(parts)
+
+
+def hero_tip(h):
+    title = f"{h.name}   {h.hp} Leben" + (f" + {h.armor} Rüstung" if h.armor else "")
+    parts = [f"Handkarten: {h.hand}   Deck: {h.deck}" + (f"   Geheimnisse: {h.secrets}" if h.secrets else "")]
+    if h.weapon:
+        parts.append("Waffe: " + h.weapon)
+    if h.goal:
+        parts.append(h.goal)
+    return title, "\n".join(parts)
+
+
+def card_tip(c):
+    stats = f"   {c.atk}/{c.hp}" if c.kind in ("MINION", "WEAPON") else ""
+    title = f"{c.name}   [{c.cost} Mana]{stats}   ({CARD_KINDS.get(c.kind, c.kind.title())})"
+    parts = ([c.text] if c.text else []) + gloss_lines(c.text)
+    if c.marks:
+        parts.append(f"Im Plan: Schritt {c.marks[0]}")
+    return title, "\n".join(parts)
+
+
+def show_tip(canvas, x, y, title, body, pal, width=340):
+    """Erklaerungsfeld direkt auf das Canvas zeichnen (am Mauszeiger, innerhalb der Flaeche gehalten)."""
+    canvas.delete("tip")
+    cw, ch = canvas.winfo_width(), canvas.winfo_height()
+    t1 = canvas.create_text(0, 0, text=title, anchor="nw", width=width, fill=pal["TEXT"], font=("Segoe UI", 10, "bold"), tags="tip")
+    b1 = canvas.bbox(t1)
+    h1 = b1[3] - b1[1]
+    t2 = canvas.create_text(0, 0, text=body, anchor="nw", width=width, fill=pal["DIM"], font=("Segoe UI", 9), tags="tip") if body else None
+    b2 = canvas.bbox(t2) if t2 else (0, 0, 0, 0)
+    w = max(b1[2] - b1[0], b2[2] - b2[0]) + 20
+    h = h1 + (b2[3] - b2[1] + 6 if t2 else 0) + 16
+    tx = min(max(6, x + 16), max(6, cw - w - 6))
+    ty = y + 20 if y + 20 + h < ch - 4 else max(4, y - h - 10)
+    box = canvas.create_polygon(tx, ty, tx + w, ty, tx + w, ty + h, tx, ty + h, fill=pal["STRIP"], outline=pal["EDGE"], width=2, tags="tip")
+    canvas.tag_lower(box, t1)
+    canvas.coords(t1, tx + 10, ty + 8)
+    if t2:
+        canvas.coords(t2, tx + 10, ty + 8 + h1 + 6)
 
 
 def layout(n_opp, n_me, width, height=HEIGHT):
@@ -154,6 +260,7 @@ class BoardView:
         self.c, self.images, self.p = canvas, images, pal
         self._last = None
         self._h = HEIGHT
+        self.hits = []             # (x1, y1, x2, y2, titel, text) fuer die Hover-Erklaerung
 
     # -- Hilfen --------------------------------------------------------------------------------
     def rrect(self, x1, y1, x2, y2, r=10, **kw):
@@ -179,6 +286,7 @@ class BoardView:
         c, p = self.c, self.p
         lay = layout(len(model.opp_tiles), len(model.my_tiles), width, height)
         c.delete("all")
+        self.hits = []
         c.create_rectangle(0, 0, width, height, fill=p["BG"], outline="")
         c.create_line(LEFT - 8, 8, LEFT - 8, height - 8, fill=p["EDGE"], width=2)
         c.create_line(LEFT, lay["mid_y"], width - 12, lay["mid_y"], fill=p["EDGE"], width=2, dash=(10, 8))
@@ -186,11 +294,15 @@ class BoardView:
         for t, (x, y) in zip(model.opp_tiles, lay["opp"]):
             self._tile(t, x, y, lay["tw"], lay["th"])
             centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2)
+            self.hits.append((x, y, x + lay["tw"], y + lay["th"]) + tile_tip(t))
         for t, (x, y) in zip(model.my_tiles, lay["me"]):
             self._tile(t, x, y, lay["tw"], lay["th"])
             centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2)
-        self._hero(model.opp, *lay["hero_opp"], lay["hero_r"])
-        self._hero(model.me, *lay["hero_me"], lay["hero_r"])
+            self.hits.append((x, y, x + lay["tw"], y + lay["th"]) + tile_tip(t))
+        for hero, key in ((model.opp, "hero_opp"), (model.me, "hero_me")):
+            self._hero(hero, *lay[key], lay["hero_r"])
+            hx, hy = lay[key]
+            self.hits.append((hx - lay["hero_r"], hy - lay["hero_r"], hx + lay["hero_r"], hy + lay["hero_r"]) + hero_tip(hero))
         centers["hero"] = lay["hero_me"]
         centers["face"] = lay["hero_opp"]
         for a in model.arrows:
@@ -284,3 +396,91 @@ class BoardView:
                            capstyle="round")
         self.c.create_line(sx, sy, ex, ey, fill=self.p["ARROW"], width=4, arrow="last", arrowshape=(14, 16, 6), capstyle="round")
         self.gem((sx + ex) / 2, (sy + ey) / 2, 11, self.p["ARROW"], a.n, fg="#143015", size=10)
+
+
+def hand_layout(n, width, height):
+    """Kartengroesse und linke Ecken der Handkarten; links bleibt die Manaspalte (LEFT) frei."""
+    avail = max(300, width - LEFT - 14)
+    gap = 8
+    cw = int(min(104, (avail - gap * (max(n, 1) - 1)) // max(n, 1, 5)))
+    cw = max(54, cw)
+    ch = min(int(cw * 1.3), height - 16)
+    cw = max(54, min(cw, int(ch / 1.3)))
+    ch = int(cw * 1.3)
+    total = n * cw + max(0, n - 1) * gap
+    x0 = LEFT + max(0, (avail - total) // 2)
+    y = (height - ch) // 2
+    return dict(cw=cw, ch=ch, xs=[(x0 + i * (cw + gap), y) for i in range(n)], height=height, width=width)
+
+
+class HandView:
+    """Handkarten als Kartenreihe und die Manakristalle links davon."""
+
+    def __init__(self, canvas, images, pal):
+        self.c, self.images, self.p = canvas, images, pal
+        self._last = None
+        self.hits = []
+
+    def draw(self, model, width, height=HAND_H, force=False):
+        key = (model, width, height)
+        if not force and key == self._last:
+            return
+        self._last = key
+        c, p = self.c, self.p
+        c.delete("all")
+        self.hits = []
+        c.create_rectangle(0, 0, width, height, fill=p["BG"], outline="")
+        c.create_line(LEFT - 8, 8, LEFT - 8, height - 8, fill=p["EDGE"], width=2)
+        self._mana(model, height)
+        lay = hand_layout(len(model.cards), width, height)
+        for card, (x, y) in zip(model.cards, lay["xs"]):
+            self._card(card, x, y, lay["cw"], lay["ch"])
+            self.hits.append((x, y, x + lay["cw"], y + lay["ch"]) + card_tip(card))
+        if not model.cards:
+            c.create_text(LEFT + (width - LEFT) // 2, height // 2, text="Keine Handkarten", fill=p["DIM"], font=("Segoe UI", 12))
+
+    def _gem(self, x, y, r, fill, text, fg="#ffffff", size=11):
+        self.c.create_oval(x - r, y - r, x + r, y + r, fill=fill, outline="#000000", width=2)
+        self.c.create_text(x, y, text=str(text), fill=fg, font=("Segoe UI", size, "bold"))
+
+    def _mana(self, model, height):
+        c, p = self.c, self.p
+        mx = max(model.max_mana, model.mana, 1)
+        per_row = 5
+        x0, y0 = 26, height // 2 - 26
+        for i in range(mx):
+            cx = x0 + (i % per_row) * 30
+            cy = y0 + (i // per_row) * 34
+            full = i < model.mana
+            pts = [cx, cy - 13, cx + 11, cy, cx, cy + 13, cx - 11, cy]
+            c.create_polygon(pts, fill=p["ATK_MANA"] if full else p["BG"], outline=p["MANA_EDGE"], width=2)
+            if full:
+                c.create_line(cx - 4, cy - 2, cx, cy - 8, fill="#ffffff", width=2)
+        c.create_text(x0 + 60, y0 + ((mx - 1) // per_row + 1) * 34 + 6, text=f"Mana {model.mana} / {model.max_mana}", fill=p["TEXT"],
+                      font=("Segoe UI", 11, "bold"))
+
+    def _card(self, card, x, y, w, h):
+        c, p = self.c, self.p
+        base = p["TILE_ME"] if card.kind == "MINION" else p["CARD_SPELL"]
+        edge = p["READY"] if (card.marks and card.playable) else (p["TILE_EDGE_ME"] if card.playable else p["EDGE"])
+        BoardView.rrect(self, x, y, x + w, y + h, 10, fill=base, outline=edge, width=4 if card.marks else 2)
+        ax1, ay1, ax2, ay2 = x + 7, y + 8, x + w - 7, y + int(h * 0.50)
+        photo = self.images.art(card.cid, ax2 - ax1, ay2 - ay1) if self.images is not None and card.cid else None
+        if photo is not None:
+            c.create_image((ax1 + ax2) // 2, (ay1 + ay2) // 2, image=photo)
+            c.create_rectangle(ax1, ay1, ax2, ay2, outline=p["EDGE"])
+        else:
+            c.create_rectangle(ax1, ay1, ax2, ay2, fill=p["ART"], outline=p["EDGE"])
+            c.create_text((ax1 + ax2) // 2, (ay1 + ay2) // 2, text=(card.name[:1] or "?").upper(), fill=p["DIM"],
+                          font=("Segoe UI", 20, "bold"))
+        sy = y + int(h * 0.52)
+        c.create_rectangle(x + 5, sy, x + w - 5, sy + 18, fill=p["STRIP"], outline="")
+        c.create_text(x + w // 2, sy + 9, text=_fit(card.name, int((w - 12) / 6.2)), fill=p["TEXT"], font=("Segoe UI", 9, "bold"))
+        self._gem(x + 13, y + 14, 12, p["ATK_MANA"], card.cost, size=11)
+        if card.kind in ("MINION", "WEAPON"):
+            self._gem(x + 14, y + h - 14, 12, p["ATK"], card.atk, fg="#2b1a00", size=11)
+            self._gem(x + w - 14, y + h - 14, 12, p["HP"], card.hp, size=11)
+        if not card.playable:
+            BoardView.rrect(self, x, y, x + w, y + h, 10, fill="#000000", outline="", stipple="gray50")
+        if card.marks:
+            self._gem(x + w - 14, y + 14, 12, p["MARK_ATT"], card.marks[0], size=11)

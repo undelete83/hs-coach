@@ -5,6 +5,12 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.12.0 - 10.10.2026
+- **Handkarten als Kartenreihe** (Etappe 3): Jede Karte zeigt Kartenmotiv, Kosten (blaue Raute), Name und bei Dienern/Waffen Angriff und Leben. Karten, die du nicht spielen kannst (zu wenig Mana oder nicht dein Zug), sind abgedunkelt; Karten des Plans tragen die Nummer des Schritts und einen grünen Rand.
+- **Manakristalle** links von der Hand: gefüllte und leere Kristalle mit „Mana x / y“.
+- **Hover-Erklärungen** auf dem ganzen Brett: Maus über eine Kachel, einen Helden oder eine Handkarte zeigt Name, Werte, Kartentext und die Erklärung der Begriffe (Spott, Gottesschild, Eingefroren, Kampfschrei ...).
+- In der Brettansicht entfallen die Textliste der Hand und die Bilderleiste, die Liste der letzten Spielzüge nutzt die volle Breite; in kleinen Fenstern (unter 1000 Pixel Höhe) wird sie ausgeblendet, damit Plan und Boss-Info Platz behalten. Die Textansicht ist unverändert.
+
 ## 2.11.1 - 09.10.2026
 - Behoben: Das Selbst-Update scheiterte stillschweigend, wenn ein zweites Coach-Fenster aus demselben Ordner lief (zum Beispiel ein altes Fenster nach früheren Updates). Das zweite Fenster hielt die Programmdateien fest, der Austausch ging nicht, und die alte Version startete wieder. Jetzt beendet das Update-Skript weitere Coach-Fenster aus diesem Ordner, versucht das Umbenennen bei gesperrten Dateien mehrmals und stellt im Notfall die alte Version sauber wieder her.
 - Neues Protokoll `%LOCALAPPDATA%\hs_coach\update.log` mit allen Schritten des letzten Updates. Scheitert ein Update, meldet der Coach das beim nächsten Start mit einem Hinweis und dem Pfad des Protokolls.

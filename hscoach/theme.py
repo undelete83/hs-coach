@@ -7,6 +7,7 @@ BOARD_KLASSISCH = dict(
     READY="#66ff88", TAUNT="#c8d0e0", DS="#66e0ff", FROZEN="#8fd0ff", ATK="#f0b429", HP="#c0392b", HP_HURT="#e8651a",
     ARMOR="#6a7a99", RING_ME="#2f6f9f", RING_OPP="#8a3a44", HERO_FILL_ME="#16314a", HERO_FILL_OPP="#3a1d22",
     MARK_ATT="#2f8f4f", MARK_TGT="#c0392b", ARROW="#7dff9a", ARROW_SHADOW="#0a1a10",
+    ATK_MANA="#3aa0ff", MANA_EDGE="#0a3a6b", CARD_SPELL="#4a3a7a",
 )
 
 BOARD_SPIELBRETT = dict(
@@ -15,6 +16,7 @@ BOARD_SPIELBRETT = dict(
     READY="#7dff9a", TAUNT="#e6b84a", DS="#ffe27a", FROZEN="#9fd8ff", ATK="#f0b429", HP="#c0392b", HP_HURT="#e8651a",
     ARMOR="#7a8aa8", RING_ME="#d6a93a", RING_OPP="#d6a93a", HERO_FILL_ME="#2f5f84", HERO_FILL_OPP="#7a3a2a",
     MARK_ATT="#2f8f4f", MARK_TGT="#c0392b", ARROW="#7dff9a", ARROW_SHADOW="#10240f",
+    ATK_MANA="#3aa0ff", MANA_EDGE="#0a3a6b", CARD_SPELL="#5a3a7a",
 )
 
 KLASSISCH = dict(

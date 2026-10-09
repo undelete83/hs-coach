@@ -126,6 +126,7 @@ class App(tk.Tk):
         self._wood_job = None
         self._board_job = None
         self._board_force = False
+        self._mid_shown = True
         self._wood_key = None
         self._wood_photo = None
         self._updating = False
@@ -336,14 +337,25 @@ class App(tk.Tk):
         self.board_canvas.pack(fill="x", padx=10, pady=(4, 4))
         self.board_view = board.BoardView(self.board_canvas, self.images if PIL_OK else None, BOARD)
         self.board_canvas.bind("<Configure>", lambda e: self._schedule_board())
+        self.hand_frame = tk.Frame(self.body, bg=BG)
+        self.hand_canvas = tk.Canvas(self.hand_frame, height=board.HAND_H, bg=BOARD["BG"], highlightthickness=BORDER_W,
+                                     highlightbackground=BORDER or BOARD["EDGE"], bd=0)
+        self.hand_canvas.pack(fill="x", padx=10, pady=(0, 4))
+        self.hand_view = board.HandView(self.hand_canvas, self.images if PIL_OK else None, BOARD)
+        self.hand_canvas.bind("<Configure>", lambda e: self._schedule_board())
+        for cv, view in ((self.board_canvas, self.board_view), (self.hand_canvas, self.hand_view)):
+            cv.bind("<Motion>", lambda e, c=cv, v=view: self._hover(c, v, e))
+            cv.bind("<Leave>", lambda e, c=cv: c.delete("tip"))
         hf = tk.Frame(mid, bg=BG)
         hf.pack(side="left", fill="both", expand=True)
+        self.hand_text_frame = hf
         self._section(hf, "🃏  HAND  (★ = im Plan, unterstrichen = Begriff, Maus drüber für Erklärung)", YELLOW)
         self.t_hand = self._text(hf, 9, YELLOW, 14)
         self.lbl_gloss = tk.Label(hf, text="", bg=BG, fg="#aabbff", font=("Segoe UI", 10), anchor="w", justify="left",
                                   wraplength=760)
         self.lbl_gloss.pack(fill="x", padx=12)
-        tk.Frame(mid, bg=LINE, width=1).pack(side="left", fill="y", pady=4)
+        self.mid_sep = tk.Frame(mid, bg=LINE, width=1)
+        self.mid_sep.pack(side="left", fill="y", pady=4)
         ef = tk.Frame(mid, bg=BG)
         ef.pack(side="left", fill="both", expand=True)
         self._section(ef, "📜  LETZTE SPIELZÜGE", GRAY)
@@ -351,6 +363,7 @@ class App(tk.Tk):
 
         tip = tk.Frame(self.body, bg=BG)
         tip.pack(fill="x")
+        self.tip_frame = tip
         pf = tk.Frame(tip, bg=BG)
         pf.pack(side="left", fill="both", expand=True)
         self._section(pf, "🧭  ZUGPLAN  (Regel-Engine, live)", GOLD)
@@ -576,13 +589,19 @@ class App(tk.Tk):
     def _apply_view(self):
         """Brettansicht (Kacheln) oder reine Textansicht (Heldenzahlen + Textlisten) einblenden."""
         brett = self.cfg.get("ansicht", "brett") != "text"
-        for f in (self.hp_frame, self.boards_frame, self.board_frame):
+        for f in (self.hp_frame, self.boards_frame, self.board_frame, self.hand_frame, self.hand_text_frame, self.img_frame):
             f.pack_forget()
         if brett:
             self.board_frame.pack(fill="x", before=self.mid_frame)
+            self.hand_frame.pack(fill="x", before=self.mid_frame)
         else:
             self.hp_frame.pack(fill="x", before=self.res_frame)
             self.boards_frame.pack(fill="x", before=self.mid_frame)
+            self.hand_text_frame.pack(side="left", fill="both", expand=True, before=self.mid_sep)
+            self.img_frame.pack(fill="x", padx=10, pady=(2, 4))
+            if not self._mid_shown:
+                self._mid_shown = True
+                self.mid_frame.pack(fill="x", before=self.tip_frame)
         self.btn_view.config(text="☰ Textansicht" if brett else "▦ Brettansicht")
         self._refresh_board(force=True)
 
@@ -620,7 +639,28 @@ class App(tk.Tk):
         height = board.height_for(self.winfo_height())
         if int(self.board_canvas.cget("height")) != height:
             self.board_canvas.config(height=height)
-        self.board_view.draw(board.build_model(s, self._board_plan(s), goal), width, height, force)
+        # kleines Fenster: die Liste der letzten Spielzuege weglassen, damit Plan und Boss-Info Platz behalten
+        show_mid = self.winfo_height() >= 1000
+        if show_mid != self._mid_shown:
+            self._mid_shown = show_mid
+            if show_mid:
+                self.mid_frame.pack(fill="x", before=self.tip_frame)
+            else:
+                self.mid_frame.pack_forget()
+        plan = self._board_plan(s)
+        self.board_view.draw(board.build_model(s, plan, goal, lambda cid: self.db.info(cid).get("text", "")), width, height, force)
+        hand_h = board.HAND_H if self.winfo_height() >= 1100 else (126 if self.winfo_height() >= 1000 else 110)
+        if int(self.hand_canvas.cget("height")) != hand_h:
+            self.hand_canvas.config(height=hand_h)
+        self.hand_view.draw(board.build_hand(s, plan), self.hand_canvas.winfo_width() or width, hand_h, force)
+
+    def _hover(self, canvas, view, event):
+        """Maus ueber einer Kachel, einem Helden oder einer Handkarte: Erklaerung einblenden."""
+        for x1, y1, x2, y2, title, body in reversed(view.hits):
+            if x1 <= event.x <= x2 and y1 <= event.y <= y2:
+                board.show_tip(canvas, event.x, event.y, title, body, BOARD)
+                return
+        canvas.delete("tip")
 
     def _schedule_wood(self):
         if self._wood_label is not None and self._wood_job is None and not self._closed:
@@ -1045,7 +1085,7 @@ class App(tk.Tk):
             cids = list(self._img_cids)
         if not PIL_OK:
             return
-        if not self.cfg["show_card_images"]:
+        if not self.cfg["show_card_images"] or self.cfg.get("ansicht", "brett") != "text":
             for lbl in self._img_labels:
                 lbl.pack_forget()
             return
