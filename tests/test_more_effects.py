@@ -176,3 +176,23 @@ class TestAuras(unittest.TestCase):
         e = parse_effect("Die Effekte am Ende des Zuges Eurer Diener werden zweimal ausgelöst. Hält 3 Züge lang an.", "SPELL")
         self.assertFalse(e.unknown)
         self.assertGreater(e.est_value, 0)
+
+
+class TestManaCrystalLoss(unittest.TestCase):
+    def test_parsed(self):
+        from hscoach.effects import parse_effect
+        e = parse_effect("Spott. Kampfschrei: Zerstört einen Eurer Manakristalle.", "MINION")
+        self.assertEqual(e.lose_crystal, 1)
+
+    def test_early_game_penalty_makes_hellguard_unattractive_vs_plain_play(self):
+        from tests.helpers import CARDS
+        CARDS["TEUFELSWACHE"] = dict(name="Teufelswache", cardtype="MINION", cost=3, text="Spott. Kampfschrei: Zerstört einen Eurer Manakristalle.")
+        CARDS["GRUNT"] = dict(name="Grunzer", cardtype="MINION", cost=3, text="")
+        try:
+            hand = [card(1, "TEUFELSWACHE", atk=3, hp=5), card(2, "GRUNT", atk=3, hp=3)]
+            plan = Planner(fake_db(), 1.0).plan(gs(mana=3, hand=hand), None)
+            self.assertIn("Grunzer", plan.steps[0].text)
+            late = Planner(fake_db(), 1.0).plan(gs(mana=10, hand=[card(1, "TEUFELSWACHE", atk=3, hp=5)]), None)
+            self.assertIn("Teufelswache", late.steps[0].text)           # bei 10 Mana kostet der Kristall nichts mehr
+        finally:
+            del CARDS["TEUFELSWACHE"], CARDS["GRUNT"]

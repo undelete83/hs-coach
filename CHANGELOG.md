@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.2 - 10.10.2026
+- **Manakristalle zerstören** (Teufelswache: „Kampfschrei: Zerstört einen Eurer Manakristalle“): Der Planer ignorierte diesen dauerhaften Nachteil. Jetzt wird er bewertet (früh im Spiel teuer, bei 10 Mana kostenlos) und im Plan als „zerstört 1 deiner Manakristalle“ angezeigt, damit man bewusst entscheidet.
+
 ## 2.14.1 - 10.10.2026
 - **Auren** („Hält N Züge lang an“, z. B. Chronologische Aura, Sandwüteraura): Der Planer kannte sie nicht („Effekt unbekannt“, teils „Kein sinnvoller Zug gefunden“, obwohl eine Aura auf der Hand lag). Auren bekommen jetzt einen geschätzten Wert, bei beschwörenden Auren aus den Werten des Dieners und der Dauer.
 - **Geheimniszone voll**: Geheimnisse und Auren teilen sich 5 Plätze (das Spiel meldet sonst `REQ_SECRET_ZONE_CAP`). Der Plan schlägt keine weitere Aura/kein weiteres Geheimnis vor, wenn die Zone voll ist oder dasselbe Geheimnis schon liegt, und sagt im Plan, warum die Karte gerade nicht spielbar ist.

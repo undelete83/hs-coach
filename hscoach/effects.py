@@ -117,6 +117,7 @@ class Effect:
     destroy_highest: bool = False # vernichtet den feindlichen Diener mit dem hoechsten Angriff (kein Ziel noetig)
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
+    lose_crystal: int = 0         # zerstoert eigene Manakristalle (Teufelswache): dauerhafter Nachteil
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
     notes: list = field(default_factory=list)
 
@@ -555,6 +556,9 @@ def parse_effect(text, cardtype="SPELL", secret=False):
     """Parst den Kartentext. Zauber, die gar nicht erkannt werden, aber Entdecken/Zufall enthalten, bekommen einen
     pauschal geschaetzten Wert (est_value) - sie sind dann nicht 'unbekannt', werden aber nicht genau simuliert."""
     e = _parse_core(text, cardtype, secret)
+    mc = _LOSE_CRYSTAL.search(clean_text(text or "").lower())
+    if mc:
+        e.lose_crystal = _num(mc.group(1))
     if e.unknown and cardtype == "SPELL":
         t = clean_text(text or "").lower()
         label = "Entdecken" if "entdeckt" in t else ("Zufall" if "zufällig" in t else "")
@@ -569,6 +573,7 @@ def parse_effect(text, cardtype="SPELL", secret=False):
     return e
 
 
+_LOSE_CRYSTAL = re.compile(r"zerstört (einen|eine|zwei|drei|\d+) eurer manakristalle?")
 _AURA_TURNS = re.compile(r"hält (\d+) züge? lang an")
 _AURA_STATS = re.compile(r"\((\d+)/(\d+)\)")
 

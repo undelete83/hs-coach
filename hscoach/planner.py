@@ -644,6 +644,10 @@ def _play_card(ss, c, tgt, log=None, opt=None):
             tname = ss.opp[ti].name if ti >= 0 else ""
         if rs[0].lower() not in tname.lower():
             n.util -= rs[1]
+    if fx.lose_crystal:                  # Teufelswache & Co.: jeder verlorene Manakristall fehlt in allen kommenden Zuegen
+        n.util -= 0.6 * fx.lose_crystal * max(0.0, min(7.0, 10 - ss.max_mana))
+        if log is not None and ss.max_mana < 10:
+            log.append(f"zerstört {fx.lose_crystal} deiner Manakristalle (dauerhaft weniger Mana)")
     if c.ctype == "MINION":
         if len(n.mine) >= MAX_BOARD:
             return None
