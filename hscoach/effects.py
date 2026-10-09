@@ -75,6 +75,9 @@ class Effect:
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
     buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
+    est_value: float = 0.0        # grob geschaetzter Wert, wenn der Effekt nicht simulierbar ist (Entdecken, Zufall)
+    est_label: str = ""           # "Entdecken" | "Zufall"
+    est_note: str = ""            # Kartentext fuer die Anzeige
     choices: tuple = ()           # "Waehlt aus": je ein Effekt pro erkannter Option (die Karte spielt genau eine davon)
     choice_labels: tuple = ()     # Anzeigetexte dazu
     heal_minion: int = 0          # heilt einen eigenen Diener um N (999 = volles Leben); zusammen mit `heal` auch den Helden
@@ -208,7 +211,7 @@ def _parse_choose_one(text, e):
     return e
 
 
-def parse_effect(text, cardtype="SPELL", secret=False):
+def _parse_core(text, cardtype="SPELL", secret=False):
     """Parst den (bereinigten) Text. Bei Dienern/Waffen nur den Kampfschrei."""
     e = Effect()
     t = clean_text(text or "").lower().replace("max. ", "max ").replace("mind. ", "mind ")   # Abkuerzungspunkt trennt keine Saetze
@@ -460,6 +463,26 @@ def parse_effect(text, cardtype="SPELL", secret=False):
 
     if e.secret or cardtype in ("MINION", "WEAPON", "HERO_POWER"):
         e.unknown = False
+    return e
+
+
+_EST_DISCOVER = 1.8       # Entdecken: eine Karte nach Wahl (etwas mehr als eine zufaellig gezogene)
+_EST_RANDOM = 1.5         # Zufall: etwa eine Karte wert
+
+
+def parse_effect(text, cardtype="SPELL", secret=False):
+    """Parst den Kartentext. Zauber, die gar nicht erkannt werden, aber Entdecken/Zufall enthalten, bekommen einen
+    pauschal geschaetzten Wert (est_value) - sie sind dann nicht 'unbekannt', werden aber nicht genau simuliert."""
+    e = _parse_core(text, cardtype, secret)
+    if e.unknown and cardtype == "SPELL":
+        t = clean_text(text or "").lower()
+        label = "Entdecken" if "entdeckt" in t else ("Zufall" if "zufällig" in t else "")
+        if label:
+            e.est_value = _EST_DISCOVER if label == "Entdecken" else _EST_RANDOM
+            e.est_label = label
+            note = clean_text(text or "")
+            e.est_note = note[:150] + ("…" if len(note) > 150 else "")
+            e.unknown = False
     return e
 
 

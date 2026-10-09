@@ -39,9 +39,12 @@ class TestParsing(unittest.TestCase):
         e = parse_effect("Wählt aus: Zieht einen Zauber; oder zieht einen Diener. (Behaltet diesen Zauber @ Zug, um beides zu tun!)", "SPELL")
         self.assertEqual([o.draw for o in e.choices], [1, 1])
 
-    def test_all_unknown_options_stay_unknown(self):
-        self.assertTrue(parse_effect("Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber.", "SPELL").unknown)
-        self.assertTrue(parse_effect("Wählt aus: Fügt 2 zufälligen feindlichen Dienern 2 Schaden zu; oder lasst einen 2 Züge Inaktiv werden.", "SPELL").unknown)
+    def test_discover_options_are_estimated(self):
+        e = parse_effect("Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber.", "SPELL")
+        self.assertEqual((e.unknown, [o.est_label for o in e.choices]), (False, ["Entdecken", "Entdecken"]))
+
+    def test_unrecognizable_options_stay_unknown(self):
+        self.assertTrue(parse_effect("Wählt aus: Tauscht etwas Merkwürdiges; oder tut etwas Unbekanntes.", "SPELL").unknown)
 
     def test_typed_draw_only_for_single_sentence_cards(self):
         self.assertEqual(parse_effect("Zieht einen Zauber.", "SPELL").draw, 1)
@@ -74,10 +77,12 @@ class TestPlanning(unittest.TestCase):
         self.assertTrue(any("Dunkle Einflüsterung" in x and "+5/+5 und Spott" in x for x in t), t)
         self.assertFalse(any("Irrwisch" in x for x in t))
 
-    def test_unknown_choose_one_is_reported_unknown(self):
+    def test_discover_choose_one_is_estimated_not_unknown(self):
         s = gs(mana=1, hand=[card(1, "RABENGOETZE")])
         p = plan_for(s)
-        self.assertFalse(any("Rabengötze" in t and "Wahl" in t for t in texts(p)))
+        t = texts(p)
+        self.assertTrue(any("Rabengötze" in x and "pauschal geschätzt" in x for x in t), t)
+        self.assertEqual(p.unknown_cards, [])
 
 
 if __name__ == "__main__":

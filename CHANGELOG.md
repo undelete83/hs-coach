@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.8.1 - 09.10.2026
+- Zauber mit Entdecken oder Zufall, die der Coach nicht genau berechnen kann, bekommen jetzt einen pauschal geschätzten Wert (etwa eine Karte) statt „Effekt unbekannt“. Im Plan steht deutlich „Entdecken/Zufall: Wert pauschal geschätzt (kein genauer Effekt)“ samt Kartentext, damit du selbst entscheidest. Erkannte Effekte schlagen die Pauschale; teilweise erkannte Karten bekommen nichts zusätzlich geschätzt.
+- `scripts/audit_effects.py` weist jetzt getrennt aus, wie viele Zauber wirklich unbekannt und wie viele nur grob geschätzt sind.
+
 ## 2.8.0 - 09.10.2026
 - „Wählt aus“ (Druiden-Zauber) wird geplant: Der Coach spielt jede erkannte Option durch und nimmt die bessere. Im Plan steht, welche Option er empfiehlt, z. B. „Spiele Mal der Natur – Wahl: Verleiht einem Diener +4 Angriff“. Erkannt werden „Mal der Natur“, „Dunkle Einflüsterung“ (nur die Stärkungs-Option), „Aufforstung“, „Eisbeißermine einnehmen“ und „Geheimzutat“ (nur die Held-Option).
 - Optionen, die der Coach nicht versteht (Entdecken, Zufall, Beschwören ohne Werte), bleiben außen vor, statt geraten zu werden. Besteht eine Karte nur aus solchen Optionen, bleibt sie „unbekannt“.

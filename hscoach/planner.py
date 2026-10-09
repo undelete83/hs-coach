@@ -400,6 +400,10 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
     if fx.heal:
         ss.my_hp = min(30, ss.my_hp + fx.heal)
         ss.util += min(fx.heal, 8) * 0.25
+    if fx.est_value:                             # Entdecken/Zufall: nicht simulierbar, pauschaler Wert
+        ss.util += fx.est_value
+        if log is not None:
+            log.append(f"{fx.est_label}: Wert pauschal geschätzt (kein genauer Effekt) – {fx.est_note}")
     if fx.armor:
         ss.my_armor += fx.armor
         ss.util += fx.armor * 0.3

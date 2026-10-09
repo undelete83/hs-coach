@@ -30,9 +30,11 @@ def main():
         names = {n.strip().lower() for n in sys.argv[sys.argv.index("--cards") + 1].split(",")}
     spells = [c for c in cards if c.get("collectible") and c.get("type") == "SPELL"
               and (names is None or c.get("name", "").lower() in names)]
-    unknown = [c for c in spells if parse_effect(c.get("text", ""), "SPELL", secret=bool(c.get("secret"))).unknown]
+    parsed = [(c, parse_effect(c.get("text", ""), "SPELL", secret=bool(c.get("secret")))) for c in spells]
+    unknown = [c for c, e in parsed if e.unknown]
+    est = [c for c, e in parsed if e.est_value]
     print(f"Sammelbare Zauber: {len(spells)}, davon ohne erkannten Effekt: {len(unknown)} "
-          f"({100 * len(unknown) / max(1, len(spells)):.0f} %)")
+          f"({100 * len(unknown) / max(1, len(spells)):.0f} %), nur grob geschätzt (Entdecken/Zufall): {len(est)}")
     by_class = collections.Counter(c.get("cardClass", "?") for c in unknown)
     print("Nach Klasse:", ", ".join(f"{k} {v}" for k, v in by_class.most_common()))
     if "--list" in sys.argv:
