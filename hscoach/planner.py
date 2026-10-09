@@ -941,6 +941,8 @@ class Planner:
 
     # -- Ausgabe -----------------------------------------------------------------------------------
     def _finish(self, s, cards, hp_fx, start, end, brief=False):
+        shuffles = []
+        played_idx = set()
         plan = Plan(score=end.score)
         plan.lethal = end.opp_hp + end.opp_armor - end.win_hp <= 0
         plan.win_hp = end.win_hp
@@ -964,6 +966,7 @@ class Planner:
                 if c is not c0 and c0.fx.cond_hold:
                     log.insert(0, f"Kampfschrei aktiv ({RACE_DE.get(c0.fx.cond_hold, 'passende Karte')} auf der Hand)")
                 plan.cids.append(c.cid)
+                played_idx.add(c.idx)
                 tname = self._tname(ss, act[2])
                 if c.ctype == "MINION":
                     b = c.fx.self_buff or (0, 0, "")
@@ -981,10 +984,14 @@ class Planner:
                         log.append("Effekt unbekannt: " + (txt_[:150] + ("…" if len(txt_) > 150 else "") if txt_ else "Kartentext lesen"))
                 if c.secret:
                     log.append("Geheimnis wird vorbereitet")
+                if c.fx.silence == "target" and not act[2] and c.ctype == "MINION" and (ss.opp or ss.mine):
+                    log.append(self._silence_hint(ss))
                 txt = head + (f" auf {tname}" if tname and act[2] else "")
                 if log:
                     txt += "  →  " + "; ".join(log)
                 plan.steps.append(Step(kind, txt, c.cid, dst=act[2]))
+                if c.fx.shuffle_back:
+                    shuffles.append((len(plan.steps) - 1, c))
                 ss = nxt
             elif act[0] == "att":
                 if act[1] == 0:
@@ -1016,12 +1023,50 @@ class Planner:
                     txt += "  →  " + "; ".join(log)
                 plan.steps.append(Step("hero_power", txt, dst=act[1]))
                 ss = n
+        if shuffles:
+            for si, c in shuffles:
+                pick = self._shuffle_pick(s, c, played_idx)
+                if pick:
+                    plan.steps[si].text += f"  →  mische {pick[0]} zurück ins Deck ({pick[1]})"
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)
         plan.warnings = self._warnings(s, end) + self._extra_warnings(s, plan, cards)
         for name, why in getattr(self, "_blocked", []):
             plan.warnings.append(f"{name} ist gerade nicht spielbar: {why}.")
         return plan
+
+    @staticmethod
+    def _silence_hint(ss):
+        """Der Kampfschrei 'Bringt einen Diener zum Schweigen' verlangt ein Ziel, sobald irgendein Diener da ist - auch wenn das
+        Schweigen nichts bringt. Dann das harmloseste Ziel nennen: ein feindlicher Diener, nie ein eigener mit Stärkungen."""
+        if ss.opp:
+            m = max(ss.opp, key=lambda x: x.atk + x.hp)
+            return (f"Pflichtziel zum Schweigen: {m.name} ({m.atk}/{m.hp}) - bringt hier kaum etwas, schadet aber nicht; "
+                    "keinen eigenen Diener wählen (sonst verliert er seine Stärkungen)")
+        m = min(ss.mine, key=lambda x: (x.atk + x.hp, x.name))
+        return f"Kein feindlicher Diener da: Pflichtziel zum Schweigen ist einer deiner Diener - nimm den ohne Stärkungen/Effekte (z. B. {m.name})"
+
+    def _shuffle_pick(self, s, source, played):
+        """Geschuetzter Ueberlebender: welche Handkarte ins Deck gemischt werden sollte - die am wenigsten brauchbare.
+        Nicht in Frage kommen die Karte selbst und Karten, die der Plan in diesem Zug noch spielt."""
+        blocked = {n: why for n, why in getattr(self, "_blocked", [])}
+        best = None
+        for i, hc in enumerate(s.my_hand):
+            if hc.cid == source.cid and hc.name == source.name and i == source.idx:
+                continue
+            if i in played and hc.name not in blocked:
+                continue
+            if hc.name in blocked:
+                keep, why = -10.0, "gerade nicht spielbar"
+            elif hc.cost > s.max_mana + 1:
+                keep, why = 3.0 - 0.8 * (hc.cost - (s.max_mana + 1)), f"mit {hc.cost} Mana noch zu teuer"
+            else:
+                keep, why = 3.0 + 0.4 * min(hc.cost, 6), "am wenigsten gebraucht"
+            if hc.is_coin:
+                keep += 2.0
+            if best is None or keep < best[0]:
+                best = (keep, hc.name, why)
+        return (best[1], best[2]) if best else None
 
     @staticmethod
     def _extra_warnings(s, plan, cards):

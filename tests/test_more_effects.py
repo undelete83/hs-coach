@@ -224,3 +224,61 @@ class TestGenericEstimate(unittest.TestCase):
                   "Zerstört einen Eurer Manakristalle. Erhaltet in 2 Zügen 2 Manakristalle.",
                   "Vernichtet Eure Untoten. Ruft sie erneut herbei."):
             self.assertTrue(self.est(t).unknown, t)
+
+
+class TestShuffleBack(unittest.TestCase):
+    """Geschuetzter Ueberlebender: der Plan nennt die Karte, die ins Deck gemischt werden soll."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["SURVIVOR"] = dict(name="Geschützter Überlebender", cardtype="MINION", cost=2,
+                                 text="Kampfschrei: Wählt eine Karte auf Eurer Hand und mischt sie in Euer Deck. Zieht eine Karte.")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["SURVIVOR"]
+
+    def test_parsed(self):
+        from hscoach.effects import parse_effect
+        self.assertTrue(parse_effect(self.CARDS["SURVIVOR"]["text"], "MINION").shuffle_back)
+
+    def test_names_the_card_to_shuffle(self):
+        hand = [card(1, "SURVIVOR", atk=2, hp=3), card(2, "FEUERBALL"), card(3, "ELEM"), card(4, "VERWANDLUNG")]
+        # 2 Mana: nur der Ueberlebende ist spielbar; Wasserelementar (4) ist noch zu teuer, Verwandlung kostet 4 -> ebenfalls
+        p = Planner(fake_db(), 1.0).plan(gs(mana=2, hand=hand), None)
+        text = p.steps[0].text
+        self.assertIn("mische", text)
+        self.assertNotIn("mische Geschützter Überlebender", text)
+
+    def test_never_shuffles_a_card_the_plan_plays(self):
+        hand = [card(1, "SURVIVOR", atk=2, hp=3), card(2, "MUENZE")]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=2, hand=hand), None)
+        for st in p.steps:
+            if "Überlebender" in st.text and "mische" in st.text:
+                played_other = [x.text for x in p.steps if x is not st]
+                name = st.text.split("mische ")[1].split(" zurück")[0]
+                self.assertFalse(any(name in t for t in played_other), (name, played_other))
+
+
+class TestSilenceBattlecryHint(unittest.TestCase):
+    """Bibliothekar des Koenigs: das Schweigen braucht ein Ziel - der Plan nennt eines, auch wenn es nichts bringt."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["BIBLIO"] = dict(name="Bibliothekar des Königs", cardtype="MINION", cost=4, text="Handelbar Kampfschrei: Bringt einen Diener zum Schweigen.")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["BIBLIO"]
+
+    def test_names_a_target_when_nothing_useful_to_silence(self):
+        p = Planner(fake_db(), 1.0).plan(gs(mana=4, hand=[card(1, "BIBLIO", atk=4, hp=4)], opp=[mm(10, "Drilly", 4, 3)], mine=[mm(20, "Welpling", 2, 1)]), None)
+        txt = " ".join(st.text for st in p.steps)
+        self.assertIn("Bibliothekar", txt)
+        self.assertTrue("Drilly" in txt and "Pflichtziel" in txt, txt)
+
+    def test_own_minion_only_when_no_enemy(self):
+        p = Planner(fake_db(), 1.0).plan(gs(mana=4, hand=[card(1, "BIBLIO", atk=4, hp=4)], mine=[mm(20, "Welpling", 2, 1)]), None)
+        txt = " ".join(st.text for st in p.steps)
+        self.assertIn("Welpling", txt)
+        self.assertIn("einer deiner Diener", txt)

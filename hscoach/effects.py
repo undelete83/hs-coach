@@ -118,6 +118,7 @@ class Effect:
     destroy_highest: bool = False # vernichtet den feindlichen Diener mit dem hoechsten Angriff (kein Ziel noetig)
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
+    shuffle_back: bool = False    # Kampfschrei: eine Handkarte waehlen und ins Deck mischen (Geschuetzter Ueberlebender)
     cond_aura: bool = False       # Kampfschrei wirkt nur, wenn man eine Aura kontrolliert (cond_fx = der Effekt dann)
     lose_crystal: int = 0         # zerstoert eigene Manakristalle (Teufelswache): dauerhafter Nachteil
     unknown: bool = True          # True, solange nichts Konkretes erkannt wurde
@@ -567,6 +568,8 @@ def parse_effect(text, cardtype="SPELL", secret=False):
     """Parst den Kartentext. Zauber, die gar nicht erkannt werden, aber Entdecken/Zufall enthalten, bekommen einen
     pauschal geschaetzten Wert (est_value) - sie sind dann nicht 'unbekannt', werden aber nicht genau simuliert."""
     e = _parse_core(text, cardtype, secret)
+    if re.search(r"wählt eine karte auf eurer hand und mischt sie in euer deck", clean_text(text or "").lower()):
+        e.shuffle_back = True
     mc = _LOSE_CRYSTAL.search(clean_text(text or "").lower())
     if mc:
         e.lose_crystal = _num(mc.group(1))

@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.5 - 10.10.2026
+- **Geschützter Überlebender** („Wählt eine Karte auf Eurer Hand und mischt sie in Euer Deck“): Der Plan nennt jetzt die Karte, die zurück ins Deck soll - die, die gerade nicht spielbar oder noch zu teuer ist, sonst die am wenigsten gebrauchte; nie eine Karte, die im selben Plan noch gespielt wird.
+- **Bibliothekar des Königs** („Bringt einen Diener zum Schweigen“): Der Kampfschrei verlangt immer ein Ziel. Wenn Schweigen nichts bringt, nennt der Plan das harmloseste Pflichtziel (ein feindlicher Diener; eigene nur, wenn kein Feind da ist, dann den ohne Stärkungen).
+
 ## 2.14.4 - 10.10.2026
 - **Aura-Paladin**: Manifestierte Zeitwege („3 Schaden an alle Feinde, wenn Ihr eine Aura kontrolliert“) wird jetzt richtig berechnet - der Schaden zählt nur, wenn eine Aura liegt oder im selben Zug vorher gelegt wird; der Plan legt dann erst die Aura. Dazu ein neuer Abschnitt in `knowledge.md` (Auren, Geheimniszone, Zeitwege, Mulligan/Spielweise aus Guides), den der Claude-Modus mitliest.
 
