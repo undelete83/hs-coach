@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.9.4 - 09.10.2026
+- Neu verstanden: Karten auf die Hand. „Erhaltet N Token (a/b) auf die Hand“ (Hexenwaldapfel), „Wählt einen Diener. Erhaltet eine Kopie davon auf die Hand“ (Geisterbeschwörung, eigene und feindliche Ziele) sowie „Kopie jedes (verletzten) befreundeten Dieners“ (Echo von Medivh, Blutkrieger). Der Planer rechnet das als Kartenwert ein (stärkere Diener sind mehr wert); er führt die neuen Handkarten nicht weiter aus.
+- Varianten mit Zusatzregeln (Finale, „kostet (1)“, mehrere Ziele) bleiben „unbekannt“.
+
 ## 2.9.3 - 09.10.2026
 - Neu verstanden: „Zieht N Diener (Drachen, Wildtiere, Mechs … / mit Spott). Verleiht ihnen +X/+X.“ (Auf in die Lüfte, Diebesgut). Der Planer zählt die gezogenen Karten und rechnet die Stärkung grob als Wert ein, weil er die Handkarten nicht einzeln weiterführt. Varianten mit Bedingung (z. B. „wenn Ihr mind. 10 Mana habt“) oder Zusatzeffekt (Finale) bleiben „unbekannt“.
 

@@ -81,6 +81,8 @@ class Effect:
     missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
     draw_buff: tuple = None       # gezogene Karten bekommen +A/+L (Auf in die Lueften, Diebesgut): nur als Wert geschaetzt
+    hand_gain: int = 0            # Karten, die auf die Hand kommen (Token, Kopien): grober Kartenwert
+    hand_copy: str = ""           # '' | 'any' | 'enemy' (Kopie eines gewaehlten Dieners) | 'friendly_all' | 'friendly_hurt'
     copy_friendly: bool = False   # ruft eine Kopie eines befreundeten Dieners herbei (Verschmelzung)
     copy_taunt: bool = False
     buff_scale_minions: bool = False   # Ziel-Staerkung gilt je eigenem Diener (Geschenk des Waldes)
@@ -126,7 +128,7 @@ class Effect:
                   self.destroy_target if self.destroy == "target" else "",
                   "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
                   "any_minion" if (self.set_stats and self.set_scope == "target") else ("enemy_minion" if self.steal else ""),
-                  "friendly_minion" if (self.buff or self.heal_minion or self.copy_friendly) else "",
+                  "friendly_minion" if (self.buff or self.heal_minion or self.copy_friendly) else ("any_minion" if self.hand_copy == "any" else ("enemy_minion" if self.hand_copy == "enemy" else "")),
                   "minion" if self.transform else ""):
             if k:
                 return k
@@ -383,6 +385,22 @@ def _parse_core(text, cardtype="SPELL", secret=False):
             e.unknown = False
             continue
         if e.draw_buff and re.match(r"verleiht (?:ihnen|ihm) \+\d+/\+\d+$", s):
+            continue
+        if solo:
+            mt = re.match(r"erhaltet (einen|eine|zwei|drei|\d+) [a-zäöüß’' -]+ \(\d+/\d+\)(?: mit [a-zäöüß]+)? auf (?:die|eure) hand$", s)
+            if mt:                                       # Token auf die Hand (Hexenwaldapfel)
+                e.hand_gain, e.unknown = _num(mt.group(1)), False
+                continue
+        if s == "erhaltet eine kopie jedes befreundeten dieners auf die hand" and solo:
+            e.hand_copy, e.unknown = "friendly_all", False
+            continue
+        if s == "erhaltet eine kopie jedes verletzten befreundeten dieners auf die hand" and solo:
+            e.hand_copy, e.unknown = "friendly_hurt", False
+            continue
+        if len(sents) == 2 and s == "wählt einen diener" and sents[1] == "erhaltet eine kopie davon auf die hand":
+            e.hand_copy, e.unknown = "any", False                 # Geisterbeschwoerung
+            continue
+        if s == "erhaltet eine kopie davon auf die hand" and e.hand_copy == "any":
             continue
         if s == "ruft eine kopie eines befreundeten dieners herbei":     # Verschmelzung
             e.copy_friendly, e.unknown = True, False

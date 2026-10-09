@@ -288,6 +288,27 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             _damage_minion(ss, True, m.uid, n, log)
         for m in list(ss.mine):
             _damage_minion(ss, False, m.uid, n, log)
+    if fx.hand_gain:
+        ss.util += 1.2 * fx.hand_gain
+        if log is not None:
+            log.append(f"erhält {fx.hand_gain} Karte(n) auf die Hand")
+    if fx.hand_copy:
+        if fx.hand_copy == "any":
+            if not tgt or tgt[0] not in ("m", "f"):
+                return False
+            src = (ss.opp if tgt[0] == "m" else ss.mine)
+            i = _find(src, tgt[1])
+            if i < 0:
+                return False
+            n, value = 1, 0.6 + 0.12 * (src[i].atk + src[i].hp)
+        else:
+            pool = [m for m in ss.mine if fx.hand_copy == "friendly_all" or _is_hurt(m)]
+            if not pool:
+                return False
+            n, value = len(pool), sum(0.6 + 0.12 * (m.atk + m.hp) for m in pool)
+        ss.util += min(value, 1.6 * n)
+        if log is not None:
+            log.append(f"erhält {n} Kopie(n) auf die Hand")
     if fx.copy_friendly:
         i = _find(ss.mine, tgt[1]) if tgt and tgt[0] == "f" else -1
         if i < 0 or len(ss.mine) >= MAX_BOARD:
