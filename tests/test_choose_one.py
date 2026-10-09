@@ -49,7 +49,7 @@ class TestParsing(unittest.TestCase):
     def test_typed_draw_only_for_single_sentence_cards(self):
         self.assertEqual(parse_effect("Zieht einen Zauber.", "SPELL").draw, 1)
         # Mehrsatz-Karten (Zusatzeffekte) duerfen nicht halb verstanden werden
-        self.assertTrue(parse_effect("Zieht 2 Diener. Verleiht ihnen +2/+2.", "SPELL").unknown)
+        self.assertTrue(parse_effect("Zieht 2 Diener. Verleiht ihnen +2/+2, wenn Ihr mind. 10 Mana habt.", "SPELL").unknown)
         self.assertTrue(parse_effect("Zieht einen Diener. Tauscht ihr Leben.", "SPELL").unknown)
 
     def test_without_semicolon_stays_unknown(self):
