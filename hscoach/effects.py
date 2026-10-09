@@ -35,6 +35,10 @@ _SCALED_DMG = [   # wertabhaengiger Schaden: (Muster, Art, Ziel/Geltungsbereich)
     (re.compile(r"^fügt jedem diener schaden zu, der seinem angriff entspricht$"), "own_atk", ""),
     (re.compile(r"^verbraucht eure gesamte rüstung\. fügt allen dienern ebenso viel schaden zu$"), "armor", ""),
 ]
+_HEAL_ALL_MINIONS = re.compile(r"^stellt bei allen dienern (\d+) leben wieder her$")
+_HEAL_MINION_HERO = re.compile(r"^stellt bei einem diener und eurem helden (\d+) leben wieder her$")
+_HEAL_MINION = re.compile(r"^stellt bei einem (?:befreundeten )?diener (\d+) leben wieder her$")
+_HEAL_FULL_TAUNT = re.compile(r"^stellt das volle leben eines dieners wieder her und verleiht ihm spott$")
 _DESTROY_HIGHEST = re.compile(r"^vernichtet den feindlichen diener mit dem höchsten angriff$")
 _COND = re.compile(r"\b(wenn|falls|nachdem|sobald|jedes mal|jedesmal|am ende|zu beginn|immer wenn|solange)\b")
 
@@ -69,6 +73,8 @@ class Effect:
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
     buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
+    heal_minion: int = 0          # heilt einen eigenen Diener um N (999 = volles Leben); zusammen mit `heal` auch den Helden
+    heal_all_minions: int = 0     # heilt ALLE Diener (beide Seiten) um N
     team_buff: tuple = None       # (angriff, leben, spott) auf alle eigenen Diener
     team_kw: tuple = ()           # Schluesselwoerter fuer alle eigenen Diener: gottesschild | lebensentzug
     team_taunt_only: bool = False # Staerkung nur fuer eigene Diener mit Spott
@@ -94,7 +100,7 @@ class Effect:
                   self.freeze_target if self.freeze == "target" else "",
                   self.destroy_target if self.destroy == "target" else "",
                   "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
-                  "friendly_minion" if self.buff else "",
+                  "friendly_minion" if (self.buff or self.heal_minion) else "",
                   "minion" if self.transform else ""):
             if k:
                 return k
@@ -204,6 +210,22 @@ def parse_effect(text, cardtype="SPELL", secret=False):
             e.dmg_target = tk
             e.unknown = False
             return e
+    m = _HEAL_ALL_MINIONS.match(flat)
+    if m:                                              # Kreis der Heilung
+        e.heal_all_minions, e.unknown = int(m.group(1)), False
+        return e
+    m = _HEAL_MINION_HERO.match(flat)
+    if m:                                              # Verbindende Heilung: ein Diener und der eigene Held
+        e.heal_minion = e.heal = int(m.group(1))
+        e.unknown = False
+        return e
+    m = _HEAL_MINION.match(flat)
+    if m:
+        e.heal_minion, e.unknown = int(m.group(1)), False
+        return e
+    if _HEAL_FULL_TAUNT.match(flat):                   # Heilung der Ahnen
+        e.heal_minion, e.buff, e.unknown = 999, (0, 0, True), False
+        return e
     if _DESTROY_HIGHEST.match(flat):                   # Strangulieren
         e.destroy_highest, e.unknown = True, False
         return e

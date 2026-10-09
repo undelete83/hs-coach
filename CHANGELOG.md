@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.7.9 - 09.10.2026
+- Drittes Paket der bisher unverstandenen Zauber: Diener heilen. Der Plan kennt jetzt das Maximalleben der Diener und heilt nie darüber hinaus (auch nicht nach einer Stärkung mit +Leben). „Kreis der Heilung“ (alle Diener, auch die des Gegners), „Verbindende Heilung“ (ein Diener und der eigene Held) und „Heilung der Ahnen“ (volles Leben und Spott) werden geplant.
+- Der Plan spielt Heilzauber nur, wenn sie wirklich etwas heilen. Er darf dafür auch erst angreifen und danach heilen, etwa bei einem 0-Mana-Zauber wie dem Kreis der Heilung.
+- Zauber mit Zusatzbedingungen (Krapfen: Nachbarn und Mana, Baum des Lebens: alle Charaktere) bleiben bewusst „unbekannt“.
+
 ## 2.7.8 - 09.10.2026
 - Zweites Paket der bisher unverstandenen Zauber: Stärkungen mit Schlüsselwörtern. Gottesschild und Lebensentzug auf einen oder alle eigenen Diener (Hand des Schutzes, Rechtschaffenheit, Siegel des Champions, Segen des Pharaos, Apotheose, Lichtgeschmiedeter Segen), „Stärken“ (nur eigene Diener mit Spott) und Angriff nur für diesen Zug: „Kampfrausch“ (alle Diener), „Wildes Brüllen“ (Diener und Held), „Unerbittliche Jagd“ (Held, die Immunität rechnet der Plan nicht mit).
 - Angriff „nur in diesem Zug“ zählt nicht für das Board nach dem Zug, sodass der Plan solche Zauber nur spielt, wenn damit wirklich angegriffen wird. Ein Gottesschild auf einen Diener, der schon eins hat, wird nicht verschwendet.

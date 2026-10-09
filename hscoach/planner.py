@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 
 from .effects import Effect
 
-M = namedtuple("M", "uid name cid atk hp taunt ds poison frozen stealth immune wf att face lifesteal sp race mine fzr",
-               defaults=(False,))
+M = namedtuple("M", "uid name cid atk hp taunt ds poison frozen stealth immune wf att face lifesteal sp race mine fzr mhp",
+               defaults=(False, 0))        # mhp = Maximalleben (0 = unbekannt/voll, dann gilt hp)
 FREEZER_TEXT = "friert jeden charakter ein, der von diesem diener verletzt"   # z.B. Wasserelementar (Book of Heroes)
 C = namedtuple("C", "idx name cid cost ctype text atk hp race taunt ds charge rush stealth wf poison lifesteal secret fx coin")
 
@@ -71,7 +71,7 @@ class SS:
 
 
 def _flags(m):
-    return (m.name, m.atk, m.hp, m.taunt, m.ds, m.poison, m.frozen, m.stealth, m.wf, m.att, m.face, m.lifesteal, m.sp)
+    return (m.name, m.atk, m.hp, m.taunt, m.ds, m.poison, m.frozen, m.stealth, m.wf, m.att, m.face, m.lifesteal, m.sp, m.mhp)
 
 
 def _key(ss):
@@ -255,18 +255,35 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             _damage_minion(ss, True, m.uid, n, log)
         for m in list(ss.mine):
             _damage_minion(ss, False, m.uid, n, log)
-    if fx.buff and tgt and tgt[0] == "f":
+    if (fx.buff or fx.heal_minion) and tgt and tgt[0] == "f":
         i = _find(ss.mine, tgt[1])
         if i < 0:
             return False
-        a, h, taunt = fx.buff
-        before = ss.mine[i]
-        ss.mine[i] = _grant(_buffed(before, (a, h, "spott" if taunt else "")), fx.buff_kw)
-        if ss.mine[i] == before:                 # nichts Neues (z. B. hat schon Gottesschild): Karte waere verschwendet
+        orig = m = ss.mine[i]
+        if fx.heal_minion:
+            m = _healed(m, fx.heal_minion)
+        if fx.buff:
+            a, h, taunt = fx.buff
+            m = _grant(_buffed(m, (a, h, "spott" if taunt else "")), fx.buff_kw)
+        ss.mine[i] = m
+        if m == orig and not (fx.heal and ss.my_hp < 30):      # nichts Neues (z. B. unverletzt, schon Gottesschild): verschwendet
             return False
         if log is not None:
-            extra = "".join(f" mit {k.capitalize()}" for k in (["spott"] if taunt else []) + list(fx.buff_kw))
-            log.append(f"{ss.mine[i].name} wird zu {ss.mine[i].atk}/{ss.mine[i].hp}" + extra)
+            if m.hp != orig.hp and fx.heal_minion:
+                log.append(f"{m.name} wird um {m.hp - orig.hp} geheilt (jetzt {m.hp} Leben)")
+            if fx.buff:
+                a, h, taunt = fx.buff
+                extra = "".join(f" mit {k.capitalize()}" for k in (["spott"] if taunt else []) + list(fx.buff_kw))
+                if a or h or extra:
+                    log.append(f"{m.name} wird zu {m.atk}/{m.hp}" + extra)
+    if fx.heal_all_minions:
+        new_mine = [_healed(m, fx.heal_all_minions) for m in ss.mine]
+        new_opp = [_healed(m, fx.heal_all_minions) for m in ss.opp]
+        if new_mine == ss.mine and new_opp == ss.opp:
+            return False
+        ss.mine[:], ss.opp[:] = new_mine, new_opp
+        if log is not None:
+            log.append(f"alle Diener werden um {fx.heal_all_minions} geheilt (auch die des Gegners)")
     if fx.team_buff or fx.team_kw:
         a, h, taunt = fx.team_buff or (0, 0, False)
         sel = {m.uid for m in ss.mine if m.taunt or not fx.team_taunt_only}
@@ -456,6 +473,11 @@ def _silenced(m):
     return m._replace(taunt=False, ds=False, poison=False, lifesteal=False, stealth=False, sp=0, fzr=False, wf=1)
 
 
+def _healed(m, n):
+    """Heilt einen Diener um n (hoechstens bis zum Maximalleben; unbekanntes Maximum = aktuelles Leben)."""
+    return m._replace(hp=min(max(m.mhp, m.hp), m.hp + n))
+
+
 def _grant(m, kws):
     """Schluesselwoerter aus Stärkungszaubern: Gottesschild, Lebensentzug."""
     for kw in kws:
@@ -469,7 +491,7 @@ def _grant(m, kws):
 def _buffed(m, buff):
     """Selbststaerkung des gerade gespielten Dieners (Kampfschrei): +Angriff/+Leben und Spott/Eifer/Ansturm."""
     atk, hp, kw = buff
-    m = m._replace(atk=m.atk + atk, hp=m.hp + hp)
+    m = m._replace(atk=m.atk + atk, hp=m.hp + hp, mhp=m.mhp + hp if m.mhp else 0)
     if kw == "spott":
         m = m._replace(taunt=True)
     elif kw == "eifer":                      # Rush: sofort angreifen, aber nur Diener
@@ -629,10 +651,10 @@ class Planner:
             ready = max(0, m.windfury - m.attacks_done) if m.can_attack else 0
             ss.mine.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
                              m.stealth, m.immune, m.windfury, ready, m.can_attack_face, m.lifesteal, m.spellpower,
-                             m.race, True, FREEZER_TEXT in self.db.info(m.cid).get("text", "").lower()))
+                             m.race, True, FREEZER_TEXT in self.db.info(m.cid).get("text", "").lower(), m.max_hp))
         for m in s.opp_minions:
             ss.opp.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
-                            m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False))
+                            m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False, False, m.max_hp))
         ss.used = ()
         ss.weapon = (s.my_weapon.atk, s.my_weapon.durability) if s.my_weapon else None
         ss.hero_atk = s.my_hero_atk
