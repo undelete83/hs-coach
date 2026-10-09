@@ -288,6 +288,16 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
             _damage_minion(ss, True, m.uid, n, log)
         for m in list(ss.mine):
             _damage_minion(ss, False, m.uid, n, log)
+    if fx.copy_friendly:
+        i = _find(ss.mine, tgt[1]) if tgt and tgt[0] == "f" else -1
+        if i < 0 or len(ss.mine) >= MAX_BOARD:
+            return False
+        src = ss.mine[i]
+        ss.uid += 1
+        cp = src._replace(uid=ss.uid, att=0, frozen=False, taunt=src.taunt or fx.copy_taunt)
+        ss.mine.insert(i + 1, cp)
+        if log is not None:
+            log.append(f"Kopie von {src.name} ({src.atk}/{src.hp})" + (" mit Spott" if cp.taunt else ""))
     if (fx.buff or fx.heal_minion) and tgt and tgt[0] == "f":
         i = _find(ss.mine, tgt[1])
         if i < 0:

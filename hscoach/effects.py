@@ -80,6 +80,8 @@ class Effect:
     cond_fx: object = None        # Effekt, der nur bei erfuellter Bedingung gilt
     missiles: tuple = None        # (anzahl, schaden_je_geschoss): zufaellig auf alle Feinde (Diener und Held)
     self_buff: tuple = None       # (angriff, leben, schluesselwort) fuer den gespielten Diener selbst
+    copy_friendly: bool = False   # ruft eine Kopie eines befreundeten Dieners herbei (Verschmelzung)
+    copy_taunt: bool = False
     buff_scale_minions: bool = False   # Ziel-Staerkung gilt je eigenem Diener (Geschenk des Waldes)
     buff_per: tuple = None        # ("minions" | "hand", angriff, leben) je anderem Diener bzw. je Handkarte
     buff: tuple = None            # (angriff, leben, spott) auf einen befreundeten Diener (Zauber mit Ziel)
@@ -123,7 +125,7 @@ class Effect:
                   self.destroy_target if self.destroy == "target" else "",
                   "enemy_minion" if self.silence == "target" or self.bounce == "target" else "",
                   "any_minion" if (self.set_stats and self.set_scope == "target") else ("enemy_minion" if self.steal else ""),
-                  "friendly_minion" if (self.buff or self.heal_minion) else "",
+                  "friendly_minion" if (self.buff or self.heal_minion or self.copy_friendly) else "",
                   "minion" if self.transform else ""):
             if k:
                 return k
@@ -371,6 +373,12 @@ def _parse_core(text, cardtype="SPELL", secret=False):
                 e.team_race = race
                 e.unknown = False
                 continue
+        if s == "ruft eine kopie eines befreundeten dieners herbei":     # Verschmelzung
+            e.copy_friendly, e.unknown = True, False
+            continue
+        if s == "verleiht der kopie spott" and e.copy_friendly:
+            e.copy_taunt = True
+            continue
         m = re.match(r"verleiht einem befreundeten diener \+(\d+)/\+(\d+) für jeden diener, den ihr kontrolliert$", s)
         if m and solo:                                  # Geschenk des Waldes
             e.buff = (int(m.group(1)), int(m.group(2)), False)
