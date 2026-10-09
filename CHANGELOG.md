@@ -5,6 +5,14 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.11.0 - 09.10.2026
+- **Spielbrett-Ansicht** (Etappe 2) und neues Standard-Design: Helden als runde Porträts mit Leben, Rüstung, Handkarten- und Deckzahl, Diener als Kacheln in zwei Reihen (Gegner oben, du unten) mit Kartenmotiv, Name, Angriff und Leben. Spott, Gottesschild, Gift, Lebensraub, Windzorn, Eifer/Ansturm und Tarnung erscheinen als Rahmen oder Chips, eingefrorene Diener unter einer Eisschicht, angriffsbereite mit grünem Rand, verletzte Diener mit orangem Lebenswert.
+- **Der Zugplan wird aufs Brett gezeichnet:** grüne Pfeile mit Schrittnummer vom Angreifer zum Ziel, rote Nummern an Zielen von Zaubern und Heldenkraft. Die Nummern entsprechen der Schrittliste im Plan.
+- Neuer Knopf **links neben „Einstellungen“** schaltet jederzeit zwischen Brett- und Textansicht um (wird gemerkt). Die Textansicht ist die bisherige Darstellung mit Heldenzahlen und Textlisten.
+- Das Design „spielbrett“ (Holz, Stein, Pergament) ist jetzt Standard; „klassisch“ bleibt unter ⚙ Einstellungen → Aussehen wählbar. Beide Designs haben eine eigene Brettfarbwelt.
+- Die Brettfläche passt ihre Höhe an die Fenstergröße an, damit Plan und Boss-Info bei kleineren Fenstern nicht verdrängt werden.
+- Neue Daten: Der Planer liefert zu jedem Schritt Angreifer und Ziel mit; der Spielstand kennt die Heldenkarte des eigenen Helden.
+
 ## 2.10.0 - 09.10.2026
 - Neues, wählbares Design **Spielbrett** (Vorschau, erste Etappe): Holzrahmen mit selbst gemalter Maserung, Titel auf Holzleisten, Textfelder aus dunklem Stein mit Goldrand, der Zugplan auf Pergament. Umschalten unter ⚙ Einstellungen → Aussehen → Design (wirkt nach einem Neustart). Das bisherige dunkelblaue Design bleibt der Standard („klassisch“).
 - Die Titelleiste passt sich dem Design an (Holzbraun statt Dunkelblau).

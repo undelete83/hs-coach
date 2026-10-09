@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, bosses, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
+from . import analysis, board, bosses, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -19,7 +19,7 @@ log = logging.getLogger("hscoach.gui")
 
 _THEME_KEYS = ("ROOT", "BG", "BG2", "TEXTBG", "HDR", "LINE", "BTN", "BTN_ACTIVE", "DIMFG", "VS", "GREEN", "RED", "YELLOW",
                "BLUE", "GRAY", "GOLD", "BORDER", "BORDER_W", "PARCH", "WOOD", "PLANK", "FRAME_PAD", "TAGS", "CAPTION",
-               "CAPTION_TEXT", "CAPTION_BORDER")
+               "CAPTION_TEXT", "CAPTION_BORDER", "BOARD")
 
 
 def apply_theme(name):
@@ -124,6 +124,8 @@ class App(tk.Tk):
         self._geo_job = None
         self._img_job = None
         self._wood_job = None
+        self._board_job = None
+        self._board_force = False
         self._wood_key = None
         self._wood_photo = None
         self._updating = False
@@ -175,6 +177,7 @@ class App(tk.Tk):
         self.var_claude = tk.BooleanVar(value=bool(self.cfg["use_claude"]))
         self.var_hand_img = tk.BooleanVar(value=bool(self.cfg["show_hand_images"]))
         self._build()
+        self._apply_view()
         self.attributes("-topmost", self.var_top.get())
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.bind("<F5>", lambda e: self._replan(force=True))
@@ -262,6 +265,8 @@ class App(tk.Tk):
                              font=("Segoe UI", 10), cursor="hand2", activebackground=BTN_ACTIVE, activeforeground=GOLD)
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)
+        self.btn_view = btn("", self._toggle_view)
+        self.btn_view.pack(side="right", padx=4)
         self.btn_update = btn("⟳ Auf Update prüfen", self._check_update)
         self.btn_update.pack(side="right", padx=4)
         self.btn_analysis = btn("📝 Analyse", self._analyze)
@@ -272,6 +277,7 @@ class App(tk.Tk):
 
         hp = tk.Frame(self.body, bg=BG2, pady=8)
         hp.pack(fill="x")
+        self.hp_frame = hp
         lf = tk.Frame(hp, bg=BG2)
         lf.pack(side="left", expand=True)
         tk.Label(lf, text="DU", bg=BG2, fg=GREEN, font=("Segoe UI", 12, "bold")).pack()
@@ -295,6 +301,7 @@ class App(tk.Tk):
 
         res = tk.Frame(self.body, bg=BG)
         res.pack(pady=4)
+        self.res_frame = res
         self.lbl_mana = tk.Label(res, text="💎  Mana: —", bg=BG, fg=BLUE, font=("Segoe UI", 15, "bold"))
         self.lbl_mana.pack(side="left", padx=10)
         self.lbl_corpses = tk.Label(res, text="", bg=BG, fg="#cc88ff", font=("Segoe UI", 15, "bold"))
@@ -307,6 +314,7 @@ class App(tk.Tk):
 
         boards = tk.Frame(self.body, bg=BG)
         boards.pack(fill="x")
+        self.boards_frame = boards
         of = tk.Frame(boards, bg=BG)
         of.pack(side="left", fill="both", expand=True)
         self._section(of, "👹  GEGNER BOARD", RED)
@@ -319,6 +327,14 @@ class App(tk.Tk):
 
         mid = tk.Frame(self.body, bg=BG)
         mid.pack(fill="x")
+        self.mid_frame = mid
+        # Brettansicht (Kacheln statt Textlisten): wird je nach Einstellung statt hp/boards eingeblendet
+        self.board_frame = tk.Frame(self.body, bg=BG)
+        self.board_canvas = tk.Canvas(self.board_frame, height=board.HEIGHT, bg=BOARD["BG"], highlightthickness=BORDER_W,
+                                      highlightbackground=BORDER or BOARD["EDGE"], bd=0)
+        self.board_canvas.pack(fill="x", padx=10, pady=(4, 4))
+        self.board_view = board.BoardView(self.board_canvas, self.images if PIL_OK else None, BOARD)
+        self.board_canvas.bind("<Configure>", lambda e: self._schedule_board())
         hf = tk.Frame(mid, bg=BG)
         hf.pack(side="left", fill="both", expand=True)
         self._section(hf, "🃏  HAND  (★ = im Plan, unterstrichen = Begriff, Maus drüber für Erklärung)", YELLOW)
@@ -547,6 +563,55 @@ class App(tk.Tk):
         messagebox.showerror("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
                              parent=self)
 
+    def _apply_view(self):
+        """Brettansicht (Kacheln) oder reine Textansicht (Heldenzahlen + Textlisten) einblenden."""
+        brett = self.cfg.get("ansicht", "brett") != "text"
+        for f in (self.hp_frame, self.boards_frame, self.board_frame):
+            f.pack_forget()
+        if brett:
+            self.board_frame.pack(fill="x", before=self.mid_frame)
+        else:
+            self.hp_frame.pack(fill="x", before=self.res_frame)
+            self.boards_frame.pack(fill="x", before=self.mid_frame)
+        self.btn_view.config(text="☰ Textansicht" if brett else "▦ Brettansicht")
+        self._refresh_board(force=True)
+
+    def _toggle_view(self):
+        self.cfg["ansicht"] = "text" if self.cfg.get("ansicht", "brett") != "text" else "brett"
+        config.save(self.cfg, ["ansicht"])
+        self._apply_view()
+
+    def _schedule_board(self, force=False):
+        self._board_force = self._board_force or force
+        if self._board_job is None and not self._closed:
+            self._board_job = self.after(120, self._board_now)
+
+    def _board_now(self):
+        self._board_job = None
+        force, self._board_force = self._board_force, False
+        self._refresh_board(force=force)
+
+    def _board_plan(self, s):
+        """Plan, dessen Pfeile gerade gelten (aktuell, sichtbar, mein Zug) - sonst None."""
+        if (self._plan is not None and self._plan_visible and s.my_active and not s.result and not s.mulligan
+                and not self._plan_stale(s)):
+            return self._plan
+        return None
+
+    def _refresh_board(self, force=False):
+        s = self._state
+        if self._closed or s is None or self.cfg.get("ansicht", "brett") == "text":
+            return
+        boss = None if s.result else self.boss
+        goal = f"Ziel: ≤ {boss.win_hp} Leben" if boss and boss.win_hp else ""
+        width = self.board_canvas.winfo_width()
+        if width <= 1:
+            return
+        height = board.height_for(self.winfo_height())
+        if int(self.board_canvas.cget("height")) != height:
+            self.board_canvas.config(height=height)
+        self.board_view.draw(board.build_model(s, self._board_plan(s), goal), width, height, force)
+
     def _schedule_wood(self):
         if self._wood_label is not None and self._wood_job is None and not self._closed:
             self._wood_job = self.after(250, self._wood_refresh)
@@ -628,6 +693,7 @@ class App(tk.Tk):
                     and not self._plan_stale(self._state) and not self._settling()):
                 self._present(self._state, self._plan)
             self._maybe_ask_claude()
+            self._refresh_board()
         except Exception:
             log.exception("GUI-Update-Fehler")
         self.after(100, self._drain)
@@ -709,6 +775,11 @@ class App(tk.Tk):
             if self.cfg["auto_analysis"]:
                 self._analyze()
 
+        if PIL_OK and self.cfg["show_card_images"] and self.cfg.get("ansicht", "brett") != "text":
+            art = ([m.cid for m in s.my_minions + s.opp_minions if m.cid]
+                   + [c for c in (s.opp_hero_cid, s.my_hero_cid) if c])
+            if art:
+                self.images.ensure(art, lambda cid, ok: self.post(lambda: self._schedule_board(True)) if ok else None)
         if PIL_OK and s.my_hand and self.cfg["show_card_images"]:
             self.images.ensure([c.cid for c in s.my_hand], lambda cid, ok: None)
 

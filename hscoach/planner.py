@@ -31,6 +31,8 @@ class Step:
     kind: str                 # minion | spell | weapon | attack | hero_attack | hero_power
     text: str
     cid: str = ""
+    src: object = None        # Angreifer: uid des Dieners (0 = Held), sonst None
+    dst: object = None        # Ziel: ("m", uid) | ("face",) | None
 
 
 @dataclass
@@ -951,7 +953,7 @@ class Planner:
                 txt = head + (f" auf {tname}" if tname and act[2] else "")
                 if log:
                     txt += "  →  " + "; ".join(log)
-                plan.steps.append(Step(kind, txt, c.cid))
+                plan.steps.append(Step(kind, txt, c.cid, dst=act[2]))
                 ss = nxt
             elif act[0] == "att":
                 if act[1] == 0:
@@ -967,7 +969,7 @@ class Planner:
                 txt = f"{who} greift {tname} an"
                 if log:
                     txt += "  →  " + "; ".join(log)
-                plan.steps.append(Step("hero_attack" if act[1] == 0 else "attack", txt))
+                plan.steps.append(Step("hero_attack" if act[1] == 0 else "attack", txt, src=act[1], dst=act[2]))
                 ss = nxt
             elif act[0] == "hp":
                 hp = s.my_hero_power
@@ -981,7 +983,7 @@ class Planner:
                 txt = f"Heldenkraft: {hp.name} ({hp.cost} Mana)" + (f" auf {tname}" if tname and act[1] else "")
                 if log:
                     txt += "  →  " + "; ".join(log)
-                plan.steps.append(Step("hero_power", txt))
+                plan.steps.append(Step("hero_power", txt, dst=act[1]))
                 ss = n
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)

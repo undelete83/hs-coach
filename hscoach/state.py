@@ -166,6 +166,7 @@ class GameState:
     opp_hero_power: HeroPower = None
     opp_max_mana: int = 0
     opp_hero_cid: str = ""
+    my_hero_cid: str = ""
     my_secrets: list = field(default_factory=list)
     opp_secret_count: int = 0
     events: list = field(default_factory=list)      # gerenderte Zeilen, aelteste zuerst
@@ -265,6 +266,7 @@ def build_state(tr, db):
         atk = t.get("ATK", 0) or 0
         if pid == me:
             s.my_hp, s.my_armor, s.my_hero_atk = hp, armor, atk
+            s.my_hero_cid = h.get("cardId", "")
             max_att = 2 if _flag(t, "WINDFURY") else 1
             left = max_att - (t.get("NUM_ATTACKS_THIS_TURN", 0) or 0)
             s.my_hero_attacks_left = 0 if _flag(t, "FROZEN") else max(0, left)

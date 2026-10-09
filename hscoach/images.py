@@ -74,6 +74,29 @@ class ImageCache:
         except Exception:
             log.exception("on_ready Fehler")
 
+    def art(self, cid, width, height, hero=False):
+        """GUI-Thread: Bildausschnitt (Kartenmotiv) einer geladenen Karte, passend skaliert, oder None."""
+        if not PIL_OK or not cid or width < 8 or height < 8:
+            return None
+        key = ("art", cid, width, height, hero)
+        ph = self._photos.get(key)
+        if ph is not None:
+            return ph
+        p = self.path(cid)
+        if not os.path.exists(p):
+            return None
+        try:
+            img = Image.open(p).convert("RGBA")
+            w, h = img.size
+            box = (0.22, 0.12, 0.78, 0.46) if hero else (0.19, 0.13, 0.81, 0.50)
+            crop = img.crop((int(w * box[0]), int(h * box[1]), int(w * box[2]), int(h * box[3])))
+            ph = ImageTk.PhotoImage(crop.resize((width, height), Image.LANCZOS))
+            self._photos[key] = ph
+            return ph
+        except Exception:
+            log.exception("Bildausschnitt %s nicht moeglich", cid)
+            return None
+
     def photo(self, cid, width, height):
         """GUI-Thread: PhotoImage fuer die Karte oder None."""
         if not PIL_OK or not cid:

@@ -35,7 +35,8 @@ DEFAULTS = {
     "card_img_w": 200,
     "card_img_h": 303,
     "show_card_images": True,
-    "design": "klassisch",            # klassisch | spielbrett (Holz, Stein, Pergament)
+    "design": "spielbrett",           # klassisch | spielbrett (Holz, Stein, Pergament)
+    "ansicht": "brett",               # brett (Kacheln) | text (reine Textlisten); per Knopf umschaltbar
     "sort_hand": "cost",
     "show_hand_images": False,
     "knowledge_path": os.path.join(REPO_DIR, "knowledge.md"),
