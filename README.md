@@ -67,7 +67,12 @@ Der API-Key gehört dir, die Abrechnung läuft direkt bei Anthropic. Mit Haiku k
 
 **Funktioniert das mit Wild/Standard/Duellen/Schlachtfeldern?** Entwickelt und getestet wurde der Coach vor allem mit den Solo-Abenteuern und normalen Partien. Schlachtfelder (Battlegrounds) und Söldner werden nicht unterstützt.
 
-**Ist das erlaubt?** Der Coach liest nur die Logdatei, die Hearthstone auf Wunsch selbst schreibt (wie andere bekannte Tracker). Er automatisiert nichts im Spiel. Eine Garantie gibt es trotzdem nicht – Nutzung auf eigene Verantwortung.
+**Ist das erlaubt? Kann ich gebannt werden?** Das lässt sich nicht verbindlich beantworten. Blizzard hat dazu keine offizielle Freigabe veröffentlicht. Was feststeht:
+
+- Der Coach liest nur die Logdatei `Power.log`, die Hearthstone auf Wunsch selbst schreibt (wie andere bekannte Tracker). Er verändert keine Spieldateien, liest nicht den Arbeitsspeicher des Spiels und automatisiert nichts im Spiel (keine Mausklicks, keine Eingaben).
+- Der **Zugplan** und die **KI-Tipps** gehen über reines Mitzählen hinaus, weil sie Züge berechnen und empfehlen. Ob Blizzard das in Wettkampfmodi als unerlaubten Vorteil wertet, ist offen.
+- Empfehlung: Nutze den Coach in den Solo-Abenteuern und gegen die KI, wofür er entwickelt und getestet wurde. In Ranglistenspielen, Arena und Turnieren (dort ist er in der Regel ausdrücklich nicht erlaubt) auf eigenes Risiko, oder lass den Zugplan und die KI-Tipps weg. Im Zweifel frage den Blizzard-Support.
+- Es gibt keine Garantie, dass dir nichts passiert. Nutzung auf eigene Verantwortung, ohne Gewährleistung (siehe Lizenz).
 
 ## Bekannte Grenzen
 
