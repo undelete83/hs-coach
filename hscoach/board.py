@@ -249,6 +249,39 @@ def height_for(window_height):
     return int(max(300, min(HEIGHT, window_height * 0.30)))
 
 
+def edge_point(box, tx, ty):
+    """Punkt, an dem der Strahl vom Mittelpunkt von `box` = (cx, cy, halbe_breite, halbe_hoehe, rund) zu (tx, ty) den Rand trifft."""
+    cx, cy, hw, hh, circle = box
+    dx, dy = tx - cx, ty - cy
+    dist = math.hypot(dx, dy)
+    if dist < 1e-6:
+        return cx, cy
+    if circle:
+        k = hw / dist
+    else:
+        k = min(hw / abs(dx) if dx else float("inf"), hh / abs(dy) if dy else float("inf"))
+    return cx + dx * k, cy + dy * k
+
+
+def arrow_points(src, dst, gap=3):
+    """Anfang und Spitze eines Angriffspfeils: Er beginnt am Rand des Angreifers und endet genau am Rand des Ziels."""
+    dy_c = dst[1] - src[1]
+    if not src[4] and not dst[4] and abs(dy_c) > (src[3] + dst[3]) * 0.6:
+        # Kachel gegen Kachel in verschiedenen Reihen: Pfeil endet mittig am Rand des Ziels (eindeutig lesbar)
+        up = dy_c < 0
+        sx, sy = src[0], src[1] + (-src[3] if up else src[3])
+        ex, ey = dst[0], dst[1] + (dst[3] if up else -dst[3])
+    else:
+        sx, sy = edge_point(src, dst[0], dst[1])
+        ex, ey = edge_point(dst, src[0], src[1])
+    dx, dy = ex - sx, ey - sy
+    dist = math.hypot(dx, dy)
+    if dist > 2 * gap + 6:                          # kleiner Abstand, damit Rand und Pfeilspitze nicht verschmelzen
+        ux, uy = dx / dist, dy / dist
+        sx, sy, ex, ey = sx + ux * gap, sy + uy * gap, ex - ux * gap, ey - uy * gap
+    return sx, sy, ex, ey
+
+
 def _fit(text, chars):
     return text if len(text) <= chars else text[:max(1, chars - 1)] + "…"
 
@@ -293,18 +326,19 @@ class BoardView:
         centers = {}
         for t, (x, y) in zip(model.opp_tiles, lay["opp"]):
             self._tile(t, x, y, lay["tw"], lay["th"])
-            centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2)
+            centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2, lay["tw"] / 2, lay["th"] / 2, False)
             self.hits.append((x, y, x + lay["tw"], y + lay["th"]) + tile_tip(t))
         for t, (x, y) in zip(model.my_tiles, lay["me"]):
             self._tile(t, x, y, lay["tw"], lay["th"])
-            centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2)
+            centers[t.eid] = (x + lay["tw"] / 2, y + lay["th"] / 2, lay["tw"] / 2, lay["th"] / 2, False)
             self.hits.append((x, y, x + lay["tw"], y + lay["th"]) + tile_tip(t))
         for hero, key in ((model.opp, "hero_opp"), (model.me, "hero_me")):
             self._hero(hero, *lay[key], lay["hero_r"])
             hx, hy = lay[key]
             self.hits.append((hx - lay["hero_r"], hy - lay["hero_r"], hx + lay["hero_r"], hy + lay["hero_r"]) + hero_tip(hero))
-        centers["hero"] = lay["hero_me"]
-        centers["face"] = lay["hero_opp"]
+        r = lay["hero_r"] + 5
+        centers["hero"] = (*lay["hero_me"], r, r, True)
+        centers["face"] = (*lay["hero_opp"], r, r, True)
         for a in model.arrows:
             self._arrow(a, centers, lay)
         if not model.opp_tiles and not model.my_tiles:
@@ -316,6 +350,8 @@ class BoardView:
         base = p["TILE_ME"] if t.mine else p["TILE_OPP"]
         edge = p["READY"] if t.ready else (p["TILE_EDGE_ME"] if t.mine else p["TILE_EDGE_OPP"])
         self.rrect(x, y, x + w, y + h, 12, fill=base, outline=edge, width=4 if t.ready else 2)
+        if any(kind == "tgt" for _, kind in t.marks):                 # Ziel im Plan: roter Ring um die ganze Kachel
+            self.rrect(x - 4, y - 4, x + w + 4, y + h + 4, 15, fill="", outline=p["MARK_TGT"], width=3)
         if t.taunt:
             self.rrect(x + 3, y + 3, x + w - 3, y + h - 3, 10, fill="", outline=p["TAUNT"], width=3)
         if t.ds:
@@ -378,6 +414,8 @@ class BoardView:
                 c.create_text(cx, base + i * 16, text=text, fill=fg, font=font)
         if hero.goal:
             c.create_text(cx, cy + r + 20, text=hero.goal, fill=p["MARK_TGT"], font=("Segoe UI", 9, "bold"))
+        if hero.marks:
+            c.create_oval(cx - r - 10, cy - r - 10, cx + r + 10, cy + r + 10, outline=p["MARK_TGT"], width=3)
         for i, n in enumerate(hero.marks[:4]):
             self.mark(cx + r + 6, cy - r + 6 + i * 24, n, "tgt")
 
@@ -385,13 +423,7 @@ class BoardView:
         src, dst = centers.get(a.src), centers.get(a.dst)
         if not src or not dst:
             return
-        (x1, y1), (x2, y2) = src, dst
-        dx, dy = x2 - x1, y2 - y1
-        dist = math.hypot(dx, dy) or 1.0
-        cut_a = min(lay["th"], lay["tw"]) * 0.42 if a.src != "hero" else lay["hero_r"] + 8
-        cut_b = min(lay["th"], lay["tw"]) * 0.42 if a.dst != "face" else lay["hero_r"] + 8
-        sx, sy = x1 + dx / dist * cut_a, y1 + dy / dist * cut_a
-        ex, ey = x2 - dx / dist * cut_b, y2 - dy / dist * cut_b
+        sx, sy, ex, ey = arrow_points(src, dst)
         self.c.create_line(sx, sy, ex, ey, fill=self.p["ARROW_SHADOW"], width=8, arrow="last", arrowshape=(16, 18, 7),
                            capstyle="round")
         self.c.create_line(sx, sy, ex, ey, fill=self.p["ARROW"], width=4, arrow="last", arrowshape=(14, 16, 6), capstyle="round")

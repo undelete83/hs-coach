@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from hscoach import board
@@ -154,6 +155,53 @@ class TestTooltips(unittest.TestCase):
     def test_gloss_lines_limit_and_unknown(self):
         self.assertEqual(board.gloss_lines("nichts Besonderes"), [])
         self.assertLessEqual(len(board.gloss_lines("Spott Gottesschild Windzorn Gift Lebensraub Tarnung Kampfschrei")), 4)
+
+
+class TestArrows(unittest.TestCase):
+    def box(self, cx, cy, w=100, h=130, circle=False):
+        return (cx, cy, w / 2, h / 2, circle)
+
+    def test_edge_point_on_rectangle_border(self):
+        b = self.box(100, 100)
+        x, y = board.edge_point(b, 100, 0)                    # senkrecht nach oben: Oberkante
+        self.assertAlmostEqual(x, 100)
+        self.assertAlmostEqual(y, 100 - 65)
+        x, y = board.edge_point(b, 300, 100)                  # waagerecht nach rechts: rechte Kante
+        self.assertAlmostEqual((x, y), (150, 100))
+        x, y = board.edge_point(b, 200, 200)                  # diagonal: trifft die Kante, nie das Innere
+        self.assertTrue(abs(x - 100) <= 50 + 1e-6 and abs(y - 100) <= 65 + 1e-6)
+        self.assertTrue(abs(abs(x - 100) - 50) < 1e-6 or abs(abs(y - 100) - 65) < 1e-6)
+
+    def test_edge_point_on_circle(self):
+        x, y = board.edge_point(self.box(0, 0, 50, 50, True), 30, 40)
+        self.assertAlmostEqual(math.hypot(x, y), 25)
+
+    def test_arrow_ends_at_the_target_border_not_in_the_middle(self):
+        src, dst = self.box(100, 400), self.box(130, 100)
+        sx, sy, ex, ey = board.arrow_points(src, dst, gap=3)
+        # Spitze liegt knapp ausserhalb der Ziel-Kachel (unterer Rand bei y = 165), der Start knapp ausserhalb der Quelle
+        self.assertTrue(165 <= ey <= 172, ey)
+        self.assertTrue(330 - 8 <= sy <= 335, sy)
+        self.assertTrue(130 - 50 <= ex <= 130 + 50)
+
+    def test_tile_to_tile_arrow_ends_centered_on_the_target(self):
+        """Der Pfeil zeigt auf die Mitte der Zielkachel, nicht auf eine Ecke neben der Nachbarkachel."""
+        src, dst = self.box(942, 480), self.box(1004, 260)
+        sx, sy, ex, ey = board.arrow_points(src, dst, gap=3)
+        self.assertAlmostEqual(ex, 1004 - 3 * (1004 - 942) / math.hypot(1004 - 942, 260 + 65 - (480 - 65)), delta=3)
+        self.assertTrue(abs(ex - 1004) <= 3)
+        self.assertTrue(abs(ey - (260 + 65)) <= 5)
+
+    def test_very_close_boxes_do_not_flip_direction(self):
+        sx, sy, ex, ey = board.arrow_points(self.box(0, 0, 40, 40), self.box(0, 45, 40, 40))
+        self.assertGreaterEqual(ey, sy)
+
+    def test_target_tiles_are_marked_in_the_model(self):
+        s = gs(mine=[mm(1, "A", 3, 3)], opp=[mm(10, "Wolf", 2, 3), mm(11, "Katze", 1, 1)])
+        plan = Plan(steps=[Step("attack", "x", src=1, dst=("m", 11))])
+        m = board.build_model(s, plan)
+        self.assertEqual(m.arrows[0].dst, 11)
+        self.assertEqual([t.marks for t in m.opp_tiles], [(), ((1, "tgt"),)])
 
 
 if __name__ == "__main__":

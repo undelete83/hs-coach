@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.12.2 - 10.10.2026
+- Pfeile im Spielbrett sind eindeutiger: Der Pfeil beginnt am Rand des Angreifers und endet **mittig am Rand der Zielkachel** (bisher stoppte er auf halber Strecke und konnte neben dem Nachbarn zu landen scheinen). Jede Kachel und jeder Held, die im Plan angegriffen oder als Ziel genannt werden, bekommen zusätzlich einen **roten Ring**; die Nummer am Ziel gehört zum Schritt im Plan.
+
 ## 2.12.1 - 10.10.2026
 - Lehre aus einer verlorenen Partie gegen Aethas: Ein unbekanntes gegnerisches Geheimnis (Gegenzauber) hat den Flammenstoß verschluckt. Der Planer rechnet jetzt damit, dass der **erste Zauber des Zuges** abgefangen werden kann, solange der Gegner Geheimnisse hat: Er bewertet ihn mit Abschlag und stellt, wenn möglich, einen billigen Zauber als **Köder** davor. Siegzüge (Lethal) bleiben davon unberührt. Aethas rechnet mit höherem Risiko (Boss-Tipp „Köder“ und Gefahren ergänzt).
 - Neue Hinweise im Plan: „Gegner hat ein Geheimnis ...: <Zauber> wird als erster Zauber gewirkt und könnte abgefangen werden - ein billiger Zauber davor wäre ein guter Köder“ sowie „Nur X von Y Mana im Plan - noch spielbar wären: ...“, wenn mehr als die Hälfte des Manas ungenutzt bleibt.
