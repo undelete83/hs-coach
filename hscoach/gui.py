@@ -24,6 +24,38 @@ SETTLE_MAX_S = 45.0   # Sicherheitsnetz: so lange wartet der Zugbeginn hoechsten
 KW_RE = re.compile("|".join(re.escape(k) for k in glossary.KEYWORDS))
 
 
+GEO_RE = re.compile(r"^(\d+)x(\d+)(?:\+(-?\d+)\+(-?\d+))?$")      # Tk liefert negative Positionen als "+-2223"
+DEFAULT_SIZE = "1680x1248"
+
+
+def virtual_screen():
+    """(x, y, breite, hoehe) des gesamten Desktops ueber alle Monitore (Windows), sonst None."""
+    try:
+        import ctypes
+        u = ctypes.windll.user32
+        return u.GetSystemMetrics(76), u.GetSystemMetrics(77), u.GetSystemMetrics(78), u.GetSystemMetrics(79)
+    except Exception:
+        return None
+
+
+def resolve_geometry(geo, screen=None):
+    """Gespeicherte Fenstergeometrie pruefen: Groesse und Position werden uebernommen, solange das Fenster noch auf einem
+    vorhandenen Monitor sichtbar waere (Monitor abgesteckt/Aufloesung geaendert -> nur die Groesse)."""
+    m = GEO_RE.match(geo or "")
+    if not m:
+        return DEFAULT_SIZE
+    w, h = int(m.group(1)), int(m.group(2))
+    if m.group(3) is None:
+        return f"{w}x{h}"
+    x, y = int(m.group(3)), int(m.group(4))
+    if screen:
+        vx, vy, vw, vh = screen
+        visible = vx - w + 120 <= x <= vx + vw - 120 and vy <= y <= vy + vh - 80
+    else:
+        visible = abs(x) <= 9000 and abs(y) <= 9000
+    return f"{w}x{h}+{x}+{y}" if visible else f"{w}x{h}"
+
+
 def strip_md(text):
     """Das Textfeld zeigt kein Markdown: Fettdruck/Code-Markierungen entfernen."""
     text = re.sub(r"\*\*|__|`", "", text)
@@ -77,6 +109,7 @@ class App(tk.Tk):
         self._release = None          # update.Release eines neueren GitHub-Releases
         self._auto_update = False     # darf sich diese Installation selbst aktualisieren?
         self._closed = False
+        self._geo_job = None
         self._updating = False
         self._update_msg = ""
         self._logcfg_state = detect.check_log_config()
@@ -131,19 +164,14 @@ class App(tk.Tk):
         self.report_callback_exception = lambda *a: log.error("Tk-Callback-Fehler", exc_info=a)
         self.after(150, self._drain)
         self.after(600, self._first_run)
+        self.bind("<Configure>", self._on_configure, add="+")
         self.lbl_status.bind("<Button-1>", self._open_release)
         update.check_async(self.cfg, lambda found: self.post(lambda: self._on_release(found)))
         self.after(30 * 60 * 1000, self._periodic_update_check)
 
     # -- Aufbau -------------------------------------------------------------------------------
     def _apply_geometry(self):
-        geo = self.cfg["geometry"]
-        m = re.match(r"^(\d+)x(\d+)([+-]\d+)?([+-]\d+)?$", geo or "")
-        if not m:
-            geo = "1680x1248"
-        elif m.group(3) and (abs(int(m.group(3))) > 9000 or abs(int(m.group(4))) > 9000):
-            geo = f"{m.group(1)}x{m.group(2)}"
-        self.geometry(geo)
+        self.geometry(resolve_geometry(self.cfg["geometry"], virtual_screen()))
 
     def _text(self, parent, height, fg, max_height=None, **pack):
         t = tk.Text(parent, bg=TEXTBG, fg=fg, height=height, font=("Consolas", 11), relief="flat", bd=6,
@@ -482,13 +510,29 @@ class App(tk.Tk):
         messagebox.showerror("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
                              parent=self)
 
-    def _on_close(self):
-        self._closed = True
+    def _on_configure(self, event):
+        """Fenster verschoben oder in der Groesse geaendert: nach kurzer Ruhe speichern (nicht erst beim Schliessen)."""
+        if event.widget is not self or self._closed:
+            return
+        if self._geo_job:
+            self.after_cancel(self._geo_job)
+        self._geo_job = self.after(1500, self._save_geometry)
+
+    def _save_geometry(self):
+        self._geo_job = None
         try:
-            self.cfg["geometry"] = self.geometry()
-            config.save(self.cfg, ["geometry"])
+            if self._closed or self.state() != "normal":
+                return
+            geo = self.geometry()
+            if geo != self.cfg.get("geometry"):
+                self.cfg["geometry"] = geo
+                config.save(self.cfg, ["geometry"])
         except Exception:
             pass
+
+    def _on_close(self):
+        self._save_geometry()
+        self._closed = True
         self.backend.stop()
         self.destroy()
 
