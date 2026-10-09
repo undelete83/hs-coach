@@ -90,7 +90,7 @@ def _mval(m):
     if m.wf > 1:
         v += m.atk * 0.6
     if m.lifesteal:
-        v += 1.0
+        v += 0.5 + 0.5 * m.atk * max(1, m.wf)          # heilt bei jedem Treffer - mit Windzorn doppelt
     if m.stealth:
         v += 0.5
     if m.sp:
@@ -111,8 +111,12 @@ def _evaluate(ss):
     for m in ss.mine:
         sc += _mval(m)
     for m in ss.opp:
-        sc -= 1.15 * _mval(m) * ss.prio.get(m.name, 1.0)
-    sc -= ss.face_k * 4.5 * (opp_total ** 0.5)
+        boost = 1.25 if (m.lifesteal and m.wf > 1) else 1.0        # Lebensraub + Windzorn: zuerst ausschalten
+        sc -= 1.15 * _mval(m) * ss.prio.get(m.name, 1.0) * boost
+    # Gegner-Diener mit Lebensraub heilen ihn im Gegenzug: sein Leben ist "weiter weg", und es kostet uns zusaetzlich
+    heal1 = sum(m.atk * max(1, m.wf) for m in ss.opp if m.lifesteal and not m.frozen and m.atk > 0)
+    sc -= ss.face_k * 4.5 * ((opp_total + heal1) ** 0.5)
+    sc -= 0.4 * heal1
     sc += 0.3 * my_total
     block = sum(m.hp for m in ss.mine if m.taunt)
     inc1 = max(0, ss.opp_inc_bonus + sum(m.atk * m.wf for m in ss.opp if not m.frozen and m.atk > 0) - block)

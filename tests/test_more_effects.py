@@ -133,3 +133,31 @@ class TestPlanning(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLifestealPriority(unittest.TestCase):
+    def test_lifesteal_windfury_minion_is_hit_first(self):
+        """Zwei gleich gefaehrliche Ziele: der mit Lebensraub + Windzorn heilt den Gegner und muss zuerst fallen."""
+        s = gs(mana=0, opp_hp=30, mine=[mm(1, "Angreifer", 4, 6)],
+               opp=[mm(10, "Klotz", 9, 4), mm(11, "Brunnen", 3, 4, lifesteal=True, windfury=True)])
+        p = plan_for(s)
+        self.assertTrue(p.steps)
+        self.assertIn("Brunnen", p.steps[0].text)
+
+    def test_lifesteal_value_grows_with_attack_and_windfury(self):
+        from hscoach.planner import M, _mval
+        base = dict(uid=1, name="x", cid="", atk=4, hp=4, taunt=False, ds=False, poison=False, frozen=False, stealth=False,
+                    immune=False, wf=1, att=0, face=True, lifesteal=False, sp=0, race="", mine=False, fzr=False, mhp=4)
+        plain = _mval(M(**base))
+        ls = _mval(M(**dict(base, lifesteal=True)))
+        ls_wf = _mval(M(**dict(base, lifesteal=True, wf=2)))
+        self.assertGreater(ls, plain + 1.0)
+        self.assertGreater(ls_wf, ls + 2.0)
+
+    def test_thrall_boss_knows_the_fountain(self):
+        from hscoach import bosses
+        b = bosses.find("Story_01_Thrall")
+        self.assertEqual(b.name, "Thrall")
+        self.assertGreaterEqual(b.bias.get("priority", {}).get("Wandelnder Brunnen", 1), 2)
+        self.assertTrue(any("Brunnen" in d for d in b.dangers))
+

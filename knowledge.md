@@ -39,3 +39,10 @@ Diese Datei wird dem Claude-Modus als zusätzliches Wissen mitgegeben. Gern erg�
 - Ablauf: Frostblitz früh, Flammenfalle in Runde 5, dann ab Runde 7 JEDE Runde Elementarwächter (4/7). Ab Runde 9 greifen die Wasserelementare direkt den Boss an (4 Schaden pro Angriff). Zwei Froststrahl und Frostnova hielten sein Board klein, Feuerball (6) schloss in Runde 13 ab.
 - Sobald Archimonde auf 10 Leben oder weniger fiel, lief das Skript (Thrall/Tyrande/Nordrassil) und der Kampf war gewonnen.
 - Lektion: Nicht jede Bestie töten - Wasserelementare jede Runde legen und mit ihnen ins Gesicht des Bosses gehen, Feuerball als Abschluss aufheben.
+
+## Verlorene Partie gegen Thrall (Jaina), Runde 32
+- Wendepunkt war der Wandelnde Brunnen (Lebensraub + Windzorn, Thralls Heldenkraft gibt Windzorn): Er heilt Thrall bei JEDEM Treffer, auch auf Diener, und schlägt mit Windzorn doppelt zu. Thrall ging in drei Runden von 15 auf über 30 Leben, wir von 30 auf 10.
+- Lektion: Gegner-Diener mit Lebensraub (besonders mit Windzorn) haben Vorrang vor allen anderen Zielen - vernichten, verwandeln oder zum Schweigen bringen. Einfrieren verschiebt das Problem nur um eine Runde. Schaden aufs Gesicht ist sinnlos, solange er den Gegner im Gegenzug heilt.
+- Mit leerem Brett gegen mehrere Gegner-Diener keine zwei kleinen Diener hinlegen, die sofort sterben (Runde 17: Bücherwyrm + Schuppenreiterin starben ohne Gegenwert). Erst stabilisieren.
+- Thralls Spätspiel: Gewittersturm räumt das Board, der Frostwolfkriegsfürst wächst bis 9/9, Geist der Luft gibt weitere Angriffe. Nicht alle Karten vor dem Sturm ausspielen; Zauber für den Brunnen aufheben.
+- Begriffe: Eifer = sofort angreifen, nur Diener; Ansturm = sofort angreifen, auch den Helden.
