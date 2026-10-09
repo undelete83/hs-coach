@@ -1,4 +1,5 @@
 """Boss-Wissen: Erkennung des Gegners (Hero-Karte) und Aufbereitung fuer Oberflaeche, Engine und KI."""
+from .bosses_auto import AUTO
 from .bosses_data import BOSSES
 
 
@@ -23,7 +24,9 @@ class Boss:
 
     @property
     def title(self):
-        return f"{self.name}  ({self.chapter}-Kapitel, Boss {self.order})" if self.order else self.name
+        if self.order:
+            return f"{self.name}  ({self.chapter}-Kapitel, Boss {self.order})"
+        return f"{self.name}  ({self.chapter})" if self.chapter else self.name
 
     def lines(self):
         """Anzeigezeilen fuer die Boss-Info im Fenster."""
@@ -70,6 +73,10 @@ for _d in BOSSES:
     _b = Boss(_d)
     for _cid in _d["match"]:
         _INDEX[_cid] = _b
+for _d in AUTO:                      # Grundwissen aus den Kartendaten; Handwissen (oben) hat Vorrang
+    _b = Boss(dict(_d, id="auto_" + _d["match"][0], source="Kartendaten (automatisch)"))
+    for _cid in _d["match"]:
+        _INDEX.setdefault(_cid, _b)
 
 
 def find(opp_hero_cid):
