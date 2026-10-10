@@ -118,6 +118,11 @@ class Effect:
     destroy_highest: bool = False # vernichtet den feindlichen Diener mit dem hoechsten Angriff (kein Ziel noetig)
     max_atk: int = 0              # Ziel darf hoechstens so viel Angriff haben (Vernichten)
     payload: object = None        # bei Geheimnissen: der Effekt, der bei Ausloesung eintritt (falls erkannt)
+    outcast_cost: int = None      # Aussenseiter: Karte kostet nur noch N, wenn sie ganz links/rechts auf der Hand liegt
+    outcast_copy: bool = False    # Aussenseiter: ruft eine Kopie dieses Dieners herbei
+    outcast_fx: object = None     # Aussenseiter: weiterer Effekt (nur Kartenziehen wird simuliert)
+    outcast_note: str = ""        # Aussenseiter-Text, soweit nicht simuliert
+    self_copy: bool = False       # (Planer) beim Ausspielen kommt eine Kopie dazu
     shuffle_back: bool = False    # Kampfschrei: eine Handkarte waehlen und ins Deck mischen (Geschuetzter Ueberlebender)
     cond_aura: bool = False       # Kampfschrei wirkt nur, wenn man eine Aura kontrolliert (cond_fx = der Effekt dann)
     lose_crystal: int = 0         # zerstoert eigene Manakristalle (Teufelswache): dauerhafter Nachteil
@@ -571,7 +576,26 @@ _EST_RANDOM = 1.5         # Zufall: etwa eine Karte wert
 def parse_effect(text, cardtype="SPELL", secret=False):
     """Parst den Kartentext. Zauber, die gar nicht erkannt werden, aber Entdecken/Zufall enthalten, bekommen einen
     pauschal geschaetzten Wert (est_value) - sie sind dann nicht 'unbekannt', werden aber nicht genau simuliert."""
+    ct = clean_text(text or "")
+    oi = ct.lower().find("außenseiter:")
+    outcast_body = ""
+    if oi >= 0:                                       # Aussenseiter-Bonus abtrennen: er gilt nur ganz links/rechts auf der Hand
+        outcast_body = ct[oi + len("außenseiter:"):].strip()
+        text = ct[:oi].strip()
     e = _parse_core(text, cardtype, secret)
+    if outcast_body:
+        b = outcast_body.lower().rstrip(". ")
+        mcost = re.fullmatch(r"kostet \((\d+)\)", b)
+        if mcost:
+            e.outcast_cost = int(mcost.group(1))
+        elif b.startswith("ruft eine kopie dieses dieners herbei"):
+            e.outcast_copy = True
+        else:
+            of = parse_effect(outcast_body, "SPELL")
+            if of.concrete and of.draw and not (of.dmg or of.aoe_dmg or of.summon):
+                e.outcast_fx = of
+            else:
+                e.outcast_note = outcast_body[:140]
     if re.search(r"wählt eine karte auf eurer hand und mischt sie in euer deck", clean_text(text or "").lower()):
         e.shuffle_back = True
     mc = _LOSE_CRYSTAL.search(clean_text(text or "").lower())

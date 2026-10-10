@@ -59,7 +59,7 @@ class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
                  "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp",
-                 "secret_p", "bait", "aura")
+                 "secret_p", "bait", "aura", "drew")
 
     def clone(self):
         n = SS.__new__(SS)
@@ -75,6 +75,7 @@ class SS:
         n.temp = self.temp
         n.secret_p, n.bait = self.secret_p, self.bait
         n.aura = self.aura
+        n.drew = self.drew
         return n
 
 
@@ -558,6 +559,7 @@ def _card_cost(ss, c):
     return c.cost, -1
 
 
+HAND_RANK = {}           # Handindex -> Position von links (fuer Aussenseiter)
 BASE_STATS = {}          # cid -> (Angriff, Leben) laut Kartendaten; wird beim Planen gefuellt (Schweigen setzt Werte zurueck)
 
 
@@ -610,9 +612,36 @@ RACE_DE = {"DRAGON": "Drache", "ELEMENTAL": "Elementar", "DEMON": "Dämon", "BEA
            "PIRATE": "Pirat", "MECHANICAL": "Mech", "UNDEAD": "Untoter", "TOTEM": "Totem"}
 
 
+def _outcast_active(ss, c):
+    """Aussenseiter: die Karte liegt ganz links (oder ganz rechts) auf der Hand. Gezogene Karten landen rechts - nach dem Ziehen zaehlt rechts nicht mehr."""
+    rank = HAND_RANK.get(c.idx)
+    if rank is None:
+        return False
+    rest = [r for i, r in HAND_RANK.items() if i not in ss.used and i != c.idx]
+    if not rest:
+        return True
+    return all(r > rank for r in rest) or (not ss.drew and all(r < rank for r in rest))
+
+
+def _apply_outcast(ss, c):
+    fx = c.fx
+    if fx.outcast_cost is None and not fx.outcast_copy and fx.outcast_fx is None:
+        return c
+    if not _outcast_active(ss, c):
+        return c
+    new = dataclasses.replace(fx, outcast_cost=None, outcast_copy=False, outcast_fx=None, self_copy=fx.self_copy or fx.outcast_copy)
+    if fx.outcast_fx is not None:
+        new = dataclasses.replace(new, draw=new.draw + fx.outcast_fx.draw, unknown=False)
+    c = c._replace(fx=new)
+    if fx.outcast_cost is not None:
+        c = c._replace(cost=min(c.cost, fx.outcast_cost))
+    return c
+
+
 def _resolve(ss, c, cards):
     """Kampfschrei mit Bedingung 'wenn Ihr einen <Volk> auf der Hand habt': gilt nur, solange noch eine andere
     passende Karte unausgespielt in der Hand ist (Reihenfolge im Plan zaehlt). Gibt die Karte mit dem wirksamen Effekt zurueck."""
+    c = _apply_outcast(ss, c)
     fx = c.fx
     if fx.buff_per:                           # Staerkung je anderem Diener / je Handkarte: jetzt in feste Werte umrechnen
         kind, a, h = fx.buff_per
@@ -650,6 +679,8 @@ def _play_card(ss, c, tgt, log=None, opt=None):
     if di >= 0:
         n.disc = ss.disc[:di] + ss.disc[di + 1:]
     fx = c.fx
+    if fx.draw or fx.hand_gain:
+        n.drew = True
     rs = ss.reserve.get(c.name)          # Boss-Tipp: Karte fuer ein bestimmtes Ziel aufheben
     if rs:
         tname = ""
@@ -673,6 +704,9 @@ def _play_card(ss, c, tgt, log=None, opt=None):
                         FREEZER_TEXT in (c.text or "").lower()))
         if fx.self_buff:
             n.mine[-1] = _buffed(n.mine[-1], fx.self_buff)
+        if fx.self_copy and len(n.mine) < MAX_BOARD:        # Aussenseiter (Mitternachtswolf): Kopie dieses Dieners
+            n.uid += 1
+            n.mine.append(n.mine[-1]._replace(uid=n.uid))
         if fx.concrete and not _apply_fx(n, fx, tgt, False, c.name, log):
             return None
     elif c.ctype == "WEAPON":
@@ -794,6 +828,10 @@ class Planner:
         for m in s.opp_minions:
             ss.opp.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
                             m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False, False, m.max_hp))
+        HAND_RANK.clear()
+        for rank, (i, _hc) in enumerate(sorted(enumerate(s.my_hand), key=lambda t: (t[1].zpos, t[0]))):
+            HAND_RANK[i] = rank
+        ss.drew = False
         BASE_STATS.clear()
         for m in list(s.my_minions) + list(s.opp_minions):
             inf = self.db.info(m.cid) if m.cid else {}
@@ -857,10 +895,10 @@ class Planner:
         for c in cards:
             if c.idx in ss.used:
                 continue
+            c = _resolve(ss, c, cards)
             cost, _ = _card_cost(ss, c)
             if cost > ss.mana:
                 continue
-            c = _resolve(ss, c, cards)
             for opt_i, c in _variants(c):
                 key = (c.cid, c.name, opt_i)
                 if key in seen_names:      # identische Karten in der Hand nur einmal expandieren
@@ -984,6 +1022,9 @@ class Planner:
                 nxt = _play_card(ss, c, act[2], log, opt)
                 if nxt is None:
                     break
+                if (c0.fx.outcast_cost is not None or c0.fx.outcast_copy or c0.fx.outcast_fx is not None) and c.fx.outcast_cost is None \
+                        and not c.fx.outcast_copy and c.fx.outcast_fx is None:
+                    log.insert(0, "Außenseiter-Bonus aktiv (Karte liegt ganz links/rechts auf der Hand)")
                 if c is not c0 and c0.fx.cond_hold:
                     log.insert(0, f"Kampfschrei aktiv ({RACE_DE.get(c0.fx.cond_hold, 'passende Karte')} auf der Hand)")
                 plan.cids.append(c.cid)

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.13 - 10.10.2026
+- **Außenseiter (Dämonenjäger)**: Der Bonus „Außenseiter:“ gilt nur, wenn die Karte **ganz links oder ganz rechts** auf der Hand liegt. Der Planer kannte ihn nicht. Jetzt rechnet er ihn ein: Mitternachtswolf ruft eine Kopie herbei, Kurier des Purpursiegels und Geistersicht ziehen eine (weitere) Karte, Augenstrahl kostet nur (1). Der Plan spielt dafür zuerst Karten vom Rand aus und schreibt „Außenseiter-Bonus aktiv (Karte liegt ganz links/rechts auf der Hand)“. Rechts zählt nach dem Kartenziehen im selben Zug nicht mehr (neue Karten kommen rechts dazu). Weitere Außenseiter-Texte werden gelesen, aber nicht simuliert.
+
 ## 2.14.12 - 10.10.2026
 - **Chaosstoß & Co. (Heldenstärkung) vor dem Heldenangriff**: Der Plan nannte „Chaosstoß (+2 Angriff für den Helden)“ nach dem Heldenangriff - dann verpufft die Stärkung. Zwei Ursachen: Bei gleichem Ergebnis blieb der zuerst gefundene Weg stehen, und der Planer bevorzugte den späteren Zauber nicht. Jetzt gewinnt bei gleichem Zustand der Weg mit dem besseren Wert (Angriff mit mehr Angriff), und jeder Schritt mit Heldenstärkung (Chaosstoß, Dämonenklauen ...) bekommt „ZUERST, BEVOR der Held angreift“. Beispiel: „Chaosstoß → Dämonenklauen → Held (3 Angriff) greift an“.
 

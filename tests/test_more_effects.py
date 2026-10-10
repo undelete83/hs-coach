@@ -413,3 +413,41 @@ class TestChaosStrikeFirst(unittest.TestCase):
         self.assertLess(i_spell, i_att, texts)
         self.assertIn("ZUERST", texts[i_spell])
         self.assertIn("2 Angriff", texts[i_att])
+
+
+class TestOutcast(unittest.TestCase):
+    """Aussenseiter (Daemonenjaeger): Bonus nur, wenn die Karte ganz links oder ganz rechts auf der Hand liegt."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["WOLF"] = dict(name="Mitternachtswolf", cardtype="MINION", cost=5, text="Eifer. Außenseiter: Ruft eine Kopie dieses Dieners herbei.")
+        CARDS["KURIER"] = dict(name="Kurier", cardtype="MINION", cost=1, text="Außenseiter: Zieht eine Karte.")
+        CARDS["STRAHL"] = dict(name="Augenstrahl", cardtype="SPELL", cost=3, text="Lebensentzug. Fügt einem Diener 3 Schaden zu. Außenseiter: Kostet (1).")
+        CARDS["FILL"] = dict(name="Füller", cardtype="MINION", cost=2, text="")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        for k in ("WOLF", "KURIER", "STRAHL", "FILL"):
+            del self.CARDS[k]
+
+    def test_parsing(self):
+        from hscoach.effects import parse_effect
+        w = parse_effect(self.CARDS["WOLF"]["text"], "MINION")
+        self.assertTrue(w.outcast_copy and not w.unknown)
+        k = parse_effect(self.CARDS["KURIER"]["text"], "MINION")
+        self.assertEqual(k.outcast_fx.draw, 1)
+        a = parse_effect(self.CARDS["STRAHL"]["text"], "SPELL")
+        self.assertEqual((a.outcast_cost, a.dmg), (1, 3))
+
+    def test_copy_only_when_at_the_edge(self):
+        hand = [card(1, "FILL", atk=2, hp=2, zpos=1), card(2, "WOLF", atk=6, hp=6, zpos=2), card(3, "FILL", atk=2, hp=2, zpos=3)]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=9, hand=hand), None)
+        self.assertIn("4 Diener", p.summary, p.summary)         # Füller zuerst, dann Wolf (links) = Kopie
+        texts = [st.text for st in p.steps]
+        wolf = next(t for t in texts if "Mitternachtswolf" in t)
+        self.assertIn("Außenseiter-Bonus aktiv", wolf)
+
+    def test_cheap_removal_when_at_the_edge(self):
+        hand = [card(1, "STRAHL"), card(2, "FILL", atk=2, hp=2)]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=1, hand=hand, opp=[mm(10, "Ziel", 2, 3)]), None)
+        self.assertTrue(any("Augenstrahl" in st.text for st in p.steps), [st.text for st in p.steps])
