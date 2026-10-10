@@ -743,6 +743,8 @@ def _attack(ss, att_uid, tgt, log=None):
                     n.opp[k] = n.opp[k]._replace(frozen=True)
                     if log is not None:
                         log.append(f"{d.name} wird eingefroren")
+    if att_uid == 0:
+        n.util += 0.02 * atk              # Gleichstand: lieber mit der staerkeren Heldenstaerkung angreifen (Staerkung zuerst)
     if att_uid == 0 and n.weapon:
         dur = n.weapon[1] - 1
         if dur <= 0:
@@ -922,7 +924,7 @@ class Planner:
         start = self._initial(s)
         start.score = _evaluate(start)
         best = start
-        seen = {_key(start)}
+        seen = {_key(start): start.score}
         frontier = [start]
         alts = {(): start}
         nodes = 0
@@ -933,10 +935,11 @@ class Planner:
                     continue
                 for ns in self._expand(st, cards, s, hp_fx):
                     k = _key(ns)
-                    if k in seen:
-                        continue
-                    seen.add(k)
                     ns.score = _evaluate(ns)
+                    prev = seen.get(k)
+                    if prev is not None and ns.score <= prev + 1e-9:       # gleicher Zustand ueber anderen Weg: nur der bessere zaehlt
+                        continue
+                    seen[k] = ns.score
                     nodes += 1
                     cand.append(ns)
                     if ns.score > best.score:
@@ -1046,17 +1049,32 @@ class Planner:
                 pick = self._shuffle_pick(s, c, played_idx)
                 if pick:
                     plan.steps[si].text += f"  →  mische {pick[0]} zurück ins Deck ({pick[1]})"
-        if hp_fx.concrete and hp_fx.hero_atk_buff:
-            for i, st_ in enumerate(plan.steps):
-                if st_.kind == "hero_power" and any(x.kind == "hero_attack" for x in plan.steps[i + 1:]):
-                    st_.text += f"  →  ZUERST einsetzen, BEVOR der Held angreift (+{hp_fx.hero_atk_buff} Angriff nur für diesen Zug)"
-                    break
+        self._hero_buffs_first(plan, hp_fx)
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)
         plan.warnings = self._warnings(s, end) + self._extra_warnings(s, plan, cards)
         for name, why in getattr(self, "_blocked", []):
             plan.warnings.append(f"{name} ist gerade nicht spielbar: {why}.")
         return plan
+
+    def _hero_buffs_first(self, plan, hp_fx):
+        """Heldenstaerkung (Daemonenklauen, Chaosstoss ...) gilt nur fuer diesen Zug und nur, wenn sie VOR dem Heldenangriff kommt:
+        solche Schritte bekommen im Plan den Hinweis 'ZUERST'."""
+        def buff(st):
+            if st.kind == "hero_power":
+                return hp_fx.hero_atk_buff if hp_fx.concrete else 0
+            if st.kind in ("spell", "weapon") and st.cid:
+                return self.db.effect(st.cid).hero_atk_buff
+            return 0
+
+        steps = plan.steps
+        first = next((i for i, x in enumerate(steps) if x.kind == "hero_attack"), None)
+        if first is None:
+            return
+        for x in steps[:next(i for i, y in enumerate(steps) if y.kind == "hero_attack")]:
+            b = buff(x)
+            if b:
+                x.text += f"  →  ZUERST, BEVOR der Held angreift (+{b} Angriff nur für diesen Zug)"
 
     @staticmethod
     def _silence_hint(ss):

@@ -391,3 +391,25 @@ class TestDemonClawsText(unittest.TestCase):
         e = parse_effect("<b>Heldenfähigkeit</b> +$a1 Angriff in diesem Zug.", "HERO_POWER")
         self.assertEqual(e.hero_atk_buff, 1)
         self.assertFalse(e.unknown)
+
+
+class TestChaosStrikeFirst(unittest.TestCase):
+    """Chaosstoss (+2 Heldenangriff): vor dem Heldenangriff, nicht danach."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["CHAOS"] = dict(name="Chaosstoß", cardtype="SPELL", cost=2, text="Verleiht Eurem Helden +2 Angriff in diesem Zug. Zieht eine Karte.")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["CHAOS"]
+
+    def test_spell_comes_before_hero_attack(self):
+        s = gs(mana=4, hand=[card(1, "CHAOS")], my_hero_attacks_left=1, opp=[mm(10, "Taunt", 3, 1, taunt=True)])
+        p = Planner(fake_db(), 1.0).plan(s, None)
+        texts = [st.text for st in p.steps]
+        i_spell = next(i for i, t in enumerate(texts) if "Chaosstoß" in t)
+        i_att = next(i for i, t in enumerate(texts) if t.startswith("Held"))
+        self.assertLess(i_spell, i_att, texts)
+        self.assertIn("ZUERST", texts[i_spell])
+        self.assertIn("2 Angriff", texts[i_att])

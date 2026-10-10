@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.14.12 - 10.10.2026
+- **Chaosstoß & Co. (Heldenstärkung) vor dem Heldenangriff**: Der Plan nannte „Chaosstoß (+2 Angriff für den Helden)“ nach dem Heldenangriff - dann verpufft die Stärkung. Zwei Ursachen: Bei gleichem Ergebnis blieb der zuerst gefundene Weg stehen, und der Planer bevorzugte den späteren Zauber nicht. Jetzt gewinnt bei gleichem Zustand der Weg mit dem besseren Wert (Angriff mit mehr Angriff), und jeder Schritt mit Heldenstärkung (Chaosstoß, Dämonenklauen ...) bekommt „ZUERST, BEVOR der Held angreift“. Beispiel: „Chaosstoß → Dämonenklauen → Held (3 Angriff) greift an“.
+
 ## 2.14.11 - 10.10.2026
 - **Dämonenjäger: Dämonenklauen** („+1 Angriff für den Helden in diesem Zug“): Der Planer verstand den Kartentext nicht (der Platzhalter „+$a1“ wurde nicht gelesen) und rechnete die Heldenkraft gar nicht ein. Jetzt steht sie im Plan **vor** dem Heldenangriff mit dem Hinweis „ZUERST einsetzen, BEVOR der Held angreift“, und der Heldenangriff zeigt den Gesamtwert (z. B. „Held (3 Angriff)“ mit Waffe). Hat der Held schon angegriffen, wird die Heldenkraft nicht mehr vorgeschlagen. Wird gerade erst eine Waffe angelegt und das Spiel meldet den Angriffswert noch nicht, rechnet der Planer sofort mit dem Waffenwert.
 
