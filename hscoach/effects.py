@@ -149,7 +149,7 @@ def clean_text(raw):
         return ""
     t = re.sub(r"<[^>]+>", "", raw)
     t = t.replace("[x]", "").replace("[d]", "")           # [d] = Geschlechts-Markierung mitten im Wort
-    t = re.sub(r"[\$#](\d+)", r"\1", t)
+    t = re.sub(r"[\$#]a?(\d+)", r"\1", t)
     t = re.sub(r"(\d+)\s*\|4\(([^,)]*),([^)]*)\)", lambda m: f"{m.group(1)} {m.group(2) if m.group(1) == '1' else m.group(3)}", t)
     t = re.sub(r"\|4\(([^,)]*),[^)]*\)", r"\1", t)
     t = t.replace("_", " ")
@@ -262,6 +262,10 @@ def _parse_core(text, cardtype="SPELL", secret=False):
         return _parse_choose_one(text, e)
 
     flat = t.rstrip(".").strip()
+    mh = re.fullmatch(r"(?:heldenfähigkeit )?\+(\d+) angriff in diesem zug", flat)
+    if mh and cardtype == "HERO_POWER":                # Daemonenklauen (Daemonenjaeger): Held +N Angriff in diesem Zug
+        e.hero_atk_buff, e.unknown = int(mh.group(1)), False
+        return e
     for rx, kind, tk in _SCALED_DMG:                   # ganzer Text ist genau so ein Zauber (z. B. Lichtbombe, Rundumschlag)
         if rx.match(flat):
             e.dmg_scale = kind

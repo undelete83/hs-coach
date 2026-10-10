@@ -799,7 +799,7 @@ class Planner:
                 BASE_STATS[m.cid] = (inf["atk"], inf["health"])
         ss.used = ()
         ss.weapon = (s.my_weapon.atk, s.my_weapon.durability) if s.my_weapon else None
-        ss.hero_atk = s.my_hero_atk
+        ss.hero_atk = max(s.my_hero_atk, s.my_weapon.atk if (s.my_weapon and s.my_hero_attacks_left > 0) else 0)   # Waffe gerade angelegt: Wert hinkt oft kurz
         ss.hero_att = s.my_hero_attacks_left
         ss.hp_used = (s.my_hero_power is None) or s.my_hero_power.used
         ss.disc = ()
@@ -896,6 +896,8 @@ class Planner:
         if not ss.hp_used and s.my_hero_power and s.my_hero_power.cost <= ss.mana:
             hp = s.my_hero_power
             kind = hp_fx.target_kind if hp_fx.concrete else ""
+            if hp_fx.concrete and hp_fx.hero_atk_buff and ss.hero_att <= 0:
+                return out                         # +Angriff fuer den Helden, der schon angegriffen hat: sinnlos
             for t in (_targets(ss, kind) if kind else [None]):
                 n = ss.clone()
                 n.mana -= hp.cost
@@ -1044,6 +1046,11 @@ class Planner:
                 pick = self._shuffle_pick(s, c, played_idx)
                 if pick:
                     plan.steps[si].text += f"  →  mische {pick[0]} zurück ins Deck ({pick[1]})"
+        if hp_fx.concrete and hp_fx.hero_atk_buff:
+            for i, st_ in enumerate(plan.steps):
+                if st_.kind == "hero_power" and any(x.kind == "hero_attack" for x in plan.steps[i + 1:]):
+                    st_.text += f"  →  ZUERST einsetzen, BEVOR der Held angreift (+{hp_fx.hero_atk_buff} Angriff nur für diesen Zug)"
+                    break
         plan.mana_used = end.spent
         plan.summary = self._summary(s, end)
         plan.warnings = self._warnings(s, end) + self._extra_warnings(s, plan, cards)

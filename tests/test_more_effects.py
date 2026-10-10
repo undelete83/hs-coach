@@ -345,3 +345,49 @@ class TestSilenceResetsBuffs(unittest.TestCase):
         r = planner._silenced(m)
         self.assertEqual((r.atk, r.hp), (3, 4))
         planner.BASE_STATS.clear()
+
+
+class TestHeroPowerBeforeHeroAttack(unittest.TestCase):
+    """Daemonenklauen (+1 Angriff fuer den Helden): zuerst einsetzen, dann angreifen; nach dem Angriff nicht mehr vorschlagen."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        from hscoach.state import HeroPower
+        CARDS["KLAUEN"] = dict(name="Dämonenklauen", cardtype="HERO_POWER", cost=1, text="Verleiht Eurem Helden +1 Angriff in diesem Zug.")
+        self.CARDS = CARDS
+        self.HeroPower = HeroPower
+
+    def tearDown(self):
+        del self.CARDS["KLAUEN"]
+
+    def state(self, left, atk=0):
+        s = gs(mana=3, my_hero_attacks_left=left, opp=[])
+        s.my_hero_atk = atk
+        s.my_hero_power = self.HeroPower(name="Dämonenklauen", cid="KLAUEN", cost=1, used=False, text="Verleiht Eurem Helden +1 Angriff in diesem Zug.")
+        return s
+
+    def test_claws_then_attack_with_hint(self):
+        p = Planner(fake_db(), 1.0).plan(self.state(1), None)
+        texts = [st.text for st in p.steps]
+        self.assertTrue(texts[0].startswith("Heldenkraft"), texts)
+        self.assertIn("ZUERST", texts[0])
+        self.assertTrue(any("Held" in t and "greift" in t for t in texts[1:]), texts)
+
+    def test_no_claws_after_hero_attacked(self):
+        p = Planner(fake_db(), 1.0).plan(self.state(0), None)
+        self.assertFalse(any("Dämonenklauen" in st.text for st in p.steps), [st.text for st in p.steps])
+
+    def test_fresh_weapon_counts_even_if_attack_value_lags(self):
+        from hscoach.state import Weapon
+        s = self.state(1, atk=0)
+        s.my_weapon = Weapon(name="Klingen", cid="", atk=2, durability=2)
+        p = Planner(fake_db(), 1.0).plan(s, None)
+        self.assertTrue(any("Held" in st.text and "greift" in st.text for st in p.steps), [st.text for st in p.steps])
+
+
+class TestDemonClawsText(unittest.TestCase):
+    def test_real_card_text_is_parsed(self):
+        from hscoach.effects import parse_effect
+        e = parse_effect("<b>Heldenfähigkeit</b> +$a1 Angriff in diesem Zug.", "HERO_POWER")
+        self.assertEqual(e.hero_atk_buff, 1)
+        self.assertFalse(e.unknown)
