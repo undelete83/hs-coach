@@ -5,6 +5,7 @@ Vernichten, Rabatte, Beschwoerungen, ...). Unbekannte Effekte werden nicht erfun
 "Effekt unbekannt" gekennzeichnet.
 """
 import dataclasses
+import re
 import time
 from collections import namedtuple
 from dataclasses import dataclass, field
@@ -195,6 +196,18 @@ def _damage_minion(ss, side_opp, uid, n, log=None, poison=False):
     if log is not None:
         log.append(f"{m.name} -{n} Leben (noch {m.hp - n})")
     return False, False
+
+
+ELUSIVE_CIDS = set()      # Karten mit "Fluechtig" (nicht von Zaubern/Heldenkraeften anvisierbar); wird beim Planen gefuellt
+
+
+def _elusive(ss, t):
+    """Ist das Ziel t ein fluechtiger Diener (Zauber und Heldenkraefte duerfen ihn nicht anvisieren)?"""
+    if not t or t[0] not in ("m", "f"):
+        return False
+    pool = ss.opp if t[0] == "m" else ss.mine
+    i = _find(pool, t[1])
+    return i >= 0 and pool[i].cid in ELUSIVE_CIDS
 
 
 def _targets(ss, kind):
@@ -828,6 +841,11 @@ class Planner:
         for m in s.opp_minions:
             ss.opp.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
                             m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False, False, m.max_hp))
+        ELUSIVE_CIDS.clear()
+        for m in list(s.my_minions) + list(s.opp_minions):
+            txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).strip().lower() if m.cid else ""
+            if txt.startswith("flüchtig") and not txt.startswith("flüchtig,"):
+                ELUSIVE_CIDS.add(m.cid)
         HAND_RANK.clear()
         for rank, (i, _hc) in enumerate(sorted(enumerate(s.my_hand), key=lambda t: (t[1].zpos, t[0]))):
             HAND_RANK[i] = rank
@@ -910,6 +928,8 @@ class Planner:
                 kind = c.fx.target_kind if c.fx.concrete else ""
                 if kind:
                     opts = _targets(ss, kind)
+                    if c.ctype == "SPELL":                       # Fluechtig: Zauber duerfen den Diener nicht anvisieren
+                        opts = [t for t in opts if not _elusive(ss, t)]
                     if c.fx.buff_hurt_only or c.fx.buff_race:
                         opts = [t for t in opts if t[0] == "f" and (not c.fx.buff_hurt_only or _is_hurt(ss.mine[_find(ss.mine, t[1])]))
                                 and _race_ok(ss.mine[_find(ss.mine, t[1])], c.fx.buff_race)]
@@ -938,7 +958,7 @@ class Planner:
             kind = hp_fx.target_kind if hp_fx.concrete else ""
             if hp_fx.concrete and hp_fx.hero_atk_buff and ss.hero_att <= 0:
                 return out                         # +Angriff fuer den Helden, der schon angegriffen hat: sinnlos
-            for t in (_targets(ss, kind) if kind else [None]):
+            for t in ([x for x in _targets(ss, kind) if not _elusive(ss, x)] if kind else [None]):
                 n = ss.clone()
                 n.mana -= hp.cost
                 n.spent += hp.cost

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.2 - 11.10.2026
+- **Flüchtig**: Diener mit „Flüchtig“ (z. B. Vorsehender Kriecherdrache) können weder von Zaubern noch von Heldenkräften anvisiert werden. Der Planer schlug trotzdem Zauber auf sie vor („Spiele Augenstrahl auf Vorsehender Kriecherdrache“), und der Zug ging im Spiel nicht. Jetzt werden solche Diener bei Zauber- und Heldenkraft-Zielen ausgelassen; Angriffe und Kampfschreie dürfen sie weiterhin treffen.
+
 ## 2.15.1 - 11.10.2026
 - **Rasende Teufelsruferin (und ähnliche Diener mit Rabatt-Kampfschrei)** wurden nie gespielt, wenn kein passender Dämon auf der Hand lag: Der Planer hielt sie für einen „reinen Rabatt-Zauber“ und übersah den 4/4-Körper. In einer verlorenen Partie blieben dadurch in drei Zügen Mana und Brett leer. Jetzt gilt der Rabatt-Filter nur noch für echte Zauber; Diener werden wegen ihrer Werte gespielt.
 

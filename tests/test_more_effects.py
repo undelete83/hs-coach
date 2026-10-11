@@ -472,3 +472,27 @@ class TestDiscountMinionBody(unittest.TestCase):
     def test_pure_discount_spell_still_waits_for_a_target_card(self):
         p = Planner(fake_db(), 1.0).plan(gs(mana=8, hand=[card(1, "ELEMBESCH")]), None)
         self.assertFalse(p.steps, [st.text for st in p.steps])
+
+
+class TestElusive(unittest.TestCase):
+    """Fluechtig: Zauber und Heldenkraefte duerfen den Diener nicht anvisieren (Vorsehender Kriecherdrache)."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["FLUECHTIG"] = dict(name="Kriecherdrache", cardtype="MINION", cost=7, atk=5, health=8, text="Flüchtig. Kostet (3) weniger.")
+        CARDS["NORMAL"] = dict(name="Normaler", cardtype="MINION", cost=3, atk=2, health=2, text="")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["FLUECHTIG"], self.CARDS["NORMAL"]
+
+    def test_spell_never_targets_the_elusive_minion(self):
+        foes = [mm(10, "Kriecherdrache", 5, 8, cid="FLUECHTIG")]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=6, hand=[card(1, "FEUERBALL")], opp=foes), None)
+        self.assertFalse(any("Feuerball" in st.text and "Kriecherdrache" in st.text for st in p.steps), [st.text for st in p.steps])
+
+    def test_spell_goes_for_the_other_minion(self):
+        foes = [mm(10, "Kriecherdrache", 5, 8, cid="FLUECHTIG"), mm(11, "Normaler", 2, 2, cid="NORMAL")]
+        p = Planner(fake_db(), 1.0).plan(gs(mana=6, hand=[card(1, "FEUERBALL")], opp=foes), None)
+        spell = [st.text for st in p.steps if "Feuerball" in st.text]
+        self.assertTrue(spell and "Normaler" in spell[0], spell)
