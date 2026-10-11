@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.2 - 11.10.2026
+- **Panthermaske** („Setzt die Werte eines Dieners auf 5/4 und verleiht ihm Verstohlenheit. Zieht 2 Karten.“): Der Planer erkannte nur das Kartenziehen und nannte deshalb keinen Diener, den du verwandeln sollst. Jetzt wird die Zielwahl berechnet – meist der schwächste eigene Diener, der dadurch am meisten gewinnt – und der Plan nennt ihn: „Spiele Panthermaske auf Welpe (1/1) → wird zu 5/4“.
+
 ## 2.16.1 - 11.10.2026
 - **Die Münze nicht mehr verschwenden**: Der Plan schlug in Runde 1 vor, die Münze nur für die Heldenkraft (1 Rüstung) zu verbrennen. Die Münze ist ein Tempo-Vorsprung und wird jetzt nur noch eingeplant, wenn sie eine Karte spielbar macht, die sonst nicht ginge.
 - **Mulligan als Zweiter**: Wäre die gesamte Starthand zu teuer und würde komplett getauscht, behält der Coach jetzt den günstigsten Diener bis 4 Mana (mit der Münze in Runde 3 spielbar), damit die neue Hand nicht genauso klobig wird.

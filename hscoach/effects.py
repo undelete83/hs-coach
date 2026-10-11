@@ -593,6 +593,15 @@ def parse_effect(text, cardtype="SPELL", secret=False):
     if oi >= 0:                                       # Aussenseiter-Bonus abtrennen: er gilt nur ganz links/rechts auf der Hand
         outcast_body = ct[oi + len("außenseiter:"):].strip()
         text = ct[:oi].strip()
+    mpm = re.fullmatch(r"(setzt die werte eines dieners auf \d+/\d+)(?: und verleiht (?:ihm|ihr) verstohlenheit)?\.\s*zieht (einen|eine|zwei|drei|\d+) karten?\.?",
+                       ct.lower())
+    if mpm and cardtype == "SPELL":                   # Panthermaske: Werte setzen + Karten ziehen (Verstohlenheit zaehlt nicht)
+        e = _parse_core(mpm.group(1) + ".", cardtype, secret)
+        if e.set_stats:
+            e.draw += _num(mpm.group(2)) or 1
+            e.notes.append("Verstohlenheit")
+            e.unknown = False
+            return e
     e = _parse_core(text, cardtype, secret)
     if outcast_body:
         b = outcast_body.lower().rstrip(". ")

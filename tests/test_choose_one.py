@@ -23,6 +23,8 @@ CARDS.update({
     "FANDRAL": dict(name="Fandral Hirschhaupt", cardtype="MINION", cost=4,
                     text="Eure Karten und Heldenfähigkeiten mit Wählt aus gewähren beide Effekte."),
     "UNTERKOENIG": dict(name="Unterkönig", cardtype="MINION", cost=7, text="Eifer. Kampfschrei und Todesröcheln: Erhaltet 6 Rüstung."),
+    "PANTHERMASKE": dict(name="Panthermaske", cardtype="SPELL", cost=4,
+                         text="Setzt die Werte eines Dieners auf 5/4 und verleiht ihm Verstohlenheit. Zieht 2 Karten."),
     "RABENGOETZE": dict(name="Rabengötze", cardtype="SPELL", cost=1,
                         text="Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber."),
 })
@@ -97,6 +99,15 @@ class TestPlanning(unittest.TestCase):
     def test_draw_one_minion_per_cost(self):
         e = parse_effect("Zieht je einen Diener, der (1), (2), (3) und (4) kostet. Verwandt: Sie kosten (1) weniger.", "SPELL")
         self.assertEqual((e.draw, e.unknown, e.est_value), (4, False, 0.0))
+
+    def test_set_stats_and_draw_spell(self):
+        e = parse_effect("Setzt die Werte eines Dieners auf 5/4 und verleiht ihm Verstohlenheit. Zieht 2 Karten.", "SPELL")
+        self.assertEqual((e.set_stats, e.set_scope, e.draw, e.unknown), ((5, 4), "target", 2, False))
+
+    def test_panthermaske_names_a_target(self):
+        s = gs(mana=4, mine=[mm(1, "Welpe", 1, 1), mm(2, "Wolf", 2, 2)], opp=[mm(10, "Brocken", 6, 6)], hand=[card(1, "PANTHERMASKE")])
+        t = texts(plan_for(s))
+        self.assertTrue(any("Panthermaske auf Welpe" in x and "5/4" in x for x in t), t)
 
     def test_summon_from_deck_spell_is_not_unknown(self):
         p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))
