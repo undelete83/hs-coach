@@ -451,3 +451,24 @@ class TestOutcast(unittest.TestCase):
         hand = [card(1, "STRAHL"), card(2, "FILL", atk=2, hp=2)]
         p = Planner(fake_db(), 1.0).plan(gs(mana=1, hand=hand, opp=[mm(10, "Ziel", 2, 3)]), None)
         self.assertTrue(any("Augenstrahl" in st.text for st in p.steps), [st.text for st in p.steps])
+
+
+class TestDiscountMinionBody(unittest.TestCase):
+    """Rasende Teufelsruferin (4/4, Kampfschrei: naechster Daemon kostet 2 weniger) wird auch ohne Daemon auf der Hand gespielt."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["RUFERIN"] = dict(name="Rasende Teufelsruferin", cardtype="MINION", cost=4,
+                                text="Kampfschrei: Der nächste Dämon, den Ihr ausspielt, kostet (2) weniger.")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["RUFERIN"]
+
+    def test_body_is_played_without_a_demon_in_hand(self):
+        p = Planner(fake_db(), 1.0).plan(gs(mana=8, hand=[card(1, "RUFERIN", atk=4, hp=4)]), None)
+        self.assertTrue(any("Teufelsruferin" in st.text for st in p.steps), [st.text for st in p.steps])
+
+    def test_pure_discount_spell_still_waits_for_a_target_card(self):
+        p = Planner(fake_db(), 1.0).plan(gs(mana=8, hand=[card(1, "ELEMBESCH")]), None)
+        self.assertFalse(p.steps, [st.text for st in p.steps])

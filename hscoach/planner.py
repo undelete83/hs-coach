@@ -904,7 +904,7 @@ class Planner:
                 if key in seen_names:      # identische Karten in der Hand nur einmal expandieren
                     continue
                 seen_names.add(key)
-                if _discount_only(c.fx) and not any(
+                if c.ctype == "SPELL" and _discount_only(c.fx) and not any(
                         o.idx not in ss.used and o.idx != c.idx and _discount_matches(o, c.fx.discount[0]) for o in cards):
                     continue            # reiner Rabatt-Zauber ohne passende Karte in der Hand waere wirkungslos
                 kind = c.fx.target_kind if c.fx.concrete else ""
