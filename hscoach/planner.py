@@ -60,7 +60,7 @@ class SS:
     __slots__ = ("mana", "max_mana", "my_hp", "my_armor", "opp_hp", "opp_armor", "mine", "opp", "used",
                  "weapon", "hero_atk", "hero_att", "hp_used", "disc", "util", "spent", "path", "uid", "score",
                  "opp_inc_bonus", "opp_spawn_atk", "win_hp", "face_k", "prio", "reserve", "hp_bonus", "def_k", "temp",
-                 "secret_p", "bait", "aura", "drew")
+                 "secret_p", "bait", "aura", "drew", "wls")
 
     def clone(self):
         n = SS.__new__(SS)
@@ -77,6 +77,7 @@ class SS:
         n.secret_p, n.bait = self.secret_p, self.bait
         n.aura = self.aura
         n.drew = self.drew
+        n.wls = self.wls
         return n
 
 
@@ -572,6 +573,8 @@ def _card_cost(ss, c):
     return c.cost, -1
 
 
+HERO_ATK_GROW = {}        # cid -> (Angriff, Leben): waechst, nachdem der eigene Held angegriffen hat (Rohling der Ruepelbande, Kampfscheusal)
+_GROW_RX = re.compile(r"erhält \+(\d+)(?:/\+(\d+))?(?: angriff)?, nachdem euer held angegriffen hat")
 HAND_RANK = {}           # Handindex -> Position von links (fuer Aussenseiter)
 BASE_STATS = {}          # cid -> (Angriff, Leben) laut Kartendaten; wird beim Planen gefuellt (Schweigen setzt Werte zurueck)
 
@@ -723,8 +726,10 @@ def _play_card(ss, c, tgt, log=None, opt=None):
         if fx.concrete and not _apply_fx(n, fx, tgt, False, c.name, log):
             return None
     elif c.ctype == "WEAPON":
+        old_atk = n.weapon[0] if n.weapon else 0
         n.weapon = (c.atk, c.hp)
-        n.hero_atk = c.atk
+        n.hero_atk = n.hero_atk - old_atk + c.atk            # Heldenstaerkung vor dem Anlegen bleibt erhalten
+        n.wls = bool(c.lifesteal) or "lebensentzug" in (c.text or "").lower()
         if fx.concrete and not _apply_fx(n, fx, tgt, False, c.name, log):
             return None
     else:
@@ -790,6 +795,13 @@ def _attack(ss, att_uid, tgt, log=None):
                     n.opp[k] = n.opp[k]._replace(frozen=True)
                     if log is not None:
                         log.append(f"{d.name} wird eingefroren")
+    if att_uid == 0 and atk > 0:
+        if n.wls:                                           # Waffe mit Lebensentzug heilt beim Schlag
+            n.my_hp = min(30, n.my_hp + atk)
+        for k, m in enumerate(n.mine):                      # Diener, die nach einem Heldenangriff wachsen
+            g = HERO_ATK_GROW.get(m.cid)
+            if g:
+                n.mine[k] = _buffed(m, (g[0], g[1], ""))
     if att_uid == 0:
         n.util += 0.02 * atk              # Gleichstand: lieber mit der staerkeren Heldenstaerkung angreifen (Staerkung zuerst)
     if att_uid == 0 and n.weapon:
@@ -841,6 +853,14 @@ class Planner:
         for m in s.opp_minions:
             ss.opp.append(M(m.eid, m.name, m.cid, m.atk, m.hp, m.taunt, m.divine_shield, m.poisonous, m.frozen,
                             m.stealth, m.immune, m.windfury, 0, True, m.lifesteal, 0, m.race, False, False, m.max_hp))
+        HERO_ATK_GROW.clear()
+        for m in list(s.my_minions) + list(s.my_hand):
+            txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).lower() if m.cid else ""
+            mg = _GROW_RX.search(txt)
+            if mg:
+                HERO_ATK_GROW[m.cid] = (int(mg.group(1)), int(mg.group(2) or 0))
+        wtxt = (self.db.info(s.my_weapon.cid).get("text") or "").lower() if (s.my_weapon and s.my_weapon.cid) else ""
+        ss.wls = "lebensentzug" in wtxt
         ELUSIVE_CIDS.clear()
         for m in list(s.my_minions) + list(s.opp_minions):
             txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).strip().lower() if m.cid else ""
@@ -1191,9 +1211,28 @@ class Planner:
         return (best[1], best[2]) if best else None
 
     @staticmethod
+    def _hero_idle_hint(s, plan):
+        """Warum der Held gerade nicht angreift (damit man nicht raet): Spott-Diener im Weg oder schlechter Tausch."""
+        if any(x.kind == "hero_attack" for x in plan.steps) or s.my_hero_attacks_left <= 0:
+            return []
+        atk = max(s.my_hero_atk, s.my_weapon.atk if s.my_weapon else 0)
+        if atk <= 0:
+            return []
+        taunts = [m for m in s.opp_minions if m.taunt and not m.stealth]
+        if taunts:
+            t = min(taunts, key=lambda m: (m.atk, m.hp))
+            kills = "tötet ihn" if atk >= t.hp else f"tötet ihn nicht (er hat {t.hp} Leben)"
+            return [f"Held greift nicht an: {t.name} ({t.atk}/{t.hp}) hat Spott, der Held müsste ihn angreifen - {atk} Schaden, {kills}, "
+                    f"und der Held nimmt dabei {t.atk} Schaden."]
+        if s.opp_minions:
+            return [f"Held greift nicht an: ein Schlag mit {atk} Angriff lohnt sich hier nicht (er würde Leben kosten, ohne einen Diener zu töten)."]
+        return []
+
+    @staticmethod
     def _extra_warnings(s, plan, cards):
         """Hinweise, die den Plan als Ganzes betreffen: Koeder gegen Geheimnisse, ungenutztes Mana."""
         w = []
+        w.extend(Planner._hero_idle_hint(s, plan))
         raf = {n for n in getattr(s, "opp_played", []) if any(k in n.lower() for k in ("rafaam", "r’faam", "r'faam"))}
         if len(raf) >= 6:
             w.append(f"RAFAAM-UHR: Der Gegner hat schon {len(raf)} verschiedene Rafaams gespielt. Beim Rafaam-Deck zerstört "

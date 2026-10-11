@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.3 - 11.10.2026
+- **Heldenangriff verständlicher und besser gerechnet**: (1) Greift der Held nicht an, obwohl er könnte, nennt der Plan jetzt den Grund, z. B. „Held greift nicht an: Ysondre (6/5) hat Spott, der Held müsste ihn angreifen - 2 Schaden, tötet ihn nicht, und der Held nimmt dabei 6 Schaden.“ (2) Waffen mit Lebensentzug (Kriegsklingen der Aldrachi) heilen beim Heldenschlag. (3) Diener, die nach einem Heldenangriff wachsen (Rohling der Rüpelbande, Kampfscheusal), zählen den Zuwachs mit. (4) Eine Heldenstärkung, die vor dem Anlegen einer Waffe gewirkt wird, bleibt erhalten.
+
 ## 2.15.2 - 11.10.2026
 - **Flüchtig**: Diener mit „Flüchtig“ (z. B. Vorsehender Kriecherdrache) können weder von Zaubern noch von Heldenkräften anvisiert werden. Der Planer schlug trotzdem Zauber auf sie vor („Spiele Augenstrahl auf Vorsehender Kriecherdrache“), und der Zug ging im Spiel nicht. Jetzt werden solche Diener bei Zauber- und Heldenkraft-Zielen ausgelassen; Angriffe und Kampfschreie dürfen sie weiterhin treffen.
 

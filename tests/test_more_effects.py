@@ -496,3 +496,37 @@ class TestElusive(unittest.TestCase):
         p = Planner(fake_db(), 1.0).plan(gs(mana=6, hand=[card(1, "FEUERBALL")], opp=foes), None)
         spell = [st.text for st in p.steps if "Feuerball" in st.text]
         self.assertTrue(spell and "Normaler" in spell[0], spell)
+
+
+class TestHeroAttackExtras(unittest.TestCase):
+    """Heldenangriff: Waffe mit Lebensentzug heilt, Diener wachsen danach, und der Plan erklaert, warum der Held nicht angreift."""
+
+    def hero(self, **kw):
+        from hscoach.state import Weapon
+        s = gs(mana=0, my_hp=20, **kw)
+        s.my_weapon = Weapon(name="Klingen", cid="", atk=2, durability=2)
+        s.my_hero_atk, s.my_hero_attacks_left, s.my_hero_can_attack = 2, 1, True
+        return s
+
+    def test_taunt_blocks_and_plan_says_why(self):
+        s = self.hero(opp=[mm(10, "Ysondre", 6, 5, taunt=True)])
+        p = Planner(fake_db(), 1.0).plan(s, None)
+        self.assertFalse(any(st.kind == "hero_attack" for st in p.steps))
+        self.assertTrue(any("Held greift nicht an" in w and "Ysondre" in w and "Spott" in w for w in p.warnings), p.warnings)
+
+    def test_no_hint_when_the_hero_attacks(self):
+        p = Planner(fake_db(), 1.0).plan(self.hero(opp=[]), None)
+        self.assertTrue(any(st.kind == "hero_attack" for st in p.steps))
+        self.assertFalse(any("Held greift nicht an" in w for w in p.warnings), p.warnings)
+
+    def test_lifesteal_weapon_heals(self):
+        from hscoach import planner
+        from tests.helpers import CARDS
+        CARDS["KLINGEN"] = dict(name="Kriegsklingen", cardtype="WEAPON", cost=3, text="Lebensentzug")
+        try:
+            s = gs(mana=3, my_hp=20, hand=[card(1, "KLINGEN", atk=2, hp=2)], my_hero_attacks_left=1)
+            p = planner.Planner(fake_db(), 1.0).plan(s, None)
+            self.assertTrue(any("Lege" in st.text for st in p.steps) and any(st.kind == "hero_attack" for st in p.steps))
+            self.assertIn("Du: 22 HP", p.summary)
+        finally:
+            del CARDS["KLINGEN"]
