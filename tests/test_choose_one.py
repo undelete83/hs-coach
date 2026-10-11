@@ -16,6 +16,10 @@ CARDS.update({
     "BUMMKIN": dict(name="Bummkin", cardtype="MINION", cost=4,
                     text="Wählt aus: Stellt bei Eurem Helden 8 Leben wieder her; oder verursacht 4 Schaden."),
     "EICHENRANKEN": dict(name="Eichenranken", cardtype="SPELL", cost=3, text="Ruft einen Diener aus Eurem Deck herbei."),
+    "AT_037a": dict(name="Wurzeln schlagen", cardtype="SPELL", cost=1, text="Verursacht 2 Schaden."),
+    "AT_037b": dict(name="Schösslingdoppelpack", cardtype="SPELL", cost=1, text="Ruft 2 Schösslinge (1/1) herbei."),
+    "CORE_AT_037": dict(name="Lebendige Wurzeln", cardtype="SPELL", cost=1,
+                        text="Wählt aus: Verursacht 2 Schaden; oder ruft 2 Schöss[d]linge (1/1) herbei."),
     "RABENGOETZE": dict(name="Rabengötze", cardtype="SPELL", cost=1,
                         text="Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber."),
 })
@@ -72,6 +76,11 @@ class TestPlanning(unittest.TestCase):
         s = gs(mana=4, my_hp=30, opp=[mm(10, "Zwerg", 3, 4)], hand=[card(1, "BUMMKIN", atk=4, hp=6)])
         t = texts(plan_for(s))
         self.assertTrue(any("Bummkin" in x and "Zwerg stirbt" in x for x in t), t)
+
+    def test_choice_names_the_option_card_shown_by_the_game(self):
+        # Das Spiel zeigt die Optionen als Karten mit eigenem Namen - der Plan nennt ihn
+        t = texts(plan_for(gs(mana=1, hand=[card(1, "CORE_AT_037")])))
+        self.assertTrue(any("„Schösslingdoppelpack“" in x or "„Wurzeln schlagen“" in x for x in t), t)
 
     def test_summon_from_deck_spell_is_not_unknown(self):
         p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))

@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.6 - 11.10.2026
+- **„Wählt aus“ eindeutig**: Das Spiel zeigt die Optionen als eigene Karten mit eigenem Namen (z. B. „Panther herbeirufen“ oder „Schösslingdoppelpack“). Der Plan nannte bisher nur den Effekttext. Jetzt steht der Kartenname dabei, z. B. „Spiele Macht der Wildnis – Wahl: „Panther herbeirufen“ (Ruft einen Panther (3/2) herbei)“. Auch bei Dienern mit „Wählt aus“ (Bummkin) wird die Wahl im Plan angezeigt.
+
 ## 2.15.5 - 11.10.2026
 - **Druiden-Mechaniken**: Diener mit „Wählt aus:“-Kampfschrei (Bummkin: 8 Leben heilen oder 4 Schaden) werden jetzt verstanden – der Planer spielt beide Optionen durch und wählt die bessere (vorher: „Effekt unbekannt“). Zauber, die „einen Diener aus Eurem Deck herbeirufen“ (Eichenranken), bekommen einen geschätzten Wert statt „unbekannt“.
 

@@ -1071,7 +1071,7 @@ class Planner:
                 opt = act[3] if len(act) > 3 else None
                 label = ""
                 if opt is not None and c.fx.choices:
-                    label = c.fx.choice_labels[opt]
+                    label = self._option_label(c0.cid, c.fx.choice_labels[opt])
                     c = c._replace(fx=c.fx.choices[opt])
                 nxt = _play_card(ss, c, act[2], log, opt)
                 if nxt is None:
@@ -1086,7 +1086,7 @@ class Planner:
                 tname = self._tname(ss, act[2])
                 if c.ctype == "MINION":
                     b = c.fx.self_buff or (0, 0, "")
-                    head = f"Spiele {c.name} ({c.atk + b[0]}/{c.hp + b[1]})"
+                    head = f"Spiele {c.name} ({c.atk + b[0]}/{c.hp + b[1]})" + (f" – Wahl: {label}" if label else "")
                     kind = "minion"
                 elif c.ctype == "WEAPON":
                     head = f"Lege {c.name} an ({c.atk}/{c.hp})"
@@ -1223,6 +1223,20 @@ class Planner:
             if best is None or keep < best[0]:
                 best = (keep, hc.name, why)
         return (best[1], best[2]) if best else None
+
+    def _option_label(self, cid, label):
+        """Bei 'Waehlt aus' zeigt das Spiel die Optionen als eigene Karten mit Namen (z. B. 'Panther herbeirufen') -
+        den Namen mitnennen, damit man die richtige Karte findet."""
+        def norm(t):
+            return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", t or "")).strip().rstrip(".").lower()
+        want = norm(label)
+        base = cid[5:] if cid.startswith("CORE_") else cid
+        for b in (cid, base):
+            for suf in "abcd":
+                i = self.db.info(b + suf)
+                if i and i.get("name") and norm(i.get("text")) == want:
+                    return f"„{i['name']}“ ({label})"
+        return label
 
     @staticmethod
     def _hero_idle_hint(s, plan):
