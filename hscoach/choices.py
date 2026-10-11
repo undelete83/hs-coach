@@ -89,9 +89,40 @@ def _minion_advice(o, s):
         notes.append("greift sofort an")
     if "kampfschrei" in t:
         v += 1.2
+        dv, dn = _draw_value(t, s)
+        v += dv
+        if dn:
+            notes.append(dn)
     if "todesröcheln" in t:
         v += 0.8
+        ms = re.search(r"todesröcheln:[^.]*?ruft [^.]*?\((\d+)/(\d+)\)[^.]*? herbei", t)
+        if ms:                                              # hinterlaesst beim Tod einen weiteren Koerper (Cairne Bluthuf)
+            v += min(5.0, 0.45 * (int(ms.group(1)) + int(ms.group(2))))
+            notes.append(f"hinterlässt einen {ms.group(1)}/{ms.group(2)}-Diener")
     return Advice(o.name, v, ", ".join(notes) + ".", o.cid)
+
+
+_RACE_WORDS = {"wildtier": "BEAST", "drachen": "DRAGON", "drache": "DRAGON", "murloc": "MURLOC", "dämon": "DEMON", "elementar": "ELEMENTAL",
+               "mech": "MECHANICAL", "pirat": "PIRATE", "totem": "TOTEM", "untoten": "UNDEAD", "untoter": "UNDEAD", "naga": "NAGA"}
+
+
+def _draw_value(t, s):
+    """Wert eines Kampfschrei-Kartenziehens. 'Zieht ein Wildtier, einen Drachen und einen Murloc' bringt nur etwas, wenn solche
+    Diener im Deck sind - als Anhaltspunkt dienen die Voelker auf deiner Hand und deinem Brett."""
+    m = re.search(r"kampfschrei:\s*zieht ([^.]*)", t)
+    if not m:
+        return 0.0, ""
+    body = m.group(1)
+    typed = {r for w, r in _RACE_WORDS.items() if re.search(r"\b(?:ein|einen|eine)\s+" + w, body)}
+    if not typed:
+        return (1.6, "zieht eine Karte") if re.search(r"\b(?:eine|2|zwei)\s+karte", body) else (0.0, "")
+    seen = {getattr(x, "race", "") for x in list(s.my_hand) + list(s.my_minions)}
+    if "ALL" in seen:
+        seen |= set(typed)
+    hit = [r for r in typed if r in seen]
+    if not hit:
+        return 0.0, "zieht nur passende Völker - keins davon auf deiner Hand/deinem Brett"
+    return 1.6 * len(hit), f"zieht {len(hit)} passende Karte(n)"
 
 
 def _spell_advice(o, s, db):

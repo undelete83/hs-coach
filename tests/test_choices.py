@@ -84,5 +84,23 @@ class TestAdvise(unittest.TestCase):
         self.assertTrue(text.startswith("AUSWAHL OFFEN"))
 
 
+class TestMinionValue(unittest.TestCase):
+    KURATOR = ChoiceOption(1, "KAR_061", "Der Kurator", "MINION", 5, 4, 6,
+                           text="Spott. Kampfschrei: Zieht ein Wildtier, einen Drachen und einen Murloc.")
+    CAIRNE = ChoiceOption(2, "EX1_110", "Cairne Bluthuf", "MINION", 6, 5, 5,
+                          text="Spott. Todesröcheln: Ruft Baine Bluthuf (5/5) herbei.")
+
+    def test_typed_draw_without_matching_races_is_worth_nothing(self):
+        ranked = choices.advise(Choice(1, "Steinhöhenverteidiger", [self.KURATOR, self.CAIRNE]), gs())
+        self.assertEqual(ranked[0].name, "Cairne Bluthuf")
+        self.assertIn("5/5", ranked[0].reason)
+
+    def test_typed_draw_counts_when_races_are_known(self):
+        s = gs(mine=[mm(1, "Wolf", 2, 2, race="BEAST"), mm(2, "Drache", 3, 3, race="DRAGON"), mm(3, "Fisch", 1, 1, race="MURLOC")])
+        k = {a.name: a for a in choices.advise(Choice(1, "x", [self.KURATOR, self.CAIRNE]), s)}
+        self.assertIn("3 passende", k["Der Kurator"].reason)
+        self.assertGreater(k["Der Kurator"].score, k["Cairne Bluthuf"].score)
+
+
 if __name__ == "__main__":
     unittest.main()

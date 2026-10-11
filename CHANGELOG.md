@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.9 - 11.10.2026
+- **Entdecken-Empfehlung für Diener genauer**: (1) „Zieht ein Wildtier, einen Drachen und einen Murloc“ (Der Kurator) zählt nur für die Völker, die du auf Hand oder Brett hast – sonst ist der Kampfschrei fast wertlos (vorher: gar nicht bewertet). (2) Diener, die beim Tod einen weiteren Diener herbeirufen (Cairne Bluthuf), bekommen dafür einen Bonus. Beim Steinhöhenverteidiger empfiehlt der Coach deshalb jetzt Cairne statt des Kurators.
+
 ## 2.15.8 - 11.10.2026
 - **„Kampfschrei und Todesröcheln:“** wurde nicht als Kampfschrei erkannt. Der Planer rechnete deshalb bei Unterkönig die 6 Rüstung nicht ein (und bei Preishändler das Kartenziehen) und bevorzugte schwächere Züge. Jetzt zählt der Kampfschrei-Teil dieser Karten voll mit.
 
