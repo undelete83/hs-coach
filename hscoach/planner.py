@@ -199,6 +199,7 @@ def _damage_minion(ss, side_opp, uid, n, log=None, poison=False):
     return False, False
 
 
+BOTH_CHOICE_CIDS = set()   # Karten mit "Waehlt aus gewaehrt beide Effekte" (Fandral Hirschhaupt)
 IGNORE_TAUNT_CIDS = set()  # Karten mit "Befreundete Angriffe ignorieren Spott" (Kayn Sonnenzorn)
 
 
@@ -873,6 +874,11 @@ class Planner:
             t_ = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).lower() if m.cid else ""
             if "befreundete angriffe ignorieren spott" in t_:
                 IGNORE_TAUNT_CIDS.add(m.cid)
+        BOTH_CHOICE_CIDS.clear()
+        for m in list(s.my_minions) + list(s.my_hand):
+            t_ = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).lower() if m.cid else ""
+            if "mit wählt aus gewähren beide effekte" in t_:
+                BOTH_CHOICE_CIDS.add(m.cid)
         ELUSIVE_CIDS.clear()
         for m in list(s.my_minions) + list(s.opp_minions):
             txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).strip().lower() if m.cid else ""
@@ -1073,6 +1079,8 @@ class Planner:
                 if opt is not None and c.fx.choices:
                     label = self._option_label(c0.cid, c.fx.choice_labels[opt])
                     c = c._replace(fx=c.fx.choices[opt])
+                    if any(m.cid in BOTH_CHOICE_CIDS for m in ss.mine):
+                        log.append("Fandral auf dem Brett: es gelten BEIDE Optionen (geplant ist nur die genannte)")
                 nxt = _play_card(ss, c, act[2], log, opt)
                 if nxt is None:
                     break

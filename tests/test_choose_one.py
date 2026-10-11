@@ -20,6 +20,8 @@ CARDS.update({
     "AT_037b": dict(name="Schösslingdoppelpack", cardtype="SPELL", cost=1, text="Ruft 2 Schösslinge (1/1) herbei."),
     "CORE_AT_037": dict(name="Lebendige Wurzeln", cardtype="SPELL", cost=1,
                         text="Wählt aus: Verursacht 2 Schaden; oder ruft 2 Schöss[d]linge (1/1) herbei."),
+    "FANDRAL": dict(name="Fandral Hirschhaupt", cardtype="MINION", cost=4,
+                    text="Eure Karten und Heldenfähigkeiten mit Wählt aus gewähren beide Effekte."),
     "RABENGOETZE": dict(name="Rabengötze", cardtype="SPELL", cost=1,
                         text="Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber."),
 })
@@ -81,6 +83,11 @@ class TestPlanning(unittest.TestCase):
         # Das Spiel zeigt die Optionen als Karten mit eigenem Namen - der Plan nennt ihn
         t = texts(plan_for(gs(mana=1, hand=[card(1, "CORE_AT_037")])))
         self.assertTrue(any("„Schösslingdoppelpack“" in x or "„Wurzeln schlagen“" in x for x in t), t)
+
+    def test_fandral_on_board_is_mentioned(self):
+        s = gs(mana=3, mine=[mm(5, "Fandral Hirschhaupt", 3, 6, cid="FANDRAL")], hand=[card(1, "MAL_NATUR")])
+        p = plan_for(s)
+        self.assertTrue(any("Fandral auf dem Brett" in st.text for st in p.steps), texts(p))
 
     def test_summon_from_deck_spell_is_not_unknown(self):
         p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))

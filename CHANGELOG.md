@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.7 - 11.10.2026
+- **Fandral Hirschhaupt**: Liegt Fandral („Karten mit Wählt aus gewähren beide Effekte“) auf deinem Brett, weist der Plan bei Wahlkarten (Zorn, Macht der Wildnis, Bummkin …) darauf hin, dass beide Optionen gelten. Geplant wird weiter mit der besseren Option; der Zusatzeffekt kommt als Bonus obendrauf.
+
 ## 2.15.6 - 11.10.2026
 - **„Wählt aus“ eindeutig**: Das Spiel zeigt die Optionen als eigene Karten mit eigenem Namen (z. B. „Panther herbeirufen“ oder „Schösslingdoppelpack“). Der Plan nannte bisher nur den Effekttext. Jetzt steht der Kartenname dabei, z. B. „Spiele Macht der Wildnis – Wahl: „Panther herbeirufen“ (Ruft einen Panther (3/2) herbei)“. Auch bei Dienern mit „Wählt aus“ (Bummkin) wird die Wahl im Plan angezeigt.
 
