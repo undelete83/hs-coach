@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.8 - 11.10.2026
+- **„Kampfschrei und Todesröcheln:“** wurde nicht als Kampfschrei erkannt. Der Planer rechnete deshalb bei Unterkönig die 6 Rüstung nicht ein (und bei Preishändler das Kartenziehen) und bevorzugte schwächere Züge. Jetzt zählt der Kampfschrei-Teil dieser Karten voll mit.
+
 ## 2.15.7 - 11.10.2026
 - **Fandral Hirschhaupt**: Liegt Fandral („Karten mit Wählt aus gewähren beide Effekte“) auf deinem Brett, weist der Plan bei Wahlkarten (Zorn, Macht der Wildnis, Bummkin …) darauf hin, dass beide Optionen gelten. Geplant wird weiter mit der besseren Option; der Zusatzeffekt kommt als Bonus obendrauf.
 

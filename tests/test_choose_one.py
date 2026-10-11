@@ -22,6 +22,7 @@ CARDS.update({
                         text="Wählt aus: Verursacht 2 Schaden; oder ruft 2 Schöss[d]linge (1/1) herbei."),
     "FANDRAL": dict(name="Fandral Hirschhaupt", cardtype="MINION", cost=4,
                     text="Eure Karten und Heldenfähigkeiten mit Wählt aus gewähren beide Effekte."),
+    "UNTERKOENIG": dict(name="Unterkönig", cardtype="MINION", cost=7, text="Eifer. Kampfschrei und Todesröcheln: Erhaltet 6 Rüstung."),
     "RABENGOETZE": dict(name="Rabengötze", cardtype="SPELL", cost=1,
                         text="Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber."),
 })
@@ -88,6 +89,10 @@ class TestPlanning(unittest.TestCase):
         s = gs(mana=3, mine=[mm(5, "Fandral Hirschhaupt", 3, 6, cid="FANDRAL")], hand=[card(1, "MAL_NATUR")])
         p = plan_for(s)
         self.assertTrue(any("Fandral auf dem Brett" in st.text for st in p.steps), texts(p))
+
+    def test_battlecry_and_deathrattle_text_counts_as_battlecry(self):
+        self.assertEqual(parse_effect("Eifer. Kampfschrei und Todesröcheln: Erhaltet 6 Rüstung.", "MINION").armor, 6)
+        self.assertEqual(parse_effect("Kampfschrei und Todesröcheln: Jeder Spieler zieht 1 Karte.", "MINION").draw, 1)
 
     def test_summon_from_deck_spell_is_not_unknown(self):
         p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))

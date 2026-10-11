@@ -260,10 +260,11 @@ def _parse_core(text, cardtype="SPELL", secret=False):
     if cardtype == "MINION" and t.startswith("wählt aus:"):         # Bummkin & Co.: Diener mit 'Waehlt aus' (Heilen oder Schaden)
         return _parse_choose_one(text, e)
     if cardtype in ("MINION", "WEAPON"):
-        if "kampfschrei:" not in t:
+        mb = re.search(r"kampfschrei(?: und todesröcheln)?:", t)       # auch 'Kampfschrei und Todesroecheln:' (Unterkoenig, Preishaendler)
+        if not mb:
             e.unknown = False
             return e
-        t = t.split("kampfschrei:", 1)[1].strip()
+        t = t[mb.end():].strip()
 
     if cardtype == "SPELL" and t.startswith("wählt aus:"):
         return _parse_choose_one(text, e)
