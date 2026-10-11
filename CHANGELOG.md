@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.4 - 11.10.2026
+- **Kayn Sonnenzorn** („Befreundete Angriffe ignorieren Spott“): Der Planer ließ trotz Kayn auf dem Brett die Spott-Diener des Gegners als Hindernis gelten. Dadurch sagte er in einer Runde „Keine sinnvolle Aktion“, obwohl drei Diener das Gesicht hätten angreifen können. Jetzt zählt der Spott nicht mehr, solange Kayn (auch einer, der im selben Plan gespielt wird) auf deinem Brett steht.
+
 ## 2.15.3 - 11.10.2026
 - **Heldenangriff verständlicher und besser gerechnet**: (1) Greift der Held nicht an, obwohl er könnte, nennt der Plan jetzt den Grund, z. B. „Held greift nicht an: Ysondre (6/5) hat Spott, der Held müsste ihn angreifen - 2 Schaden, tötet ihn nicht, und der Held nimmt dabei 6 Schaden.“ (2) Waffen mit Lebensentzug (Kriegsklingen der Aldrachi) heilen beim Heldenschlag. (3) Diener, die nach einem Heldenangriff wachsen (Rohling der Rüpelbande, Kampfscheusal), zählen den Zuwachs mit. (4) Eine Heldenstärkung, die vor dem Anlegen einer Waffe gewirkt wird, bleibt erhalten.
 

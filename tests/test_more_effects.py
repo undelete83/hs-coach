@@ -530,3 +530,32 @@ class TestHeroAttackExtras(unittest.TestCase):
             self.assertIn("Du: 22 HP", p.summary)
         finally:
             del CARDS["KLINGEN"]
+
+
+class TestIgnoreTaunt(unittest.TestCase):
+    """Kayn Sonnenzorn: 'Befreundete Angriffe ignorieren Spott' - der Plan darf trotz Spott-Diener das Gesicht angreifen."""
+
+    def setUp(self):
+        from tests.helpers import CARDS
+        CARDS["KAYN"] = dict(name="Kayn Sonnenzorn", cardtype="MINION", cost=4, atk=3, health=5, text="Ansturm. Befreundete Angriffe ignorieren Spott.")
+        CARDS["PLAIN"] = dict(name="Schlichter", cardtype="MINION", cost=2, atk=3, health=3, text="")
+        self.CARDS = CARDS
+
+    def tearDown(self):
+        del self.CARDS["KAYN"], self.CARDS["PLAIN"]
+
+    def faces(self, mine):
+        from hscoach.effects import Effect
+        s = gs(mana=0, mine=mine, opp=[mm(10, "Wand", 1, 8, taunt=True)])
+        pl = Planner(fake_db(), 1.0)
+        cards = pl._cards(s)
+        ss = pl._initial(s)
+        out = pl._expand(ss, cards, s, Effect())
+        return [n for n in out if n.path[1][0] == "att" and n.path[1][2] == ("face",)]
+
+    def test_face_attack_is_offered_despite_taunt_with_kayn_on_board(self):
+        mine = [mm(1, "Kayn Sonnenzorn", 3, 5, cid="KAYN"), mm(2, "Schlichter", 3, 3, cid="PLAIN")]
+        self.assertTrue(self.faces(mine))
+
+    def test_without_kayn_taunt_still_blocks_face(self):
+        self.assertFalse(self.faces([mm(2, "Schlichter", 3, 3, cid="PLAIN")]))

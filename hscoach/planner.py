@@ -199,6 +199,13 @@ def _damage_minion(ss, side_opp, uid, n, log=None, poison=False):
     return False, False
 
 
+IGNORE_TAUNT_CIDS = set()  # Karten mit "Befreundete Angriffe ignorieren Spott" (Kayn Sonnenzorn)
+
+
+def _ignores_taunt(ss):
+    return any(m.cid in IGNORE_TAUNT_CIDS for m in ss.mine)
+
+
 ELUSIVE_CIDS = set()      # Karten mit "Fluechtig" (nicht von Zaubern/Heldenkraeften anvisierbar); wird beim Planen gefuellt
 
 
@@ -861,6 +868,11 @@ class Planner:
                 HERO_ATK_GROW[m.cid] = (int(mg.group(1)), int(mg.group(2) or 0))
         wtxt = (self.db.info(s.my_weapon.cid).get("text") or "").lower() if (s.my_weapon and s.my_weapon.cid) else ""
         ss.wls = "lebensentzug" in wtxt
+        IGNORE_TAUNT_CIDS.clear()
+        for m in list(s.my_minions) + list(s.my_hand):
+            t_ = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).lower() if m.cid else ""
+            if "befreundete angriffe ignorieren spott" in t_:
+                IGNORE_TAUNT_CIDS.add(m.cid)
         ELUSIVE_CIDS.clear()
         for m in list(s.my_minions) + list(s.opp_minions):
             txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).strip().lower() if m.cid else ""
@@ -912,6 +924,8 @@ class Planner:
     def _expand(self, ss, cards, s, hp_fx):
         out = []
         taunts = [m for m in ss.opp if m.taunt and not m.stealth]
+        if taunts and _ignores_taunt(ss):                    # Kayn Sonnenzorn: alle eigenen Angriffe ignorieren Spott
+            taunts = []
         targets = [("m", m.uid) for m in (taunts if taunts else ss.opp) if not m.stealth]
         face_ok = not taunts
         for m in ss.mine:
