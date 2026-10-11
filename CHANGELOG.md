@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.3 - 11.10.2026
+- **„Keine sinnvolle Aktion“ nach der Heldenkraft**: Hast du in dieser Runde schon Mana ausgegeben (z. B. für die Heldenkraft), steht jetzt „✓ Zug fertig - du hast alles Sinnvolle gespielt“, wie viel Mana übrig ist und welche Karten auf der Hand bleiben (zu teuer). Vorher las sich das wie ein Fehler des Coaches.
+
 ## 2.16.2 - 11.10.2026
 - **Panthermaske** („Setzt die Werte eines Dieners auf 5/4 und verleiht ihm Verstohlenheit. Zieht 2 Karten.“): Der Planer erkannte nur das Kartenziehen und nannte deshalb keinen Diener, den du verwandeln sollst. Jetzt wird die Zielwahl berechnet – meist der schwächste eigene Diener, der dadurch am meisten gewinnt – und der Plan nennt ihn: „Spiele Panthermaske auf Welpe (1/1) → wird zu 5/4“.
 

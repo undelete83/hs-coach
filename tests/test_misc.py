@@ -54,6 +54,13 @@ class TestTips(unittest.TestCase):
         txt = tips.render_plan(s, Planner(fake_db()).plan(s))
         self.assertIn("Zug beenden", txt)
 
+    def test_turn_done_after_spending_mana(self):
+        s = gs(mana=1, hand=[card(1, "ELEM", cost=5, atk=5, hp=5)], my_mana_used=3)
+        txt = tips.render_plan(s, Planner(fake_db()).plan(s))
+        self.assertIn("Zug fertig", txt)
+        self.assertIn("Bleibt auf der Hand: Wasserelementar (5)", txt)
+        self.assertNotIn("Keine sinnvolle Aktion", txt)
+
     def test_render_numbered_and_warning(self):
         s = gs(mana=2, my_hp=3, opp=[mm(10, "Brecher", 5, 5)], hand=[card(1, "FROSTBLITZ")])
         txt = tips.render_plan(s, Planner(fake_db()).plan(s))

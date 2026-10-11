@@ -12,8 +12,16 @@ def render_plan(s, plan):
     elif plan.lethal:
         out.append("★ LETHAL - mit diesem Zug gewinnst du!")
     if not plan.steps:
-        out.append("Keine sinnvolle Aktion gefunden - Zug beenden"
-                   + (" (Mana für Reaktionen aufheben)." if s.my_mana else "."))
+        done = s.my_mana_used > 0 or bool(s.my_hero_power and s.my_hero_power.used)
+        stuck = sorted({f"{c.name} ({c.cost})" for c in s.my_hand if c.cost > s.my_mana and not c.is_coin})
+        if done:
+            out.append("✓ Zug fertig - du hast alles Sinnvolle gespielt. Zug beenden."
+                       + (f" (Noch {s.my_mana} Mana übrig, dafür passt keine Karte.)" if s.my_mana else ""))
+            if stuck:
+                out.append("   Bleibt auf der Hand: " + ", ".join(stuck) + ".")
+        else:
+            out.append("Keine sinnvolle Aktion gefunden - Zug beenden"
+                       + (" (Mana für Reaktionen aufheben)." if s.my_mana else "."))
     for i, st in enumerate(plan.steps, 1):
         out.append(f"{i}. {st.text}")
     left = s.my_mana - plan.mana_used
