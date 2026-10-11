@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.5 - 11.10.2026
+- **Mulligan als Erster**: Der Coach riet nur 1–2-Mana-Karten zu behalten und tauschte sonst alles. Mit einem Deck, das erst bei 3–4 Mana loslegt, führte das zu genauso klobigen Folgehänden. Jetzt gelten 1–3-Mana-Karten auch als Erster als Behalter (wie schon als Zweiter).
+
 ## 2.16.4 - 11.10.2026
 - **Kartenziehen wird nach der Handgröße bewertet**: Mit fast leerer Hand zählt jede gezogene Karte mehr (bis ca. 2,3 statt pauschal 1,5), mit voller Hand weniger – und Karten, die über das Handlimit von 10 hinaus gezogen würden, zählen kaum noch. Damit rutschen Karten wie Hybridisierung, Panthermaske oder Kernwurzelsteine bei leerer Hand im Plan nach vorn, statt monatelang auf der Hand zu liegen.
 

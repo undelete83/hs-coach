@@ -45,7 +45,7 @@ def mulligan_advice(s, db=None, boss=None):
     """Einfache Mulligan-Hilfe: billige Karten behalten, teure tauschen."""
     hand = [c for c in s.my_hand if not c.is_coin]
     second = len(hand) >= 4
-    keep_cost = 3 if second else 2
+    keep_cost = 3                                   # 1- bis 3-Mana-Karten sind auch als Erster normale Behalter
     lines = [f"Mulligan - du gehst {'ZWEITER (du bekommst die Münze)' if second else 'ERSTER'}. Empfehlung:"]
     kept = 0
     # Wuerde alles getauscht, landet man oft bei einer genauso teuren Hand: als Zweiter mit Muenze lieber einen 4er-Diener

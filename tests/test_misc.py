@@ -87,6 +87,13 @@ class TestTips(unittest.TestCase):
         self.assertEqual(txt.count("BEHALTEN"), 1)
         self.assertRegex(txt, r"BEHALTEN\s+\[4")
 
+    def test_mulligan_first_player_keeps_three_drops(self):
+        db = fake_db()
+        hand = [card(1, "ELEM", cost=3, atk=3, hp=4), card(2, "ELEM", cost=5, atk=5, hp=5), card(3, "ELEM", cost=6, atk=6, hp=6)]
+        txt = tips.mulligan_advice(gs(hand=hand), db)
+        self.assertIn("ERSTER", txt)
+        self.assertRegex(txt, r"BEHALTEN\s+\[3")
+
 
 class TestNoSecrets(unittest.TestCase):
     PATTERN = re.compile(r"sk-ant-[A-Za-z0-9_\-]{16,}")
