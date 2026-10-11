@@ -270,6 +270,7 @@ class App(tk.Tk):
                              font=("Segoe UI", 10), cursor="hand2", activebackground=BTN_ACTIVE, activeforeground=GOLD)
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)
+        btn("📚 Sammlung", self._open_collection).pack(side="right", padx=4)
         self.btn_view = btn("", self._toggle_view)
         self.btn_view.pack(side="right", padx=4)
         self.btn_update = btn("⟳ Auf Update prüfen", self._check_update)
@@ -478,6 +479,15 @@ class App(tk.Tk):
 
     def _open_settings(self):
         settings.SettingsDialog(self)
+
+    def _open_collection(self):
+        from . import collection_ui                     # erst bei Bedarf laden (ttk, Kartentabelle)
+        win = getattr(self, "_coll_win", None)
+        if win is not None and win.winfo_exists():
+            win.lift()
+            win.focus_force()
+            return
+        self._coll_win = collection_ui.CollectionWindow(self)
 
     def on_settings_changed(self, changed):
         if not changed:

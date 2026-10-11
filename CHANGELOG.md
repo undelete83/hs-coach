@@ -5,6 +5,13 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.0 - 11.10.2026
+- **Neu: Sammlung.** Der Knopf „📚 Sammlung“ öffnet ein Fenster mit deiner Kartensammlung von HSReplay (die der Hearthstone Deck Tracker dort hochlädt). Der Coach ruft sie selbst ab: Link unter „⚙ Einstellungen > Sammlung (HSReplay)“ eintragen, dann „Von HSReplay aktualisieren“. Es wird nur der öffentliche Teil gelesen, ohne Login und Schlüssel; der Link bleibt in deiner lokalen Config.
+  - Tab „Karten“: Suche und Filter nach Klasse, Format (Standard/Wild), Kosten, Seltenheit, Art und Besitz (Besitze ich / vollständig / fehlt mir), mit Kartentext und Besitz „2/2“.
+  - Tab „Deck prüfen“: Deckcode einfügen (oder aus der Zwischenablage), der Coach zeigt fehlende Karten, Herstellungskosten in Staub und Hinweise (nicht Standard-zugelassen, keine 30 Karten).
+  - Neue Einstellung `standard_sets` in der Config für die Standard-Rotation.
+- **Hybridisierung** („Zieht je einen Diener, der (1), (2), (3) und (4) kostet“): Der Planer rechnet jetzt 4 gezogene Karten statt einer Schätzung.
+
 ## 2.15.9 - 11.10.2026
 - **Entdecken-Empfehlung für Diener genauer**: (1) „Zieht ein Wildtier, einen Drachen und einen Murloc“ (Der Kurator) zählt nur für die Völker, die du auf Hand oder Brett hast – sonst ist der Kampfschrei fast wertlos (vorher: gar nicht bewertet). (2) Diener, die beim Tod einen weiteren Diener herbeirufen (Cairne Bluthuf), bekommen dafür einen Bonus. Beim Steinhöhenverteidiger empfiehlt der Coach deshalb jetzt Cairne statt des Kurators.
 

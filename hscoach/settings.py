@@ -164,6 +164,12 @@ class SettingsDialog(tk.Toplevel):
                                 wraplength=640)
         self.lbl_api.pack(fill="x", padx=14, pady=(2, 0))
 
+        self._section("Sammlung (HSReplay)")
+        tk.Label(self, text="Link zu deiner Sammlung auf hsreplay.net (der Deck Tracker lädt sie dorthin hoch), z. B. "
+                 "https://hsreplay.net/collection/2/12345678/. Es wird nur der öffentliche Teil abgerufen, ohne Login.",
+                 bg=BG, fg=GRAY, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=640).pack(fill="x", padx=14)
+        self._row("Sammlungs-Link", "hsreplay_collection")
+
         self._section("Ablage und Anzeige")
         self._row("Berichte speichern in", "reports_dir", browse=True)
         self._row("Zusätzlich kopieren nach", "obsidian_dir", browse=True)

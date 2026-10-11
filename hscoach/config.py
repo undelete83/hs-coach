@@ -50,6 +50,8 @@ DEFAULTS = {
     "api_lan": False,                 # False = nur dieser PC; True = auch im Heimnetz (nur mit Zugangscode)
     "api_token": "",                  # Zugangscode fuer den LAN-Zugriff (wird automatisch erzeugt)
     "update_repo": "undelete83/hs-coach",
+    "hsreplay_collection": "",        # Link zur eigenen Sammlung auf hsreplay.net (Region/Konto), z. B. .../collection/2/12345678/
+    "standard_sets": ["CORE", "EVENT", "EMERALD_DREAM", "THE_LOST_CITY", "TIME_TRAVEL", "CATACLYSM", "ESCAPEFROM_VIOLET_HOLD"],
 }
 
 # $ pro 1 Mio Token: (input, output). Cache-Lesen = 10 %, Cache-Schreiben = 125 % vom Input.

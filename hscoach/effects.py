@@ -323,6 +323,14 @@ def _parse_core(text, cardtype="SPELL", secret=False):
     last_scope = ""
     for s in re.split(r"(?<=[.!?])\s+", t):
         s = s.strip().rstrip(".")
+        mj = re.fullmatch(r"zieht je einen diener, der ((?:\(\d+\)(?:, | und )?)+) kostet", s)
+        if mj:                                          # Hybridisierung: je ein Diener mit Kosten 1, 2, 3 und 4
+            e.draw += len(re.findall(r"\(\d+\)", mj.group(1)))
+            e.unknown = False
+            continue
+        if s.startswith("verwandt: sie kosten (") and s.endswith(") weniger") and e.draw:
+            e.notes.append(s)                           # Rabatt auf die gezogenen Karten - nur ein Zusatznutzen
+            continue
         if not s or s.startswith("zwillingszauber"):
             continue
         mh = _HOLD.search(s)

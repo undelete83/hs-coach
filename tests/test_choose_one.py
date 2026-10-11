@@ -94,6 +94,10 @@ class TestPlanning(unittest.TestCase):
         self.assertEqual(parse_effect("Eifer. Kampfschrei und Todesröcheln: Erhaltet 6 Rüstung.", "MINION").armor, 6)
         self.assertEqual(parse_effect("Kampfschrei und Todesröcheln: Jeder Spieler zieht 1 Karte.", "MINION").draw, 1)
 
+    def test_draw_one_minion_per_cost(self):
+        e = parse_effect("Zieht je einen Diener, der (1), (2), (3) und (4) kostet. Verwandt: Sie kosten (1) weniger.", "SPELL")
+        self.assertEqual((e.draw, e.unknown, e.est_value), (4, False, 0.0))
+
     def test_summon_from_deck_spell_is_not_unknown(self):
         p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))
         self.assertEqual(p.unknown_cards, [])

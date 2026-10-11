@@ -67,6 +67,18 @@ Unter **⚙ Einstellungen → Plan-API** lässt sich eine kleine **nur lesende**
 
 Beispiel (PowerShell): `Invoke-RestMethod http://127.0.0.1:8765/api/plan | Select-Object phase, text`
 
+## Sammlung (HSReplay)
+
+Der Knopf „📚 Sammlung“ zeigt deine Kartensammlung und prüft Decks dagegen. Die Sammlung kommt von hsreplay.net: Der
+Hearthstone Deck Tracker lädt sie dorthin hoch, der Coach ruft den öffentlichen Teil ab (ohne Login, ohne Schlüssel).
+
+1. Unter „⚙ Einstellungen > Sammlung (HSReplay)“ den Link deiner Sammlung eintragen, z. B. `https://hsreplay.net/collection/2/12345678/`.
+2. „📚 Sammlung“ öffnen und „Von HSReplay aktualisieren“ klicken. Die Sammlung wird zwischengespeichert.
+3. Tab „Karten“: Suche und Filter (Klasse, Format Standard/Wild, Kosten, Seltenheit, Art, Besitz).
+   Tab „Deck prüfen“: Deckcode einfügen, der Coach zeigt fehlende Karten und die Herstellungskosten in Staub.
+
+Welche Sets Standard sind, steht in der Config (`standard_sets`); nach der Rotation im Frühjahr dort anpassen.
+
 ## Kosten der KI-Funktionen
 
 Der API-Key gehört dir, die Abrechnung läuft direkt bei Anthropic. Mit Haiku kostet ein Zug-Tipp typischerweise einen Bruchteil eines Cents; der Coach zeigt die Kosten der letzten Anfrage und der Sitzung an. Wer keinen Key einträgt, zahlt nichts.
