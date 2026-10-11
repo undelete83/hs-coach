@@ -72,6 +72,14 @@ class TestTips(unittest.TestCase):
         self.assertIn("TAUSCHEN", txt)
         self.assertRegex(txt, r"BEHALTEN\s+\[1")
 
+    def test_mulligan_keeps_one_four_drop_when_everything_is_expensive(self):
+        db = fake_db()
+        hand = [card(1, "ELEM", cost=4, atk=4, hp=5), card(2, "ELEM", cost=5, atk=5, hp=5), card(3, "ELEM", cost=6, atk=6, hp=6),
+                card(4, "ELEM", cost=7, atk=7, hp=7)]
+        txt = tips.mulligan_advice(gs(hand=hand), db)
+        self.assertEqual(txt.count("BEHALTEN"), 1)
+        self.assertRegex(txt, r"BEHALTEN\s+\[4")
+
 
 class TestNoSecrets(unittest.TestCase):
     PATTERN = re.compile(r"sk-ant-[A-Za-z0-9_\-]{16,}")

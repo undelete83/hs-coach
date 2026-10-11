@@ -751,7 +751,7 @@ def _play_card(ss, c, tgt, log=None, opt=None):
         else:
             n.util += 1.2
         if c.coin:
-            n.util -= 0.3
+            n.util -= 1.6                        # die Muenze ist ein Zug-Vorsprung: nicht fuer eine Heldenkraft oder Kleinkram verbrennen
         if ss.secret_p and not ss.bait:
             n.bait = True                         # ab jetzt ist der "Koeder" gespielt - weitere Zauber sind sicherer
             gain = min(60.0, _evaluate(n) - _evaluate(ss))

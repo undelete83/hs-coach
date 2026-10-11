@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.1 - 11.10.2026
+- **Die Münze nicht mehr verschwenden**: Der Plan schlug in Runde 1 vor, die Münze nur für die Heldenkraft (1 Rüstung) zu verbrennen. Die Münze ist ein Tempo-Vorsprung und wird jetzt nur noch eingeplant, wenn sie eine Karte spielbar macht, die sonst nicht ginge.
+- **Mulligan als Zweiter**: Wäre die gesamte Starthand zu teuer und würde komplett getauscht, behält der Coach jetzt den günstigsten Diener bis 4 Mana (mit der Münze in Runde 3 spielbar), damit die neue Hand nicht genauso klobig wird.
+
 ## 2.16.0 - 11.10.2026
 - **Neu: Sammlung.** Der Knopf „📚 Sammlung“ öffnet ein Fenster mit deiner Kartensammlung von HSReplay (die der Hearthstone Deck Tracker dort hochlädt). Der Coach ruft sie selbst ab: Link unter „⚙ Einstellungen > Sammlung (HSReplay)“ eintragen, dann „Von HSReplay aktualisieren“. Es wird nur der öffentliche Teil gelesen, ohne Login und Schlüssel; der Link bleibt in deiner lokalen Config.
   - Tab „Karten“: Suche und Filter nach Klasse, Format (Standard/Wild), Kosten, Seltenheit, Art und Besitz (Besitze ich / vollständig / fehlt mir), mit Kartentext und Besitz „2/2“.

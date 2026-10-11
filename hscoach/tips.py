@@ -40,6 +40,14 @@ def mulligan_advice(s, db=None, boss=None):
     keep_cost = 3 if second else 2
     lines = [f"Mulligan - du gehst {'ZWEITER (du bekommst die Münze)' if second else 'ERSTER'}. Empfehlung:"]
     kept = 0
+    # Wuerde alles getauscht, landet man oft bei einer genauso teuren Hand: als Zweiter mit Muenze lieber einen 4er-Diener
+    # behalten (Muenze + 3 Mana = 4er in Runde 3).
+    fallback = None
+    if second and not any(c.cost <= keep_cost and (c.cardtype in ("MINION", "WEAPON") or (c.cardtype == "SPELL" and c.cost <= 2))
+                          for c in hand):
+        pool = [c for c in hand if c.cardtype == "MINION" and c.cost <= keep_cost + 1]
+        if pool:
+            fallback = min(pool, key=lambda c: (c.cost, -(c.atk + c.hp), c.name))
     for c in sorted(hand, key=lambda c: (c.cost, c.name)):
         fx = db.effect(c.cid) if db and c.cid else None
         cheap_spell = c.cardtype == "SPELL" and c.cost <= 2 and fx is not None and fx.concrete
@@ -48,6 +56,9 @@ def mulligan_advice(s, db=None, boss=None):
             kept += 1
         elif c.cost <= keep_cost and (c.cardtype in ("MINION", "WEAPON") or cheap_spell):
             verdict, why = "BEHALTEN", "günstig - kommt früh aufs Board"
+            kept += 1
+        elif fallback is not None and c is fallback:
+            verdict, why = "BEHALTEN", "sonst bleibt die Hand zu teuer: mit der Münze in Runde 3 spielbar"
             kept += 1
         elif c.cost == keep_cost + 1 and second and kept >= 1 and c.cardtype == "MINION":
             verdict, why = "BEHALTEN", "als zweiter Spieler mit Münze gut spielbar"

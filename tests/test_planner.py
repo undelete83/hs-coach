@@ -128,6 +128,11 @@ class TestSpells(unittest.TestCase):
         p = plan_for(s)
         self.assertEqual(set(p.cids), {"MUENZE", "FROSTBLITZ"})
 
+    def test_coin_is_not_burned_for_a_hero_power(self):
+        hp = HeroPower("Gestaltwandel", "HEROPOWER_X", 2, False, "Erhaltet 1 Rüstung.")
+        s = gs(mana=1, my_hero_power=hp, hand=[card(1, "MUENZE", is_coin=True)])
+        self.assertNotIn("MUENZE", plan_for(s).cids)
+
     def test_aoe_kills_small_board(self):
         s = gs(mana=7, opp=[mm(10, "A", 2, 4), mm(11, "B", 3, 5), mm(12, "C", 1, 1)], hand=[card(1, "FLAMMENSTOSS")])
         p = plan_for(s)
