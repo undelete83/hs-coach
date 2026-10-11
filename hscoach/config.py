@@ -45,6 +45,10 @@ DEFAULTS = {
     "auto_analysis": False,
     "plan_time_budget_s": 1.2,
     "update_check": True,
+    "api_enabled": False,             # Lese-API fuer Zweitbildschirme/Handy (nur Zugplan und Spielstand, nichts steuerbar)
+    "api_port": 8765,
+    "api_lan": False,                 # False = nur dieser PC; True = auch im Heimnetz (nur mit Zugangscode)
+    "api_token": "",                  # Zugangscode fuer den LAN-Zugriff (wird automatisch erzeugt)
     "update_repo": "undelete83/hs-coach",
 }
 

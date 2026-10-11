@@ -30,6 +30,13 @@ def apply(cfg, values, api_key=None):
         default = config.DEFAULTS[k]
         if isinstance(default, bool):
             v = bool(v)
+        elif isinstance(default, int):
+            try:
+                v = int(str(v).strip())
+            except ValueError:
+                v = default
+            if k == "api_port" and not 1024 <= v <= 65535:
+                v = default
         elif isinstance(default, str):
             v = str(v).strip()
             if not v and k in ("claude_model", "analysis_model", "card_source"):
@@ -146,6 +153,17 @@ class SettingsDialog(tk.Toplevel):
         self._row("Modell (Zug-Tipp)", "claude_model")
         self._row("Modell (Analyse)", "analysis_model")
 
+        self._section("Plan-API (Zweitbildschirm, Handy, USB-Display)")
+        tk.Label(self, text="Stellt Zugplan und Spielstand nur lesend bereit: Webseite, JSON und Text. Es werden keine Namen von "
+                 "Mitspielern, kein BattleTag und kein API-Key ausgegeben.", bg=BG, fg=GRAY, font=("Segoe UI", 9),
+                 anchor="w", justify="left", wraplength=640).pack(fill="x", padx=14)
+        self._check("Plan-API aktivieren", "api_enabled")
+        self._row("Port", "api_port", width=10)
+        self._check("Auch im Heimnetz erreichbar (mit Zugangscode)", "api_lan")
+        self.lbl_api = tk.Label(self, text=self._api_text(), bg=BG, fg=GRAY, font=("Consolas", 9), anchor="w", justify="left",
+                                wraplength=640)
+        self.lbl_api.pack(fill="x", padx=14, pady=(2, 0))
+
         self._section("Ablage und Anzeige")
         self._row("Berichte speichern in", "reports_dir", browse=True)
         self._row("Zusätzlich kopieren nach", "obsidian_dir", browse=True)
@@ -162,6 +180,14 @@ class SettingsDialog(tk.Toplevel):
                   cursor="hand2").pack(side="left")
 
     # -- Aktionen --------------------------------------------------------------------------------------------
+    def _api_text(self):
+        port = self.cfg.get("api_port", 8765)
+        lines = [f"Dieser PC:  http://127.0.0.1:{port}/"]
+        if self.cfg.get("api_lan"):
+            tok = self.cfg.get("api_token") or "(wird beim Speichern erzeugt)"
+            lines.append(f"Heimnetz:   http://<IP-dieses-PCs>:{port}/?token={tok}")
+        return "\n".join(lines)
+
     def _browse(self, var):
         d = filedialog.askdirectory(parent=self, initialdir=var.get() or os.path.expanduser("~"))
         if d:

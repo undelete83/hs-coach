@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
+from . import analysis, api, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -145,6 +145,8 @@ class App(tk.Tk):
         self.coach = ClaudeCoach(self.cfg)
         self.coach.preload()
         self.images = ImageCache(self.cfg)
+        self.api_hub = api.Hub()
+        self.api_server = None
 
         self._calls = queue.Queue()
         self._seen_version = 0
@@ -192,6 +194,7 @@ class App(tk.Tk):
         self.lbl_status.bind("<Button-1>", self._open_release)
         update.check_async(self.cfg, lambda found: self.post(lambda: self._on_release(found)))
         self.after(30 * 60 * 1000, self._periodic_update_check)
+        self.after(900, self._api_apply)
 
     # -- Aufbau -------------------------------------------------------------------------------
     def _apply_geometry(self):
@@ -479,6 +482,8 @@ class App(tk.Tk):
     def on_settings_changed(self, changed):
         if not changed:
             return
+        if any(k.startswith("api_") for k in changed):
+            self._api_apply()
         if "api_key" in changed or "claude_model" in changed or "analysis_model" in changed:
             self.coach._client = None                  # neuer Key / neues Modell -> Client neu aufbauen
             self.coach.preload()
@@ -708,7 +713,53 @@ class App(tk.Tk):
         except Exception:
             pass
 
+    # -- Plan-API (lesend, fuer Zweitbildschirme) -------------------------------------------------------------
+    def _api_apply(self):
+        """Startet/stoppt die Lese-API passend zu den Einstellungen."""
+        if self.api_server is not None:
+            self.api_server.stop()
+            self.api_server = None
+        if not self.cfg.get("api_enabled"):
+            return
+        if self.cfg.get("api_lan") and not self.cfg.get("api_token"):
+            self.cfg["api_token"] = api.new_token()
+            config.save(self.cfg, ["api_token"])
+        srv = api.ApiServer(self.api_hub, self.cfg.get("api_port", 8765), self.cfg.get("api_lan"), self.cfg.get("api_token"))
+        if srv.start():
+            self.api_server = srv
+            self._api_publish()
+        else:
+            self.lbl_status.config(text="Plan-API: " + srv.error, fg="#ffaa44")
+
+    def _api_publish(self, waiting=False):
+        if self.api_server is None:
+            return
+        s = self._state
+        if s is None:
+            return
+        try:
+            plan = self._plan if (self._plan is not None and self._plan_visible and not self._plan_stale(s)) else None
+            boss = None if s.result else bosses.find(s.opp_hero_cid)
+            ph = api.phase_of(s, plan, waiting)
+            if ph == "mulligan":
+                text = tips.mulligan_advice(s, self.db, boss)
+            elif ph == "choice":
+                text = choices.render(s.choice, s, self.db)[0]
+            elif ph == "result":
+                text = tips.render_plan(s, None)
+            elif ph == "opponent":
+                text = "Gegner ist am Zug ..."
+            elif ph == "plan":
+                text = tips.render_plan(s, plan)
+            else:
+                text = ""
+            self.api_hub.publish(api.build_snapshot(s, plan, boss, text, waiting, self.db))
+        except Exception:
+            log.exception("API-Momentaufnahme")
+
     def _on_close(self):
+        if self.api_server is not None:
+            self.api_server.stop()
         self._save_geometry()
         self._closed = True
         self.backend.stop()
@@ -841,6 +892,7 @@ class App(tk.Tk):
 
     # -- Darstellung ------------------------------------------------------------------------------------
     def _render_state(self, s):
+        self._api_publish()
         if s.result:
             txt = {"WON": "SIEG 🏆", "LOST": "NIEDERLAGE", "TIED": "UNENTSCHIEDEN"}[s.result]
         elif s.mulligan:
@@ -959,6 +1011,7 @@ class App(tk.Tk):
         self._set_rich("plan", self.t_plan, segs)
 
     def _render_plan(self, s, plan):
+        self._api_publish()
         if s.choice and not s.mulligan and not s.result:
             self._render_choice(s)
             return
@@ -1063,6 +1116,7 @@ class App(tk.Tk):
                    if s.ui_known and not s.ui_my_turn else
                    "⏳ Zugbeginn - ich warte kurz, bis alle Karten nachgezogen sind ...")
             self._set_rich("plan", self.t_plan, [(msg, "dim")])
+            self._api_publish(waiting=True)
             return
         self._present_pending = False
         self._plan_visible = True

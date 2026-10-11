@@ -56,6 +56,17 @@ Alles Wichtige steht im Fenster unter **⚙ Einstellungen**:
 
 Die Einstellungen liegen in `%APPDATA%\HSCoach\config.json`, Cache und Logdatei in `%LOCALAPPDATA%\hs_coach`.
 
+## Plan auf anderen Geräten (Plan-API)
+
+Unter **⚙ Einstellungen → Plan-API** lässt sich eine kleine **nur lesende** Schnittstelle einschalten. Sie zeigt den Zugplan und den Spielstand auf einem Zweitbildschirm, Tablet, Handy oder einem USB-Mini-Display. Es wird nichts gesteuert, und es werden **keine Namen von Mitspielern, kein BattleTag und kein API-Key** ausgegeben.
+
+- **Standard:** nur auf diesem PC erreichbar (`http://127.0.0.1:8765/`). Port und Ein/Aus stehen in den Einstellungen.
+- **Im Heimnetz:** „Auch im Heimnetz erreichbar“ einschalten. Dann gilt ein Zugangscode (steht in den Einstellungen), und es werden nur Geräte aus privaten Adressbereichen bedient, nie aus dem Internet. Beim ersten Mal fragt die Windows-Firewall nach einer Freigabe.
+- **Webseite:** `http://<IP des PCs>:8765/?token=<Code>` im Browser öffnen, sie aktualisiert sich von selbst.
+- **Für eigene Programme (GET):** `/api/plan` (klein: Phase, Schritte, Warnungen), `/api/state` (alles; mit `?since=<rev>` wartet die Antwort bis zu 20 s auf eine Änderung), `/api/plan.txt` (Text), `/api/health`. Zugangscode per `?token=`, Kopfzeile `X-Token` oder `Authorization: Bearer`.
+
+Beispiel (PowerShell): `Invoke-RestMethod http://127.0.0.1:8765/api/plan | Select-Object phase, text`
+
 ## Kosten der KI-Funktionen
 
 Der API-Key gehört dir, die Abrechnung läuft direkt bei Anthropic. Mit Haiku kostet ein Zug-Tipp typischerweise einen Bruchteil eines Cents; der Coach zeigt die Kosten der letzten Anfrage und der Sitzung an. Wer keinen Key einträgt, zahlt nichts.

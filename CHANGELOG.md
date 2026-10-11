@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.0 - 11.10.2026
+- **Plan-API für andere Geräte** (Einstellungen → Plan-API, standardmäßig aus): Eine kleine, nur lesende Schnittstelle zeigt Zugplan und Spielstand auf Zweitbildschirm, Tablet, Handy oder USB-Mini-Display. Webseite unter `/` (aktualisiert sich selbst), JSON unter `/api/plan` und `/api/state` (mit `?since=` als Long-Poll), Text unter `/api/plan.txt`, `/api/health`. Nur auf diesem PC erreichbar; im Heimnetz nur mit Zugangscode und nur von privaten Adressen. Keine Namen von Mitspielern, kein BattleTag, kein API-Key in den Daten.
+
 ## 2.14.13 - 10.10.2026
 - **Außenseiter (Dämonenjäger)**: Der Bonus „Außenseiter:“ gilt nur, wenn die Karte **ganz links oder ganz rechts** auf der Hand liegt. Der Planer kannte ihn nicht. Jetzt rechnet er ihn ein: Mitternachtswolf ruft eine Kopie herbei, Kurier des Purpursiegels und Geistersicht ziehen eine (weitere) Karte, Augenstrahl kostet nur (1). Der Plan spielt dafür zuerst Karten vom Rand aus und schreibt „Außenseiter-Bonus aktiv (Karte liegt ganz links/rechts auf der Hand)“. Rechts zählt nach dem Kartenziehen im selben Zug nicht mehr (neue Karten kommen rechts dazu). Weitere Außenseiter-Texte werden gelesen, aber nicht simuliert.
 
