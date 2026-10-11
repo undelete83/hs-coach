@@ -128,6 +128,19 @@ class TestSpells(unittest.TestCase):
         p = plan_for(s)
         self.assertEqual(set(p.cids), {"MUENZE", "FROSTBLITZ"})
 
+    def test_draw_is_worth_more_with_an_empty_hand(self):
+        from hscoach import planner as pl
+        ss = pl.SS() if hasattr(pl, "SS") else None
+        ss.used = ()
+        pl.HAND_N[0] = 2
+        low = pl._draw_value(ss, 2)
+        pl.HAND_N[0] = 6
+        mid = pl._draw_value(ss, 2)
+        pl.HAND_N[0] = 9
+        full = pl._draw_value(ss, 2)             # 9 Karten + 2 gezogene: die zweite verfaellt
+        self.assertGreater(low, mid)
+        self.assertGreater(mid, full)
+
     def test_coin_is_not_burned_for_a_hero_power(self):
         hp = HeroPower("Gestaltwandel", "HEROPOWER_X", 2, False, "Erhaltet 1 Rüstung.")
         s = gs(mana=1, my_hero_power=hp, hand=[card(1, "MUENZE", is_coin=True)])

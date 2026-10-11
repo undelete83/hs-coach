@@ -514,7 +514,7 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
         ss.my_armor += fx.armor
         ss.util += fx.armor * 0.3
     if fx.draw:
-        ss.util += fx.draw * 1.5
+        ss.util += _draw_value(ss, fx.draw)
         if fx.draw_buff:
             ss.util += 0.25 * (fx.draw_buff[0] + fx.draw_buff[1]) * fx.draw_buff[2]      # Staerkung der gezogenen Karten (grob)
         if log is not None:
@@ -583,6 +583,19 @@ def _card_cost(ss, c):
 
 HERO_ATK_GROW = {}        # cid -> (Angriff, Leben): waechst, nachdem der eigene Held angegriffen hat (Rohling der Ruepelbande, Kampfscheusal)
 _GROW_RX = re.compile(r"erhält \+(\d+)(?:/\+(\d+))?(?: angriff)?, nachdem euer held angegriffen hat")
+HAND_N = [0]             # Handkarten zu Beginn der Planung (fuer den Wert des Kartenziehens)
+
+
+def _draw_value(ss, n):
+    """Wert von n gezogenen Karten: mit leerer Hand zaehlt jede mehr als mit voller; ueber 10 Handkarten verfallen sie."""
+    rem = max(0, HAND_N[0] - len(ss.used))
+    total = 0.0
+    for k in range(n):
+        have = rem + k
+        total += 0.4 if have >= 10 else (2.3 if have <= 2 else (1.9 if have <= 4 else 1.5))
+    return total
+
+
 HAND_RANK = {}           # Handindex -> Position von links (fuer Aussenseiter)
 BASE_STATS = {}          # cid -> (Angriff, Leben) laut Kartendaten; wird beim Planen gefuellt (Schweigen setzt Werte zurueck)
 
@@ -884,6 +897,7 @@ class Planner:
             txt = re.sub(r"<[^>]+>", "", (self.db.info(m.cid).get("text") or "")).strip().lower() if m.cid else ""
             if txt.startswith("flüchtig") and not txt.startswith("flüchtig,"):
                 ELUSIVE_CIDS.add(m.cid)
+        HAND_N[0] = len(s.my_hand)
         HAND_RANK.clear()
         for rank, (i, _hc) in enumerate(sorted(enumerate(s.my_hand), key=lambda t: (t[1].zpos, t[0]))):
             HAND_RANK[i] = rank

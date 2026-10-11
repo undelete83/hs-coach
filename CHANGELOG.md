@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.16.4 - 11.10.2026
+- **Kartenziehen wird nach der Handgröße bewertet**: Mit fast leerer Hand zählt jede gezogene Karte mehr (bis ca. 2,3 statt pauschal 1,5), mit voller Hand weniger – und Karten, die über das Handlimit von 10 hinaus gezogen würden, zählen kaum noch. Damit rutschen Karten wie Hybridisierung, Panthermaske oder Kernwurzelsteine bei leerer Hand im Plan nach vorn, statt monatelang auf der Hand zu liegen.
+
 ## 2.16.3 - 11.10.2026
 - **„Keine sinnvolle Aktion“ nach der Heldenkraft**: Hast du in dieser Runde schon Mana ausgegeben (z. B. für die Heldenkraft), steht jetzt „✓ Zug fertig - du hast alles Sinnvolle gespielt“, wie viel Mana übrig ist und welche Karten auf der Hand bleiben (zu teuer). Vorher las sich das wie ein Fehler des Coaches.
 
