@@ -13,6 +13,9 @@ CARDS.update({
                            text="Wählt aus: Ruft 5 Irrwische herbei; oder verleiht einem Diener +5/+5 und Spott."),
     "AUFFORSTUNG": dict(name="Aufforstung", cardtype="SPELL", cost=2,
                         text="Wählt aus: Zieht einen Zauber; oder zieht einen Diener. (Behaltet diesen Zauber @ Zug, um beides zu tun!)"),
+    "BUMMKIN": dict(name="Bummkin", cardtype="MINION", cost=4,
+                    text="Wählt aus: Stellt bei Eurem Helden 8 Leben wieder her; oder verursacht 4 Schaden."),
+    "EICHENRANKEN": dict(name="Eichenranken", cardtype="SPELL", cost=3, text="Ruft einen Diener aus Eurem Deck herbei."),
     "RABENGOETZE": dict(name="Rabengötze", cardtype="SPELL", cost=1,
                         text="Wählt aus: Entdeckt einen Diener; oder entdeckt einen Zauber."),
 })
@@ -55,8 +58,25 @@ class TestParsing(unittest.TestCase):
     def test_without_semicolon_stays_unknown(self):
         self.assertTrue(parse_effect("Wählt aus: Erhaltet 2 Naturzauber auf Eure Hand oder verringert die Kosten von Zaubern auf Eurer Hand um (1).", "SPELL").unknown)
 
+    def test_minion_choose_one_battlecry(self):
+        e = parse_effect("Wählt aus: Stellt bei Eurem Helden 8 Leben wieder her; oder verursacht 4 Schaden.", "MINION")
+        self.assertEqual((e.unknown, [(o.heal, o.dmg) for o in e.choices]), (False, [(8, 0), (0, 4)]))
+
+    def test_summon_from_deck_is_estimated(self):
+        e = parse_effect("Ruft einen Diener aus Eurem Deck herbei.", "SPELL")
+        self.assertEqual((e.unknown, e.est_value > 0), (False, True))
+
 
 class TestPlanning(unittest.TestCase):
+    def test_minion_choose_one_picks_damage_for_kill(self):
+        s = gs(mana=4, my_hp=30, opp=[mm(10, "Zwerg", 3, 4)], hand=[card(1, "BUMMKIN", atk=4, hp=6)])
+        t = texts(plan_for(s))
+        self.assertTrue(any("Bummkin" in x and "Zwerg stirbt" in x for x in t), t)
+
+    def test_summon_from_deck_spell_is_not_unknown(self):
+        p = plan_for(gs(mana=3, hand=[card(1, "EICHENRANKEN")]))
+        self.assertEqual(p.unknown_cards, [])
+
     def test_planner_picks_attack_option_for_lethal_pressure(self):
         # Gegner-Held 4 Leben, mein Diener 1/1: +4 Angriff ist letal, +4 Leben nicht
         s = gs(mana=3, opp_hp=5, mine=[mm(1, "Kämpfer", 1, 1)], hand=[card(1, "MAL_NATUR")])

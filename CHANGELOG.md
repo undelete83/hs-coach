@@ -5,6 +5,9 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.15.5 - 11.10.2026
+- **Druiden-Mechaniken**: Diener mit „Wählt aus:“-Kampfschrei (Bummkin: 8 Leben heilen oder 4 Schaden) werden jetzt verstanden – der Planer spielt beide Optionen durch und wählt die bessere (vorher: „Effekt unbekannt“). Zauber, die „einen Diener aus Eurem Deck herbeirufen“ (Eichenranken), bekommen einen geschätzten Wert statt „unbekannt“.
+
 ## 2.15.4 - 11.10.2026
 - **Kayn Sonnenzorn** („Befreundete Angriffe ignorieren Spott“): Der Planer ließ trotz Kayn auf dem Brett die Spott-Diener des Gegners als Hindernis gelten. Dadurch sagte er in einer Runde „Keine sinnvolle Aktion“, obwohl drei Diener das Gesicht hätten angreifen können. Jetzt zählt der Spott nicht mehr, solange Kayn (auch einer, der im selben Plan gespielt wird) auf deinem Brett steht.
 

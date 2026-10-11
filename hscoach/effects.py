@@ -257,6 +257,8 @@ def _parse_core(text, cardtype="SPELL", secret=False):
             pl = parse_effect(body, "SPELL")
             if pl.concrete and not pl.secret:
                 e.payload = pl
+    if cardtype == "MINION" and t.startswith("wählt aus:"):         # Bummkin & Co.: Diener mit 'Waehlt aus' (Heilen oder Schaden)
+        return _parse_choose_one(text, e)
     if cardtype in ("MINION", "WEAPON"):
         if "kampfschrei:" not in t:
             e.unknown = False
@@ -598,6 +600,12 @@ def parse_effect(text, cardtype="SPELL", secret=False):
                 e.outcast_note = outcast_body[:140]
     if re.search(r"wählt eine karte auf eurer hand und mischt sie in euer deck", clean_text(text or "").lower()):
         e.shuffle_back = True
+    md = _DECK_SUMMON.search(clean_text(text or "").lower())
+    if md and cardtype == "SPELL":                      # Eichenranken: Diener aus dem Deck herbeirufen (Wert geschaetzt)
+        e.est_value += 2.5 * (_num(md.group(1)) or 1)
+        e.est_label = e.est_label or "Diener aus dem Deck"
+        e.est_note = e.est_note or "Ruft einen Diener aus dem Deck herbei"
+        e.unknown = False
     mc = _LOSE_CRYSTAL.search(clean_text(text or "").lower())
     if mc:
         e.lose_crystal = _num(mc.group(1))
@@ -623,6 +631,7 @@ def parse_effect_estimated(text, cardtype="SPELL", secret=False):
     return e
 
 
+_DECK_SUMMON = re.compile(r"ruft (einen|eine|zwei|drei|\d+) diener aus eurem deck herbei")
 _LOSE_CRYSTAL = re.compile(r"zerstört (einen|eine|zwei|drei|\d+) eurer manakristalle?")
 _AURA_TURNS = re.compile(r"hält (\d+) züge? lang an")
 _AURA_STATS = re.compile(r"\((\d+)/(\d+)\)")
