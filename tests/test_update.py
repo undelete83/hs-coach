@@ -398,6 +398,7 @@ if __name__ == "__main__":
 
 
 class TestMacUpdate(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "darwin", "macOS-Pfade")
     def test_bundle_path_from_executable(self):
         self.assertEqual(update.mac_bundle("/Applications/HSCoach.app/Contents/MacOS/HSCoach"), "/Applications/HSCoach.app")
         self.assertEqual(update.mac_bundle("/usr/bin/python3"), "")
