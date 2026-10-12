@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.18.0 - 12.10.2026
+- **Neu: Zugplan aufs Handy per QR-Code.** Der Knopf „📱 Handy“ öffnet ein Fenster mit einem QR-Code für die Plan-Webseite – mit der aktuellen Heimnetz-Adresse dieses Rechners, dem Port und dem Zugangscode. Mit der Handykamera scannen, fertig. Die Adresse wird alle paar Sekunden neu ermittelt, der Code stimmt also auch nach einem IP-Wechsel. Ist die Plan-API noch nicht fürs Heimnetz eingeschaltet, geht das direkt im Fenster mit einem Klick. Dazu „Adresse kopieren“.
+- In den Einstellungen steht bei der Plan-API jetzt die echte Heimnetz-Adresse statt „<IP-dieses-PCs>“.
+- Neue Abhängigkeit: `qrcode`.
+
 ## 2.17.1 - 12.10.2026
 - **Selbst-Update auch auf dem Mac**: Wie unter Windows lädt der Coach ein neues Release (`HSCoach-<Version>-mac.zip`), prüft die SHA-256-Summe, entpackt es mit `ditto`, tauscht nach dem Beenden das ganze `HSCoach.app` aus (bei einem Fehler kommt die alte Version zurück) und startet neu. Voraussetzung: die App liegt in einem beschreibbaren Ordner wie `/Applications` (nicht direkt aus dem Download-Ordner gestartet). Protokoll: `~/Library/Application Support/hs_coach/update.log`.
 - **Mac: abgedunkelte Handkarten waren schwarz.** Karten, die du gerade nicht bezahlen kannst, eingefrorene und getarnte Diener bekommen eine halbdurchsichtige Schicht. macOS-Tk kann dafür kein Raster (stipple) und füllte die Fläche deckend schwarz. Auf dem Mac wird die Schicht jetzt als halbdurchsichtiges Bild gezeichnet.

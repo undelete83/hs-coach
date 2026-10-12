@@ -3,7 +3,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from . import config, detect, theme, widgets, winstyle
+from . import api, config, detect, theme, widgets, winstyle
 
 BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 
@@ -191,7 +191,8 @@ class SettingsDialog(tk.Toplevel):
         lines = [f"Dieser PC:  http://127.0.0.1:{port}/"]
         if self.cfg.get("api_lan"):
             tok = self.cfg.get("api_token") or "(wird beim Speichern erzeugt)"
-            lines.append(f"Heimnetz:   http://<IP-dieses-PCs>:{port}/?token={tok}")
+            ip = api.lan_ip() or "<IP-dieses-Rechners>"
+            lines.append(f"Heimnetz:   http://{ip}:{port}/?token={tok}   (QR-Code: Knopf „📱 Handy“)")
         return "\n".join(lines)
 
     def _browse(self, var):

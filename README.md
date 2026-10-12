@@ -73,8 +73,9 @@ Die Einstellungen liegen in `%APPDATA%\HSCoach\config.json`, Cache und Logdatei 
 Unter **⚙ Einstellungen → Plan-API** lässt sich eine kleine **nur lesende** Schnittstelle einschalten. Sie zeigt den Zugplan und den Spielstand auf einem Zweitbildschirm, Tablet, Handy oder einem USB-Mini-Display. Es wird nichts gesteuert, und es werden **keine Namen von Mitspielern, kein BattleTag und kein API-Key** ausgegeben.
 
 - **Standard:** nur auf diesem PC erreichbar (`http://127.0.0.1:8765/`). Port und Ein/Aus stehen in den Einstellungen.
-- **Im Heimnetz:** „Auch im Heimnetz erreichbar“ einschalten. Dann gilt ein Zugangscode (steht in den Einstellungen), und es werden nur Geräte aus privaten Adressbereichen bedient, nie aus dem Internet. Beim ersten Mal fragt die Windows-Firewall nach einer Freigabe.
+- **Im Heimnetz:** „Auch im Heimnetz erreichbar“ einschalten. Dann gilt ein Zugangscode (steht in den Einstellungen), und es werden nur Geräte aus privaten Adressbereichen bedient, nie aus dem Internet. Beim ersten Mal fragt die Windows-Firewall (bzw. die macOS-Firewall, falls aktiv) nach einer Freigabe.
 - **Webseite:** `http://<IP des PCs>:8765/?token=<Code>` im Browser öffnen, sie aktualisiert sich von selbst.
+- **Aufs Handy:** Knopf **„📱 Handy“** im Hauptfenster zeigt einen QR-Code mit genau dieser Adresse (aktuelle IP, Port, Zugangscode) – mit der Handykamera scannen. Ist die API noch aus, lässt sie sich dort mit einem Klick fürs Heimnetz einschalten.
 - **Für eigene Programme (GET):** `/api/plan` (klein: Phase, Schritte, Warnungen), `/api/state` (alles; mit `?since=<rev>` wartet die Antwort bis zu 20 s auf eine Änderung), `/api/plan.txt` (Text), `/api/health`. Zugangscode per `?token=`, Kopfzeile `X-Token` oder `Authorization: Bearer`.
 
 Beispiel (PowerShell): `Invoke-RestMethod http://127.0.0.1:8765/api/plan | Select-Object phase, text`

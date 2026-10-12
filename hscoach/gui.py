@@ -271,6 +271,7 @@ class App(tk.Tk):
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)
         btn("📚 Sammlung", self._open_collection).pack(side="right", padx=4)
+        btn("📱 Handy", self._open_phone).pack(side="right", padx=4)
         self.btn_view = btn("", self._toggle_view)
         self.btn_view.pack(side="right", padx=4)
         self.btn_update = btn("⟳ Auf Update prüfen", self._check_update)
@@ -488,6 +489,15 @@ class App(tk.Tk):
             win.focus_force()
             return
         self._coll_win = collection_ui.CollectionWindow(self)
+
+    def _open_phone(self):
+        from . import phone_ui
+        win = getattr(self, "_phone_win", None)
+        if win is not None and win.winfo_exists():
+            win.lift()
+            win.focus_force()
+            return
+        self._phone_win = phone_ui.PhoneWindow(self)
 
     def on_settings_changed(self, changed):
         if not changed:

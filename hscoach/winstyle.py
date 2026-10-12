@@ -1,4 +1,5 @@
 """Windows-Feinheiten: Titelleiste im dunklen Stil des Programms (Windows 10/11, sonst wirkungslos)."""
+import sys
 
 CAPTION = "#12122b"      # Titelleiste
 TEXT = "#c8c8e8"         # Titeltext
@@ -12,6 +13,8 @@ def _colorref(hex_color):
 
 def style_titlebar(win, caption=CAPTION, text=TEXT, border=BORDER):
     """Dunkle Titelleiste fuer ein Tk-Fenster. Gibt True zurueck, wenn Windows die Einstellung angenommen hat."""
+    if sys.platform != "win32":
+        return False
     try:
         import ctypes
         win.update_idletasks()

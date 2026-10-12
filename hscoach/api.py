@@ -15,6 +15,7 @@ import ipaddress
 import json
 import logging
 import secrets
+import socket
 import sys
 import threading
 import time
@@ -157,6 +158,37 @@ def client_allowed(ip, lan):
     if a.is_loopback:
         return True
     return bool(lan and (a.is_private or a.is_link_local))
+
+
+def lan_ip():
+    """Aktuelle private IPv4-Adresse dieses Rechners im Heimnetz (z. B. 192.168.1.127), sonst "".
+    Der UDP-"connect" schickt nichts ab, er fragt nur das Betriebssystem, ueber welche Adresse es raus ginge."""
+    candidates = []
+    for probe in ("192.168.0.1", "10.0.0.1", "172.16.0.1", "8.8.8.8"):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect((probe, 9))
+                candidates.append(s.getsockname()[0])
+        except OSError:
+            continue
+    try:
+        candidates += socket.gethostbyname_ex(socket.gethostname())[2]
+    except OSError:
+        pass
+    for ip in candidates:
+        try:
+            a = ipaddress.ip_address(ip)
+        except ValueError:
+            continue
+        if a.version == 4 and a.is_private and not a.is_loopback and not a.is_link_local:
+            return ip
+    return ""
+
+
+def phone_url(ip, port, token=""):
+    """Adresse der Plan-Webseite fuer andere Geraete im Heimnetz."""
+    url = f"http://{ip}:{int(port)}/"
+    return url + (f"?token={token}" if token else "")
 
 
 def token_ok(expected, given):
