@@ -1,6 +1,8 @@
 """Aus dem Tracker (Entities) einen lesbaren Spielstand bauen."""
 from dataclasses import dataclass, field
 
+from . import decklog
+
 ZONE_PLAY, ZONE_HAND, ZONE_DECK, ZONE_SECRET = "PLAY", "HAND", "DECK", "SECRET"
 
 
@@ -196,6 +198,8 @@ class GameState:
     opp_played: list = field(default_factory=list)
     game_type: str = ""
     ui_known: bool = False            # liegen PowerTaskList-Zugmarker vor?
+    my_deck_name: str = ""
+    my_deck_left: list = None         # Karten-IDs, die noch im Deck liegen (aus Decks.log); None = unbekannt
     ui_my_turn: bool = False          # zeigt der Bildschirm schon meinen Zug?
     ui_step: str = ""
     choice: Choice = None             # offene Kartenauswahl (nur meine)
@@ -398,7 +402,20 @@ def build_state(tr, db):
     s.my_spellpower = sum(m.spellpower for m in s.my_minions)
     _build_events(s, tr, db, me)
     s.choice = _build_choice(tr, db, me)
+    _build_deck(s, tr, db, me)
     return s
+
+
+def _build_deck(s, tr, db, me):
+    """Rest im eigenen Deck, wenn die Decks.log den Deckcode der Partie kennt (sonst bleibt my_deck_left None)."""
+    name, code = decklog.deck_for_power_log(getattr(tr, "path", None))
+    if not code:
+        return
+    deck = decklog.deck_cids(code, db)
+    if not deck:
+        return
+    s.my_deck_name = name
+    s.my_deck_left = decklog.remaining(deck, tr, me)
 
 
 def _build_choice(tr, db, me):

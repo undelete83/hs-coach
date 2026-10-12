@@ -21,7 +21,7 @@ Live-Coach für **Hearthstone** (Windows). Der Coach liest die Logdatei, die Hea
 
 1. Auf der [Release-Seite](https://github.com/undelete83/hs-coach/releases) das Zip `HSCoach-<Version>.zip` laden und entpacken.
 2. `HSCoach.exe` starten. Beim ersten Start öffnet sich das Einstellungsfenster.
-3. Hearthstone schreibt die Logdatei nur, wenn eine `log.config` existiert. Zeigt der Dialog „✗ …“, klicke auf **„Power.log aktivieren“** und starte Hearthstone danach einmal komplett neu.
+3. Hearthstone schreibt die Logdatei nur, wenn eine `log.config` existiert. Zeigt der Dialog „✗ …“, klicke auf **„Power.log aktivieren“** und starte Hearthstone danach einmal komplett neu. Der Knopf legt dabei auch ein Deck-Log an: Damit kennt der Coach den Rest deines Decks (z. B. für Eichenranken).
 4. Spiel starten – der Coach findet den Log-Ordner und deinen Spielernamen selbst.
 
 Windows SmartScreen kann bei der unsignierten `.exe` warnen („Weitere Informationen → Trotzdem ausführen“). Wer das nicht möchte, nutzt Variante B.

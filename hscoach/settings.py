@@ -11,7 +11,7 @@ BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 RESTART_KEYS = ("log_dir", "player_name", "card_source", "design")
 
 LOG_CONFIG_TEXT = {
-    "ok": ("✓ Hearthstone schreibt die Power.log (log.config ist in Ordnung).", "#66ff88"),
+    "ok": ("✓ Hearthstone schreibt die Power.log und das Deck-Log (log.config ist in Ordnung).", "#66ff88"),
     "missing": ("✗ Keine log.config gefunden - ohne sie schreibt Hearthstone kein Power.log.", "#ff6666"),
     "no_power": ("✗ In der log.config fehlt der Abschnitt [Power].", "#ff6666"),
     "disabled": ("✗ In der log.config ist [Power] ausgeschaltet.", "#ff6666"),
@@ -203,8 +203,14 @@ class SettingsDialog(tk.Toplevel):
     def _refresh_logcfg(self):
         state = detect.check_log_config()
         text, color = LOG_CONFIG_TEXT[state]
+        decks = state == "ok" and detect.decks_logged()
+        if state == "ok" and not decks:
+            text, color = ("✓ Hearthstone schreibt die Power.log.\n• Deck-Log fehlt noch: Mit ihm kennt der Coach den Rest deines Decks "
+                           "(z. B. für Eichenranken). Danach Hearthstone einmal neu starten."), "#ffaa44"
         self.lbl_logcfg.config(text=text, fg=color)
-        if state == "ok":
+        self.btn_logcfg.config(text="Deck-Log ergänzen (log.config)" if state == "ok"
+                               else "Power.log aktivieren (log.config anlegen)")
+        if decks:
             self.btn_logcfg.pack_forget()
         else:
             self.btn_logcfg.pack(anchor="w", padx=14, pady=2)

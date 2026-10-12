@@ -15,7 +15,7 @@ from .extract import ensure_base_xml
 
 log = logging.getLogger("hscoach.carddb")
 
-SCHEMA = 4
+SCHEMA = 5
 HSJSON_URL = "https://api.hearthstonejson.com/v1/latest/{loc}/cards.json"
 HSJSON_TTL_S = 3 * 24 * 3600          # Kartendaten hoechstens alle 3 Tage neu laden
 USER_AGENT = "HSCoach/2 (+https://github.com/undelete83/hs-coach)"
@@ -86,6 +86,8 @@ def parse_hsjson(cards):
         info = {}
         if "name" in c:
             info["name"] = c["name"]
+        if c.get("dbfId"):
+            info["dbf"] = c["dbfId"]
         if c.get("text"):
             info["text"] = clean_text(c["text"])
         if "cost" in c:
@@ -185,6 +187,7 @@ class CardDB:
         self.source = ""
         self.error = ""
         self._fx = {}
+        self._by_dbf = None
 
     # -- Laden ---------------------------------------------------------------
     def _sources(self):
@@ -261,6 +264,12 @@ class CardDB:
     # -- Zugriff -------------------------------------------------------------
     def info(self, cid):
         return self.cards.get(cid) or {}
+
+    def cid_by_dbf(self, dbf):
+        """Karten-ID zur dbfId (aus Deckcodes). Bevorzugt sammelbare Fassungen (CORE_/Basis) vor Sonderdrucken."""
+        if self._by_dbf is None or not self._by_dbf and self.cards:
+            self._by_dbf = {i["dbf"]: cid for cid, i in self.cards.items() if i.get("dbf")}
+        return self._by_dbf.get(dbf, "")
 
     def name(self, cid):
         return self.info(cid).get("name", "")

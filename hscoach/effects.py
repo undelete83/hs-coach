@@ -92,6 +92,7 @@ class Effect:
     buff_kw: tuple = ()           # zusaetzliche Schluesselwoerter dazu: gottesschild | lebensentzug
     est_value: float = 0.0        # grob geschaetzter Wert, wenn der Effekt nicht simulierbar ist (Entdecken, Zufall)
     est_label: str = ""           # "Entdecken" | "Zufall"
+    deck_summon: int = 0          # "Ruft N Diener aus Eurem Deck herbei" (Planer bewertet mit dem echten Deckinhalt)
     est_note: str = ""            # Kartentext fuer die Anzeige
     choices: tuple = ()           # "Waehlt aus": je ein Effekt pro erkannter Option (die Karte spielt genau eine davon)
     choice_labels: tuple = ()     # Anzeigetexte dazu
@@ -620,9 +621,10 @@ def parse_effect(text, cardtype="SPELL", secret=False):
         e.shuffle_back = True
     md = _DECK_SUMMON.search(clean_text(text or "").lower())
     if md and cardtype == "SPELL":                      # Eichenranken: Diener aus dem Deck herbeirufen (Wert geschaetzt)
-        e.est_value += 2.5 * (_num(md.group(1)) or 1)
+        e.deck_summon = _num(md.group(1)) or 1
+        e.est_value += 2.5 * e.deck_summon
         e.est_label = e.est_label or "Diener aus dem Deck"
-        e.est_note = e.est_note or "Ruft einen Diener aus dem Deck herbei"
+        e.est_note = e.est_note or "Wert geschätzt, Deckliste unbekannt (Deck-Log in den Einstellungen ergänzen)"
         e.unknown = False
     mc = _LOSE_CRYSTAL.search(clean_text(text or "").lower())
     if mc:

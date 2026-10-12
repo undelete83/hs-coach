@@ -111,6 +111,25 @@ def _mval(m):
     return v
 
 
+def deck_minion_value(info):
+    """Wert eines Dieners aus der Kartendatenbank, auf derselben Skala wie _mval (Diener auf dem Brett)."""
+    atk, hp = info.get("atk", 0) or 0, info.get("health", 0) or 0
+    v = atk * 1.0 + hp * 0.8 + 1.0
+    if info.get("taunt"):
+        v += 1.5
+    if info.get("divine_shield"):
+        v += 0.7 * atk + 1.0
+    if info.get("poisonous"):
+        v += 2.5
+    if info.get("windfury"):
+        v += atk * 0.6
+    if info.get("lifesteal"):
+        v += 0.5 + 0.5 * atk
+    if info.get("stealth"):
+        v += 0.5
+    return v
+
+
 def _evaluate(ss):
     opp_total = ss.opp_hp + ss.opp_armor - ss.win_hp      # Boss-Siegschwelle: bei <= 0 ist der Kampf gewonnen
     if opp_total <= 0:
@@ -506,7 +525,13 @@ def _apply_fx(ss, fx, tgt, is_spell, name, log):
     if fx.heal:
         ss.my_hp = min(30, ss.my_hp + fx.heal)
         ss.util += min(fx.heal, 8) * 0.25
-    if fx.est_value:                             # Entdecken/Zufall: nicht simulierbar, pauschaler Wert
+    if fx.deck_summon and len(ss.mine) >= 7:     # Brett voll: der Diener aus dem Deck kann nicht erscheinen
+        pass
+    elif fx.deck_summon:                         # Eichenranken: Wert aus dem Deckinhalt (oder geschaetzt)
+        ss.util += fx.est_value
+        if log is not None:
+            log.append(f"Diener aus dem Deck – {fx.est_note}")
+    elif fx.est_value:                           # Entdecken/Zufall: nicht simulierbar, pauschaler Wert
         ss.util += fx.est_value
         if log is not None:
             log.append(f"{fx.est_label}: Wert pauschal geschätzt (kein genauer Effekt) – {fx.est_note}")
@@ -716,6 +741,8 @@ def _play_card(ss, c, tgt, log=None, opt=None):
     if di >= 0:
         n.disc = ss.disc[:di] + ss.disc[di + 1:]
     fx = c.fx
+    if fx.deck_summon and (fx.est_value <= 0 or len(ss.mine) >= 7):
+        n.util -= 0.6 * cost + 0.5              # kein Diener mehr im Deck / Brett voll: die Karte waere verschenkt
     if fx.draw or fx.hand_gain:
         n.drew = True
     rs = ss.reserve.get(c.name)          # Boss-Tipp: Karte fuer ein bestimmtes Ziel aufheben
@@ -855,10 +882,30 @@ class Planner:
                 if (c.secret or fx.secret) and c.name in s.my_secrets:
                     self._blocked.append((c.name, "dieses Geheimnis ist schon aktiv"))
                     continue
+            if fx.deck_summon and s.my_deck_left is not None:
+                fx = self._deck_summon_fx(fx, s.my_deck_left)
             cards.append(C(i, c.name, c.cid, c.cost, c.cardtype, c.text, c.atk, c.hp, c.race, c.taunt,
                            c.divine_shield, c.charge, c.rush, c.stealth, c.windfury, c.poisonous, c.lifesteal,
                            c.secret or fx.secret, fx, c.is_coin))
         return cards
+
+    def _deck_summon_fx(self, fx, deck_left):
+        """Eichenranken & Co.: Wert = Durchschnitt der Diener, die wirklich noch im Deck liegen (statt pauschal 2,5)."""
+        vals, atk, hp = [], 0, 0
+        for cid in deck_left:
+            i = self.db.info(cid)
+            if i.get("cardtype") != "MINION":
+                continue
+            vals.append(deck_minion_value(i))
+            atk += i.get("atk", 0) or 0
+            hp += i.get("health", 0) or 0
+        n = fx.deck_summon
+        if not vals:
+            return dataclasses.replace(fx, est_value=0.0, est_label="Diener aus dem Deck",
+                           est_note="kein Diener mehr im Deck – die Karte bewirkt nichts")
+        k = len(vals)
+        return dataclasses.replace(fx, est_value=sum(vals) / k * min(n, k), est_label="Diener aus dem Deck",
+                       est_note=f"im Schnitt {atk / k:.0f}/{hp / k:.0f} – {k} Diener noch im Deck")
 
     def _initial(self, s):
         ss = SS()
@@ -1301,7 +1348,7 @@ class Planner:
                     " - wenn möglich vorher einen billigen Zauber als Köder wirken"
                 w.append(f"Gegner hat ein Geheimnis (z. B. Gegenzauber): \u201e{first.name}\u201c ({first.cost} Mana) wird als erster "
                          f"Zauber gewirkt und könnte abgefangen werden{hint}.")
-        if s.my_mana >= 4 and plan.mana_used * 2 < s.my_mana:
+        if s.my_mana >= 4 and plan.mana_used * 2 < s.my_mana and not plan.lethal:     # im Siegerzug egal
             used = {st.cid for st in plan.steps if st.cid}
             left = [c for c in cards if c.cid not in used and c.ctype in ("MINION", "SPELL", "WEAPON") and c.cost <= s.my_mana]
             if left:

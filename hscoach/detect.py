@@ -12,7 +12,15 @@ FilePrinting=True
 ConsolePrinting=False
 ScreenPrinting=False
 Verbose=True
+
+[Decks]
+LogLevel=1
+FilePrinting=True
+ConsolePrinting=False
+ScreenPrinting=False
+Verbose=False
 """
+_SECTIONS = ("power", "decks")             # diese Abschnitte schreibt der Coach selbst
 
 _SUBDIRS = [r"Program Files (x86)\Hearthstone", r"Program Files\Hearthstone", r"Games\Blizzard\Hearthstone",
             r"Blizzard\Hearthstone", r"Games\Hearthstone", r"Hearthstone", r"Battle.net\Hearthstone",
@@ -124,6 +132,26 @@ def check_log_config(path=None):
     return "ok" if printing else "disabled"
 
 
+def decks_logged(path=None):
+    """Schreibt Hearthstone die Decks.log (Deckcode der laufenden Partie)?"""
+    path = path or log_config_path()
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return False
+    section, printing = None, False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1].lower()
+        elif section == "decks" and "=" in line:
+            k, v = [x.strip().lower() for x in line.split("=", 1)]
+            if k == "fileprinting":
+                printing = v == "true"
+    return printing
+
+
 def write_log_config(path=None):
     """Legt [Power] an bzw. aktiviert es; vorhandene Abschnitte bleiben erhalten. Sichert die alte Datei als .bak."""
     path = path or log_config_path()
@@ -139,7 +167,7 @@ def write_log_config(path=None):
     for raw in old.splitlines():
         s = raw.strip()
         if s.startswith("[") and s.endswith("]"):
-            skip = s[1:-1].lower() == "power"
+            skip = s[1:-1].lower() in _SECTIONS
         if not skip:
             out.append(raw)
     text = "\n".join(out).rstrip()

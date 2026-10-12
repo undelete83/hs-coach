@@ -217,7 +217,10 @@ class Tracker:
         return eid
 
     def _set_tag(self, eid, k, v):
-        self._ent(eid)["tags"][k] = _val(v)
+        e = self._ent(eid)
+        e["tags"][k] = _val(v)
+        if k == "ZONE" and "zone0" not in e:          # Startzone (DECK = Karte aus dem eigenen Startdeck)
+            e["zone0"] = e["tags"][k]
 
     def _power(self, rest):
         s = rest.lstrip()

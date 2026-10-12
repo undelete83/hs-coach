@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.19.0 - 12.10.2026
+- **Eichenranken & Co. mit dem echten Deck bewertet.** Karten wie „Ruft einen Diener aus Eurem Deck herbei“ wurden pauschal geschätzt. Jetzt liest der Coach den Deckcode der laufenden Partie aus der `Decks.log`, zieht alle Karten ab, die schon aus dem Deck gekommen sind, und rechnet mit dem Durchschnitt der Diener, die wirklich noch drin sind („im Schnitt 3/4 – 14 Diener noch im Deck“). Ist kein Diener mehr im Deck oder das Brett voll, schlägt der Plan die Karte nicht mehr vor.
+  - Dafür schreibt Hearthstone zusätzlich ein Deck-Log: In den Einstellungen gibt es dazu den Knopf „Deck-Log ergänzen“, danach Hearthstone einmal neu starten. Ohne Deck-Log bleibt es bei der Schätzung.
+- **Keine Mana-Warnung im Siegerzug.** Ist der Plan letal, entfällt der Hinweis „Nur 0 von 9 Mana im Plan“.
+
 ## 2.18.3 - 12.10.2026
 - Release mit den Fixes aus 2.18.2: **kein Absturz mehr bei Rückfragen auf dem Mac** (eigene Dialoge statt Systemdialog), **HTTPS in der Mac-App** (Zertifikate über `certifi`) und ein **Selbsttest**, der jedes Release vor dem Veröffentlichen auf Windows und Mac prüft.
 - Enthält außerdem den QR-Code fürs Handy aus 2.18.0 (Knopf „📱 Handy“).
