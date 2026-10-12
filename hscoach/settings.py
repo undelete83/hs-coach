@@ -1,9 +1,9 @@
 """Einstellungsdialog (tkinter). Die reine Logik (apply) ist von der Oberflaeche getrennt und einzeln testbar."""
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, ttk
 
-from . import api, config, detect, theme, widgets, winstyle
+from . import api, config, detect, dialogs, theme, widgets, winstyle
 
 BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 
@@ -213,9 +213,9 @@ class SettingsDialog(tk.Toplevel):
         try:
             p = detect.write_log_config()
         except OSError as ex:
-            messagebox.showerror("Fehler", f"log.config konnte nicht geschrieben werden:\n{ex}", parent=self)
+            dialogs.show_error("Fehler", f"log.config konnte nicht geschrieben werden:\n{ex}", parent=self)
             return
-        messagebox.showinfo("Erledigt", f"{p} wurde angelegt.\n\nHearthstone einmal komplett neu starten, "
+        dialogs.show_info("Erledigt", f"{p} wurde angelegt.\n\nHearthstone einmal komplett neu starten, "
                             "damit die Datei gelesen wird.", parent=self)
         self._refresh_logcfg()
 
@@ -226,7 +226,7 @@ class SettingsDialog(tk.Toplevel):
             self.lbl_key.config(text="Kein Key hinterlegt - Claude-Funktionen sind aus.", fg=GRAY)
 
     def _remove_key(self):
-        if messagebox.askyesno("API-Key entfernen", "Gespeicherten API-Key löschen?", parent=self):
+        if dialogs.ask_yes_no("API-Key entfernen", "Gespeicherten API-Key löschen?", parent=self):
             config.delete_api_key(self.cfg)
             self.var_key.set("")
             self._refresh_key_label()

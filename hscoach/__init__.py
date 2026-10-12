@@ -4,13 +4,28 @@ import logging.handlers
 import os
 import sys
 
-__version__ = "2.18.1"
+__version__ = "2.18.2"
 if getattr(sys, "frozen", False):          # als .exe (PyInstaller)
     REPO_DIR = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
 else:
     REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 _configured = False
+
+
+def setup_tls():
+    """macOS: Python-Builds ohne Zugriff auf die System-Zertifikate (z. B. die App aus der GitHub-CI) koennen sonst keine
+    HTTPS-Verbindung pruefen (CERTIFICATE_VERIFY_FAILED). Dann gilt das Zertifikatspaket von certifi."""
+    if sys.platform != "darwin" or os.environ.get("SSL_CERT_FILE"):
+        return
+    try:
+        import certifi
+        os.environ["SSL_CERT_FILE"] = certifi.where()
+    except ImportError:
+        pass
+
+
+setup_tls()
 
 
 def setup_logging():

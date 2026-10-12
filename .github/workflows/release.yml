@@ -44,6 +44,14 @@ jobs:
           CODE=$(python -c "import hscoach; print(hscoach.__version__)")
           test "v$CODE" = "$TAG" || { echo "Tag $TAG, Code $CODE"; exit 1; }
       - run: python scripts/build_exe.py
+      - name: Selbsttest der fertigen .exe (Tk, Module, HTTPS, QR)
+        shell: bash
+        run: |
+          set +e
+          ./dist/HSCoach/HSCoach.exe --selftest
+          CODE=$?
+          cat "$LOCALAPPDATA/hs_coach/selftest.txt" || true
+          exit $CODE
       - uses: actions/upload-artifact@v4
         with:
           name: windows
@@ -70,6 +78,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' dist/HSCoach.app/Contents/Info.plist)" = "$VERSION"
           codesign --verify --deep dist/HSCoach.app
           test -f "dist/HSCoach-$VERSION-mac.zip"
+      - name: Selbsttest der fertigen App (Tk, Module, HTTPS, QR)
+        run: dist/HSCoach.app/Contents/MacOS/HSCoach --selftest
       - uses: actions/upload-artifact@v4
         with:
           name: mac

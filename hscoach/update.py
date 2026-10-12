@@ -378,7 +378,8 @@ def build_script(directory, new_dir, work_dir, pid, exe_name=EXE_NAME, proc_name
 
 def _clean_env():
     """PyInstaller markiert die Umgebung; ein neu gestartetes Programm muss sich frisch entpacken."""
-    return {k: v for k, v in os.environ.items() if not k.startswith("_PYI") and k != "_MEIPASS2"}
+    return {k: v for k, v in os.environ.items()
+            if not k.startswith("_PYI") and k != "_MEIPASS2" and not k.startswith("HS_COACH_UPDATE_")}
 
 
 def launch(script_path):

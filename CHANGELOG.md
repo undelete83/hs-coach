@@ -5,6 +5,12 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.18.2 - 12.10.2026
+- **Mac: Absturz bei Rückfragen behoben.** Der Dialog „Version … jetzt installieren?“ (und andere Rückfragen) ließ die Mac-App abstürzen: macOS 26 hängt an Systemdialoge eine Gamecontroller-Steuerung, die Tk 9 beim Aufräumen falsch freigibt. Auf dem Mac zeigt der Coach Rückfragen und Meldungen jetzt in eigenen Fenstern im Coach-Stil; unter Windows bleibt alles wie bisher.
+- **Mac: HTTPS in der Release-App.** Die von GitHub gebaute Mac-App (2.18.1) fand keine Zertifikate (`CERTIFICATE_VERIFY_FAILED`): keine Kartendaten, keine Update-Prüfung. Sie nutzt jetzt das Zertifikatspaket `certifi` (neue Abhängigkeit).
+- **Selbsttest** `HSCoach --selftest` (Tk, Module, HTTPS, QR-Code). Der Release-Workflow führt ihn mit der fertig gebauten App auf Windows und Mac aus und veröffentlicht nur, wenn er besteht.
+- Test-Einstellungen für das Update (`HS_COACH_UPDATE_*`) werden nicht mehr an die neu gestartete App vererbt.
+
 ## 2.18.1 - 12.10.2026
 - Erstes Release mit den Neuerungen aus 2.18.0: **Zugplan aufs Handy per QR-Code** (Knopf „📱 Handy“, mit aktueller Heimnetz-Adresse, Port und Zugangscode), echte Adresse in den Plan-API-Einstellungen.
 - Erstes Release, bei dem GitHub das Windows- und das Mac-Paket automatisch baut.

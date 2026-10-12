@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, api, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, widgets, winstyle
+from . import analysis, api, board, bosses, choices, config, detect, dialogs, glossary, settings, theme, textures, tips, update, version, widgets, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -522,8 +522,7 @@ class App(tk.Tk):
         path = update.take_failure()
         if not path:
             return
-        from tkinter import messagebox
-        messagebox.showwarning("Update", "Das letzte Update konnte nicht installiert werden - der Coach läuft weiter in der "
+        dialogs.show_warning("Update", "Das letzte Update konnte nicht installiert werden - der Coach läuft weiter in der "
                                "alten Version.\n\nMeist hilft es, alle Coach-Fenster zu schließen, nur eines zu starten und das "
                                f"Update erneut zu versuchen.\n\nProtokoll: {path}", parent=self)
 
@@ -548,15 +547,14 @@ class App(tk.Tk):
         update.check_now_async(self.cfg, done)
 
     def _update_checked(self, status, result):
-        from tkinter import messagebox
         self.btn_update.config(state="normal", text="⟳ Auf Update prüfen")
         if status == "new":
             self._on_release(result)
             self._open_release()
         elif status == "current":
-            messagebox.showinfo("Update", f"Du hast bereits die neueste Version ({self.build.version}).", parent=self)
+            dialogs.show_info("Update", f"Du hast bereits die neueste Version ({self.build.version}).", parent=self)
         else:
-            messagebox.showwarning("Update", f"Die Suche nach Updates ist fehlgeschlagen:\n{result}\n\n"
+            dialogs.show_warning("Update", f"Die Suche nach Updates ist fehlgeschlagen:\n{result}\n\n"
                                    "Internetverbindung prüfen und später erneut versuchen.", parent=self)
 
     def _periodic_update_check(self):
@@ -574,11 +572,10 @@ class App(tk.Tk):
             import webbrowser
             webbrowser.open(r.url)
             return
-        from tkinter import messagebox
         s = self._state
         warn = "\n\nAchtung: Es läuft gerade eine Partie - der Coach wird kurz beendet." if (
             s is not None and not s.result and (s.turn or s.mulligan)) else ""
-        if messagebox.askyesno("Update", f"Version {r.version} jetzt installieren?\n\nDer Coach lädt das Update, prüft es "
+        if dialogs.ask_yes_no("Update", f"Version {r.version} jetzt installieren?\n\nDer Coach lädt das Update, prüft es "
                                "und startet danach neu. Einstellungen und API-Key bleiben erhalten." + warn, parent=self):
             self._start_update(r)
 
@@ -605,10 +602,9 @@ class App(tk.Tk):
         threading.Thread(target=work, daemon=True, name="self-update").start()
 
     def _update_failed(self, err, r):
-        from tkinter import messagebox
         self._updating = False
         self._update_msg = ""
-        messagebox.showerror("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
+        dialogs.show_error("Update fehlgeschlagen", f"{err}\n\nDu kannst das Paket auch von Hand laden:\n{r.url}",
                              parent=self)
 
     def _apply_view(self):

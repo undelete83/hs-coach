@@ -160,7 +160,7 @@ class TestUpdateButtonHandler(unittest.TestCase):
         self.app.build.version = "2.7.3"
 
     def run_handler(self, status, result):
-        with self.mock.patch("tkinter.messagebox.showinfo") as info, self.mock.patch("tkinter.messagebox.showwarning") as warn:
+        with self.mock.patch("hscoach.dialogs.show_info") as info, self.mock.patch("hscoach.dialogs.show_warning") as warn:
             self.gui.App._update_checked(self.app, status, result)
         return info, warn
 
