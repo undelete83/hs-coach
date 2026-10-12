@@ -14,8 +14,7 @@ class TestMacPaths(unittest.TestCase):
     def test_install_dirs_are_applications(self):
         with mock.patch.object(detect, "IS_MAC", True), mock.patch.dict(os.environ, {"HS_INSTALL_DIR": ""}):
             dirs = detect.candidate_install_dirs()
-        self.assertIn("/Applications/Hearthstone", dirs)
-        self.assertFalse(any(":\\" in d for d in dirs))
+        self.assertEqual(dirs, ["/Applications/Hearthstone", os.path.expanduser("~/Applications/Hearthstone")])
 
     def test_app_bundle_counts_as_installation(self):
         import tempfile
