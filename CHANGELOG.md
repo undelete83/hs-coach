@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.18.1 - 12.10.2026
+- Erstes Release mit den Neuerungen aus 2.18.0: **Zugplan aufs Handy per QR-Code** (Knopf „📱 Handy“, mit aktueller Heimnetz-Adresse, Port und Zugangscode), echte Adresse in den Plan-API-Einstellungen.
+- Erstes Release, bei dem GitHub das Windows- und das Mac-Paket automatisch baut.
+
 ## 2.18.0 - 12.10.2026
 - **Neu: Zugplan aufs Handy per QR-Code.** Der Knopf „📱 Handy“ öffnet ein Fenster mit einem QR-Code für die Plan-Webseite – mit der aktuellen Heimnetz-Adresse dieses Rechners, dem Port und dem Zugangscode. Mit der Handykamera scannen, fertig. Die Adresse wird alle paar Sekunden neu ermittelt, der Code stimmt also auch nach einem IP-Wechsel. Ist die Plan-API noch nicht fürs Heimnetz eingeschaltet, geht das direkt im Fenster mit einem Klick. Dazu „Adresse kopieren“.
 - In den Einstellungen steht bei der Plan-API jetzt die echte Heimnetz-Adresse statt „<IP-dieses-PCs>“.
