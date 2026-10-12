@@ -1,9 +1,10 @@
-"""Updates: Hinweis auf neue GitHub-Releases und (nur bei der .exe) Selbst-Update.
+"""Updates: Hinweis auf neue GitHub-Releases und (bei der .exe bzw. der Mac-App) Selbst-Update.
 
 Ablauf des Selbst-Updates: Zip laden -> Pruefsumme (SHA-256 aus der GitHub-Release-API) kontrollieren -> sicher
 entpacken -> ein kleines Batch-Skript wartet, bis der Coach beendet ist, ersetzt dann die Programmdateien (mit
 Rueckfall auf die alte Version, wenn das Kopieren scheitert) und startet den Coach neu. Einstellungen, API-Key und
 Berichte liegen ausserhalb des Programmordners und bleiben unberuehrt.
+Auf dem Mac dasselbe mit `HSCoach-<Version>-mac.zip`: ein Shell-Skript tauscht das ganze `HSCoach.app`-Bundle aus.
 
 Schlaegt die Abfrage fehl (offline, kein Release, Rate-Limit), bleibt alles stumm.
 """
@@ -12,6 +13,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -32,7 +34,11 @@ API_URL = os.environ.get("HS_COACH_UPDATE_URL") or "https://api.github.com/repos
 TIMEOUT_S = 6
 MAX_ZIP_BYTES = 300 * 1024 * 1024
 EXE_NAME = "HSCoach.exe"
-ASSET_RE = re.compile(r"^HSCoach-\d[\d.]*\.zip$")          # nur das Windows-Zip, nicht "-mac.zip"
+IS_MAC = sys.platform == "darwin"
+WIN_ASSET_RE = re.compile(r"^HSCoach-\d[\d.]*\.zip$")         # Windows-Zip (nie das "-mac.zip")
+MAC_ASSET_RE = re.compile(r"^HSCoach-\d[\d.]*-mac\.zip$")
+ASSET_RE = MAC_ASSET_RE if IS_MAC else WIN_ASSET_RE
+APP_BUNDLE = "HSCoach.app"
 
 Release = namedtuple("Release", "version url asset_url asset_name size sha256")
 
@@ -58,12 +64,13 @@ def _fetch(url, opener, accept="application/json"):
         return resp.read()
 
 
-def _asset_info(data, opener):
-    """(name, url, size, sha256) des Programm-Zips im Release - oder Leerwerte."""
+def _asset_info(data, opener, pattern=None):
+    """(name, url, size, sha256) des Programm-Zips fuer diese Plattform im Release - oder Leerwerte."""
+    pattern = pattern or ASSET_RE
     assets = data.get("assets") or []
     for a in assets:
         name = str(a.get("name") or "")
-        if not ASSET_RE.match(name):
+        if not pattern.match(name):
             continue
         sha = str(a.get("digest") or "")
         sha = sha.split(":", 1)[1].lower() if sha.lower().startswith("sha256:") else ""
@@ -127,8 +134,34 @@ def app_dir():
     return os.path.dirname(os.path.abspath(sys.executable))
 
 
+def mac_bundle(executable=None):
+    """Pfad von `HSCoach.app`, wenn der Coach als Mac-App laeuft (…/HSCoach.app/Contents/MacOS/HSCoach), sonst ""."""
+    exe = os.path.abspath(executable or sys.executable)
+    bundle = os.path.dirname(os.path.dirname(os.path.dirname(exe)))
+    return bundle if bundle.endswith(".app") and os.path.basename(os.path.dirname(exe)) == "MacOS" else ""
+
+
+def can_self_update_mac(bundle=None, frozen=None):
+    """Die Mac-App darf sich ersetzen, wenn sie als Bundle laeuft und ihr Ordner (z. B. /Applications) beschreibbar ist."""
+    if not (getattr(sys, "frozen", False) if frozen is None else frozen):
+        return False
+    b = bundle or mac_bundle()
+    if not b or not os.path.isdir(os.path.join(b, "Contents", "MacOS")):
+        return False
+    if "/AppTranslocation/" in b or b.startswith("/Volumes/"):   # aus dem Download-Ordner/DMG gestartet: erst verschieben
+        return False
+    try:
+        with tempfile.NamedTemporaryFile(dir=os.path.dirname(b)):
+            pass
+    except OSError:
+        return False
+    return True
+
+
 def can_self_update(directory=None, frozen=None):
-    """Nur die installierte .exe darf sich ersetzen - und nur, wenn der Ordner beschreibbar und das Skript sicher ist."""
+    """Nur die installierte .exe/.app darf sich ersetzen - und nur, wenn der Ordner beschreibbar und das Skript sicher ist."""
+    if IS_MAC:
+        return can_self_update_mac(directory, frozen)
     if os.name != "nt" or not (getattr(sys, "frozen", False) if frozen is None else frozen):
         return False
     d = directory or app_dir()
@@ -207,6 +240,76 @@ def extract(zip_path, dest_dir):
     if not (os.path.isfile(os.path.join(new, EXE_NAME)) and os.path.isdir(os.path.join(new, "_internal"))):
         raise UpdateError("Ungueltiges Paket (HSCoach.exe oder _internal fehlt).")
     return new
+
+
+def extract_mac(zip_path, dest_dir):
+    """Entpackt das Mac-Zip mit `ditto` (erhaelt Symlinks und Rechte im Bundle) und gibt den Pfad der neuen App zurueck."""
+    root = os.path.realpath(dest_dir)
+    with zipfile.ZipFile(zip_path) as z:
+        for info in z.infolist():
+            target = os.path.realpath(os.path.join(root, info.filename))
+            if target != root and not target.startswith(root + os.sep):
+                raise UpdateError("Ungueltiges Paket (Pfad ausserhalb des Zielordners).")
+    os.makedirs(root, exist_ok=True)
+    try:
+        subprocess.run(["/usr/bin/ditto", "-x", "-k", zip_path, root], check=True, capture_output=True, timeout=120)
+    except Exception as ex:
+        raise UpdateError(f"Entpacken fehlgeschlagen: {ex}") from ex
+    new = os.path.join(root, APP_BUNDLE)
+    if not os.path.isfile(os.path.join(new, "Contents", "MacOS", "HSCoach")):
+        raise UpdateError("Ungueltiges Paket (HSCoach.app fehlt).")
+    return new
+
+
+def build_script_mac(bundle, new_app, work_dir, pid, log_path=None, restart=True, wait_s=90):
+    """Shell-Skript: wartet auf das Ende des Coaches, tauscht das App-Bundle aus (alte Version bleibt als .bak, bis die
+    neue an ihrem Platz ist; sonst Rueckfall) und startet die App neu. Bei einem Fehlschlag entsteht `<log>.failed`."""
+    log = log_path or os.path.join(work_dir, "update.log")
+    q = shlex.quote
+    lines = [
+        "#!/bin/sh",
+        f"APP={q(bundle)}",
+        f"NEW={q(new_app)}",
+        f"WORK={q(work_dir)}",
+        f"LOG={q(log)}",
+        'BAK="$APP.bak"',
+        'echo "[$(date)] Update gestartet" >> "$LOG"',
+        "n=0",
+        f"while kill -0 {int(pid)} 2>/dev/null; do",
+        "  n=$((n+1))",
+        f"  if [ $n -ge {int(wait_s)} ]; then",
+        '    echo "[$(date)] Coach beendet sich nicht - Abbruch" >> "$LOG"',
+        '    echo "Update fehlgeschlagen" > "$LOG.failed"; rm -rf "$WORK"; exit 1',
+        "  fi",
+        "  sleep 1",
+        "done",
+        'echo "[$(date)] Coach beendet, tausche App aus" >> "$LOG"',
+        'rm -rf "$BAK"',
+        'if mv "$APP" "$BAK" 2>>"$LOG"; then',
+        '  if mv "$NEW" "$APP" 2>>"$LOG"; then',
+        '    rm -rf "$BAK"',
+        '    echo "[$(date)] Update erfolgreich" >> "$LOG"',
+        "  else",
+        '    echo "[$(date)] Austausch gescheitert, alte Version wird wiederhergestellt" >> "$LOG"',
+        '    rm -rf "$APP"; mv "$BAK" "$APP"',
+        '    echo "Update fehlgeschlagen" > "$LOG.failed"',
+        "  fi",
+        "else",
+        '  echo "[$(date)] Alte App konnte nicht verschoben werden" >> "$LOG"',
+        '  echo "Update fehlgeschlagen" > "$LOG.failed"',
+        "fi",
+        '/usr/bin/xattr -dr com.apple.quarantine "$APP" 2>/dev/null',
+    ]
+    if restart:
+        lines.append('/usr/bin/open "$APP"')
+    lines += ['rm -rf "$WORK"', ""]
+    return "\n".join(lines)
+
+
+def launch_mac(script_path):
+    subprocess.Popen(["/bin/sh", script_path], start_new_session=True, close_fds=True, env=_clean_env(),
+                     cwd=os.path.dirname(os.path.dirname(script_path)) or "/", stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 _SYS32 = "%SystemRoot%\\System32\\"      # absolute Pfade: ein anderes `find` im PATH (z. B. von Git) darf nicht stoeren
@@ -289,7 +392,7 @@ def prepare(release, repo, work_dir, progress=None, opener=urllib.request.urlope
     """Download, Pruefung, Entpacken. Gibt den Ordner mit der neuen Version zurueck."""
     shutil.rmtree(work_dir, ignore_errors=True)
     zip_path = download(release, repo, work_dir, progress, opener)
-    return extract(zip_path, os.path.join(work_dir, "new"))
+    return (extract_mac if IS_MAC else extract)(zip_path, os.path.join(work_dir, "new"))
 
 
 def log_file():
@@ -311,7 +414,7 @@ def take_failure():
 
 def install_and_restart(new_dir, work_dir, directory=None, pid=None):
     """Schreibt und startet das Austausch-Skript. Danach muss sich der Coach sofort beenden."""
-    script = os.path.join(work_dir, "update.cmd")
+    script = os.path.join(work_dir, "update.sh" if IS_MAC else "update.cmd")
     log = log_file()
     os.makedirs(os.path.dirname(log), exist_ok=True)
     with open(log, "w", encoding="utf-8") as f:
@@ -320,6 +423,11 @@ def install_and_restart(new_dir, work_dir, directory=None, pid=None):
         os.remove(log + ".failed")
     except OSError:
         pass
+    if IS_MAC:
+        with open(script, "w", encoding="utf-8", newline="\n") as f:
+            f.write(build_script_mac(directory or mac_bundle(), new_dir, work_dir, pid or os.getpid(), log_path=log))
+        launch_mac(script)
+        return
     with open(script, "w", encoding="utf-8", newline="") as f:
         f.write(build_script(directory or app_dir(), new_dir, work_dir, pid or os.getpid(), log_path=log))
     launch(script)

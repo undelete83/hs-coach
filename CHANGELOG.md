@@ -5,6 +5,10 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.17.1 - 12.10.2026
+- **Selbst-Update auch auf dem Mac**: Wie unter Windows lädt der Coach ein neues Release (`HSCoach-<Version>-mac.zip`), prüft die SHA-256-Summe, entpackt es mit `ditto`, tauscht nach dem Beenden das ganze `HSCoach.app` aus (bei einem Fehler kommt die alte Version zurück) und startet neu. Voraussetzung: die App liegt in einem beschreibbaren Ordner wie `/Applications` (nicht direkt aus dem Download-Ordner gestartet). Protokoll: `~/Library/Application Support/hs_coach/update.log`.
+- **Mac: abgedunkelte Handkarten waren schwarz.** Karten, die du gerade nicht bezahlen kannst, eingefrorene und getarnte Diener bekommen eine halbdurchsichtige Schicht. macOS-Tk kann dafür kein Raster (stipple) und füllte die Fläche deckend schwarz. Auf dem Mac wird die Schicht jetzt als halbdurchsichtiges Bild gezeichnet.
+
 ## 2.17.0 - 12.10.2026
 - **Neu: Mac-Version.** Der Coach läuft jetzt auch auf macOS (Hearthstone aus `/Applications/Hearthstone`). Log-Ordner und `log.config` (`~/Library/Preferences/Blizzard/Hearthstone/`) werden automatisch gefunden, „Power.log aktivieren“ funktioniert. Einstellungen, Cache und Logdatei liegen unter `~/Library/Application Support/`. Bauen mit `python3 scripts/build_mac.py` (braucht ein Python mit Tk, z. B. Homebrew `python-tk`), ergibt `HSCoach.app` und `HSCoach-<Version>-mac.zip`. Das Selbst-Update gibt es auf dem Mac nicht; der Update-Hinweis öffnet die Release-Seite.
 - Knöpfe auf dem Mac im dunklen Stil (macOS ignoriert sonst die Hintergrundfarbe von Tk-Knöpfen).

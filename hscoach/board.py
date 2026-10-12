@@ -6,12 +6,14 @@
 """
 import math
 import re
+import sys
 from dataclasses import dataclass, field
 
 from .effects import clean_text
 from .glossary import GLOSSARY
 
 HEIGHT = 380
+STIPPLE_OK = sys.platform != "darwin"      # macOS-Tk kennt kein stipple und fuellt solche Flaechen deckend
 LEFT = 200                 # linke Spalte fuer die Helden
 GAP = 10
 MAX_TILE_W = 112
@@ -293,9 +295,29 @@ class BoardView:
         self.c, self.images, self.p = canvas, images, pal
         self._last = None
         self._h = HEIGHT
-        self.hits = []             # (x1, y1, x2, y2, titel, text) fuer die Hover-Erklaerung
+        self.hits = []
+        self._veils = []             # (x1, y1, x2, y2, titel, text) fuer die Hover-Erklaerung
 
     # -- Hilfen --------------------------------------------------------------------------------
+    def veil(self, x1, y1, x2, y2, r, fill, alpha):
+        """Halbdurchsichtige Flaeche (abgedunkelt/eingefroren). Windows: stipple; macOS: RGBA-Bild per Pillow."""
+        if STIPPLE_OK:
+            return BoardView.rrect(self, x1, y1, x2, y2, r, fill=fill, outline="",
+                                   stipple="gray50" if alpha >= 0.4 else "gray25")
+        try:
+            from PIL import Image, ImageDraw, ImageTk
+        except ImportError:
+            return None                                   # lieber keine Schicht als eine deckende
+        w, h = int(x2 - x1), int(y2 - y1)
+        if w < 2 or h < 2:
+            return None
+        rgb = tuple(int(fill[i:i + 2], 16) for i in (1, 3, 5))
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        ImageDraw.Draw(img).rounded_rectangle((0, 0, w - 1, h - 1), radius=r, fill=rgb + (int(255 * alpha),))
+        photo = ImageTk.PhotoImage(img)
+        self._veils.append(photo)                        # Referenz halten, sonst raeumt Tk das Bild ab
+        return self.c.create_image(x1, y1, image=photo, anchor="nw")
+
     def rrect(self, x1, y1, x2, y2, r=10, **kw):
         pts = [x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r, x2, y2 - r, x2, y2, x2 - r, y2, x1 + r, y2, x1, y2, x1, y2 - r,
                x1, y1 + r, x1, y1]
@@ -319,6 +341,7 @@ class BoardView:
         c, p = self.c, self.p
         lay = layout(len(model.opp_tiles), len(model.my_tiles), width, height)
         c.delete("all")
+        self._veils = []
         self.hits = []
         c.create_rectangle(0, 0, width, height, fill=p["BG"], outline="")
         c.create_line(LEFT - 8, 8, LEFT - 8, height - 8, fill=p["EDGE"], width=2)
@@ -378,10 +401,10 @@ class BoardView:
             c.create_text(bx + bw / 2, by + 7, text=text, fill=p["BADGE_TEXT"], font=("Segoe UI", 8, "bold"))
             bx += bw + 4
         if t.frozen:
-            self.rrect(x, y, x + w, y + h, 12, fill=p["FROZEN"], outline="", stipple="gray50")
+            self.veil(x, y, x + w, y + h, 12, p["FROZEN"], 0.5)
             c.create_text(x + w - 16, y + 18, text="❄", fill="#e8f6ff", font=("Segoe UI Symbol", 16, "bold"))
         elif t.stealth:
-            self.rrect(x, y, x + w, y + h, 12, fill="#000000", outline="", stipple="gray25")
+            self.veil(x, y, x + w, y + h, 12, "#000000", 0.25)
         hurt = t.hp < t.max_hp
         self.gem(x + 16, y + h - 16, 15, p["ATK"], t.atk, fg="#2b1a00")
         self.gem(x + w - 16, y + h - 16, 15, p["HP_HURT"] if hurt else p["HP"], t.hp)
@@ -452,6 +475,7 @@ class HandView:
         self.c, self.images, self.p = canvas, images, pal
         self._last = None
         self.hits = []
+        self._veils = []
 
     def draw(self, model, width, height=HAND_H, force=False):
         key = (model, width, height)
@@ -460,6 +484,7 @@ class HandView:
         self._last = key
         c, p = self.c, self.p
         c.delete("all")
+        self._veils = []
         self.hits = []
         c.create_rectangle(0, 0, width, height, fill=p["BG"], outline="")
         c.create_line(LEFT - 8, 8, LEFT - 8, height - 8, fill=p["EDGE"], width=2)
@@ -513,6 +538,6 @@ class HandView:
             self._gem(x + 14, y + h - 14, 12, p["ATK"], card.atk, fg="#2b1a00", size=11)
             self._gem(x + w - 14, y + h - 14, 12, p["HP"], card.hp, size=11)
         if not card.playable:
-            BoardView.rrect(self, x, y, x + w, y + h, 10, fill="#000000", outline="", stipple="gray50")
+            BoardView.veil(self, x, y, x + w, y + h, 10, "#000000", 0.5)
         if card.marks:
             self._gem(x + w - 14, y + 14, 12, p["MARK_ATT"], card.marks[0], size=11)

@@ -51,7 +51,7 @@ python3.14 scripts/build_mac.py      # baut dist/HSCoach.app (+ Zip)
 ```
 
 Oder direkt aus dem Quellcode: `python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python hs_coach.py`.
-Auf dem Mac liegen `log.config` unter `~/Library/Preferences/Blizzard/Hearthstone/`, Einstellungen, Cache und Logdatei unter `~/Library/Application Support/HSCoach` bzw. `hs_coach`. Das Selbst-Update gibt es nur unter Windows; auf dem Mac öffnet der Update-Hinweis die Release-Seite.
+Auf dem Mac liegen `log.config` unter `~/Library/Preferences/Blizzard/Hearthstone/`, Einstellungen, Cache und Logdatei unter `~/Library/Application Support/HSCoach` bzw. `hs_coach`. Updates installiert die Mac-App wie unter Windows selbst (Release-Asset `HSCoach-<Version>-mac.zip`), sofern sie in einem beschreibbaren Ordner wie `/Applications` liegt.
 
 ## Einstellungen
 

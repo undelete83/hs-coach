@@ -25,5 +25,24 @@ class TestMacPaths(unittest.TestCase):
                 self.assertEqual(detect.find_log_dir([root]), os.path.join(root, "Logs"))
 
 
+class TestVeil(unittest.TestCase):
+    def test_veil_without_stipple_is_transparent_image(self):
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+        except Exception:
+            self.skipTest("kein Tk")
+        try:
+            from hscoach import board
+            canvas = tk.Canvas(root, width=100, height=100)
+            view = board.BoardView(canvas, None, {})
+            with mock.patch.object(board, "STIPPLE_OK", False):
+                item = view.veil(0, 0, 80, 100, 10, "#000000", 0.5)
+            self.assertEqual(canvas.type(item), "image")
+            self.assertEqual(len(view._veils), 1)
+        finally:
+            root.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

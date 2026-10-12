@@ -44,6 +44,17 @@ def make_zip(path, files):
             z.writestr(name, data)
 
 
+_ORIG_ASSET_RE = update.ASSET_RE
+
+
+def setUpModule():
+    update.ASSET_RE = update.WIN_ASSET_RE        # die meisten Tests hier arbeiten mit dem Windows-Paketnamen
+
+
+def tearDownModule():
+    update.ASSET_RE = _ORIG_ASSET_RE
+
+
 GOOD_FILES = {"HSCoach/HSCoach.exe": b"exe", "HSCoach/_internal/lib.dll": b"dll", "HSCoach/README.md": b"hi"}
 
 
@@ -73,6 +84,20 @@ class TestCheck(unittest.TestCase):
                  "digest": "sha256:" + "00" * 32},
                 {"name": "HSCoach-2.7.0.zip", "browser_download_url": ZIP_URL, "size": 5, "digest": "sha256:" + sha}]}))
         self.assertEqual((r.asset_name, r.asset_url), ("HSCoach-2.7.0.zip", ZIP_URL))
+
+    def test_mac_picks_mac_zip(self):
+        sha = "12" * 32
+        r = update.check(REPO, "2.6.0", opener_for({
+            "tag_name": "v2.7.0", "assets": [
+                {"name": "HSCoach-2.7.0.zip", "browser_download_url": ZIP_URL, "size": 5, "digest": "sha256:" + "00" * 32},
+                {"name": "HSCoach-2.7.0-mac.zip", "browser_download_url": ZIP_URL + "-mac", "size": 9,
+                 "digest": "sha256:" + sha}]}))
+        name, url, size, got = update._asset_info({"assets": [
+            {"name": "HSCoach-2.7.0.zip", "browser_download_url": ZIP_URL, "size": 5, "digest": "sha256:" + "00" * 32},
+            {"name": "HSCoach-2.7.0-mac.zip", "browser_download_url": ZIP_URL + "-mac", "size": 9,
+             "digest": "sha256:" + sha}]}, None, update.MAC_ASSET_RE)
+        self.assertEqual((name, got), ("HSCoach-2.7.0-mac.zip", sha))
+        self.assertEqual(r.asset_name, "HSCoach-2.7.0.zip")          # Windows-Muster ist in diesem Modul gesetzt
 
     def test_checksum_file_fallback(self):
         sha = "cd" * 32
@@ -370,3 +395,99 @@ class TestRealSwap(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMacUpdate(unittest.TestCase):
+    def test_bundle_path_from_executable(self):
+        self.assertEqual(update.mac_bundle("/Applications/HSCoach.app/Contents/MacOS/HSCoach"), "/Applications/HSCoach.app")
+        self.assertEqual(update.mac_bundle("/usr/bin/python3"), "")
+
+    def test_guards(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = os.path.join(d, "HSCoach.app")
+            self.assertFalse(update.can_self_update_mac(app, frozen=False))
+            self.assertFalse(update.can_self_update_mac(app, frozen=True))              # kein Bundle
+            os.makedirs(os.path.join(app, "Contents", "MacOS"))
+            self.assertTrue(update.can_self_update_mac(app, frozen=True))
+        self.assertFalse(update.can_self_update_mac(
+            "/private/var/folders/x/AppTranslocation/y/d/HSCoach.app", frozen=True))
+
+    def test_script_quotes_paths(self):
+        s = update.build_script_mac("/Apps/Mein Ordner/HSCoach.app", "/w/new/HSCoach.app", "/w", 4242, "/l/update.log")
+        self.assertIn("APP='/Apps/Mein Ordner/HSCoach.app'", s)
+        self.assertIn("kill -0 4242", s)
+        self.assertIn('/usr/bin/open "$APP"', s)
+        self.assertNotIn("open", update.build_script_mac("/a.app", "/n.app", "/w", 1, restart=False).replace("/dev/null", ""))
+
+
+@unittest.skipUnless(sys.platform == "darwin", "nur macOS")
+class TestMacRealSwap(unittest.TestCase):
+    """Echtes Entpacken mit ditto und echter Austausch eines Test-Bundles durch das Shell-Skript (ohne Neustart)."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root, True)
+        self.app = os.path.join(self.root, "Programme mit Leerzeichen", "HSCoach.app")
+        self._bundle(self.app, "old")
+        self.work = os.path.join(self.root, "work")
+        os.makedirs(self.work)
+        self.log = os.path.join(self.root, "update.log")
+
+    def _bundle(self, path, version):
+        os.makedirs(os.path.join(path, "Contents", "MacOS"))
+        exe = os.path.join(path, "Contents", "MacOS", "HSCoach")
+        with open(exe, "w") as f:
+            f.write("#!/bin/sh\n")
+        os.chmod(exe, 0o755)
+        os.symlink("MacOS/HSCoach", os.path.join(path, "Contents", "link"))
+        with open(os.path.join(path, "Contents", "VERSION"), "w") as f:
+            f.write(version)
+
+    def _version(self):
+        with open(os.path.join(self.app, "Contents", "VERSION")) as f:
+            return f.read()
+
+    def wait_for(self, cond, timeout=20):
+        end = time.time() + timeout
+        while time.time() < end:
+            if cond():
+                return True
+            time.sleep(0.2)
+        return False
+
+    def test_extract_keeps_symlinks_and_rights(self):
+        src = os.path.join(self.root, "src", "HSCoach.app")
+        self._bundle(src, "new")
+        z = os.path.join(self.root, "HSCoach-9.9.9-mac.zip")
+        subprocess.run(["ditto", "-c", "-k", "--keepParent", src, z], check=True)
+        new = update.extract_mac(z, os.path.join(self.work, "new"))
+        self.assertTrue(os.path.islink(os.path.join(new, "Contents", "link")))
+        self.assertTrue(os.access(os.path.join(new, "Contents", "MacOS", "HSCoach"), os.X_OK))
+
+    def test_swap_waits_and_replaces(self):
+        new = os.path.join(self.work, "new", "HSCoach.app")
+        self._bundle(new, "new")
+        waiter = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2)"])
+        script = os.path.join(self.work, "update.sh")
+        with open(script, "w") as f:
+            f.write(update.build_script_mac(self.app, new, self.work, waiter.pid, self.log, restart=False))
+        update.launch_mac(script)
+        time.sleep(0.8)
+        self.assertEqual(self._version(), "old", "darf nicht vor dem Prozessende tauschen")
+        waiter.wait()
+        self.assertTrue(self.wait_for(lambda: not os.path.exists(self.work)), "Arbeitsordner wird aufgeraeumt")
+        self.assertEqual(self._version(), "new")
+        self.assertFalse(os.path.exists(self.app + ".bak"))
+        self.assertIn("erfolgreich", open(self.log).read())
+        self.assertFalse(os.path.exists(self.log + ".failed"))
+
+    def test_rollback_when_new_app_missing(self):
+        script = os.path.join(self.work, "update.sh")
+        with open(script, "w") as f:
+            f.write(update.build_script_mac(self.app, os.path.join(self.root, "fehlt.app"), self.work, 999999,
+                                            self.log, restart=False))
+        update.launch_mac(script)
+        self.assertTrue(self.wait_for(lambda: not os.path.exists(self.work)))
+        self.assertEqual(self._version(), "old", "alte Version muss zurueckkommen")
+        self.assertFalse(os.path.exists(self.app + ".bak"))
+        self.assertTrue(os.path.exists(self.log + ".failed"))
