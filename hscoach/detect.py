@@ -2,6 +2,9 @@
 import glob
 import os
 import string
+import sys
+
+IS_MAC = sys.platform == "darwin"
 
 LOG_CONFIG_TEXT = """[Power]
 LogLevel=1
@@ -48,6 +51,8 @@ def candidate_install_dirs():
     env = os.environ.get("HS_INSTALL_DIR")
     if env:
         dirs.append(env)
+    if IS_MAC:
+        return dirs + ["/Applications/Hearthstone", os.path.expanduser("~/Applications/Hearthstone")]
     dirs += _registry_install_dirs()
     for root in _fixed_drives():
         dirs += [os.path.join(root, sub) for sub in _SUBDIRS]
@@ -81,12 +86,15 @@ def find_log_dir(extra_candidates=()):
         newest = max((os.path.getmtime(p) for p in subs), default=0)
         if subs and newest > best_time:
             best, best_time = logs, newest
-        elif best is None and os.path.isdir(os.path.join(os.path.dirname(logs), "Hearthstone_Data")):
+        elif best is None and any(os.path.exists(os.path.join(os.path.dirname(logs), x))
+                                  for x in ("Hearthstone_Data", "Hearthstone.app")):
             best = logs                # Installation vorhanden, nur noch kein Log
     return best
 
 
 def log_config_path():
+    if IS_MAC:
+        return os.path.expanduser("~/Library/Preferences/Blizzard/Hearthstone/log.config")
     base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
     return os.path.join(base, "Blizzard", "Hearthstone", "log.config")
 

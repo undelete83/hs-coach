@@ -7,7 +7,7 @@ import threading
 import time
 import tkinter as tk
 
-from . import analysis, api, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, winstyle
+from . import analysis, api, board, bosses, choices, config, detect, glossary, settings, theme, textures, tips, update, version, widgets, winstyle
 from .ai import ClaudeCoach
 from .carddb import CardDB
 from .images import ImageCache, PIL_OK
@@ -266,7 +266,7 @@ class App(tk.Tk):
         chk("Claude API", self.var_claude, self._toggle_claude).pack(side="left", padx=8)
 
         def btn(text, cmd):
-            return tk.Button(bar, text=text, command=cmd, bg=BTN, fg=GOLD, relief="flat",
+            return widgets.Button(bar, text=text, command=cmd, bg=BTN, fg=GOLD, relief="flat",
                              font=("Segoe UI", 10), cursor="hand2", activebackground=BTN_ACTIVE, activeforeground=GOLD)
 
         btn("⚙ Einstellungen", self._open_settings).pack(side="right", padx=8)

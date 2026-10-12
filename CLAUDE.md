@@ -1,12 +1,13 @@
 # HS Coach – Hinweise für Claude Code
 
-Windows-Live-Coach für Hearthstone (Python/tkinter). Liest `Power.log`, Regel-Engine plant Züge, optional Claude-Tipps.
+Live-Coach für Hearthstone unter Windows und macOS (Python/tkinter). Liest `Power.log`, Regel-Engine plant Züge, optional Claude-Tipps.
 Repo: github.com/undelete83/hs-coach, Branch `main`. Besitzer: Andreas. Antworten auf Deutsch, lockerer Ton (Duzen) ist erwünscht.
 
-## Stand (09.10.2026, Version 2.9.4)
-- Seit dem letzten Release v2.7.6 wurden die Versionen 2.7.7 bis 2.9.4 gebaut (siehe CHANGELOG.md), alles auf `main`.
-- Release v2.9.4 fehlt noch: auf dem PC `python scripts/build_exe.py`, dann GitHub-Release `v2.9.4` mit `HSCoach-2.9.4.zip` (+ `.sha256`). Release-Text = CHANGELOG 2.7.7 bis 2.9.4.
-- Kartenbasis (Datenstand hearthstone_data): 8.170 sammelbare Karten, 2.304 Zauber. Davon 578 ohne erkannten Effekt, 398 nur grob geschätzt (Entdecken/Zufall), rund 1.330 genau gerechnet.
+## Stand (12.10.2026, Version 2.17.0)
+- Letztes veröffentlichtes Release: v2.16.5. Neu in 2.17.0: Mac-Version (siehe CHANGELOG.md).
+- Windows-Release: auf dem PC `python scripts/build_exe.py` → `HSCoach-X.Y.Z.zip`. Mac-Release: auf dem Mac `python3 scripts/build_mac.py` → `HSCoach-X.Y.Z-mac.zip` (beide mit `.sha256`). Der Windows-Updater nimmt nur `HSCoach-<Version>.zip` (`update.ASSET_RE`).
+- Plattform-Weichen: `detect.IS_MAC`/`config.IS_MAC` (Pfade), `widgets.Button` (auf dem Mac flacher Label-Knopf statt `tk.Button`). Neue Knöpfe immer über `widgets.Button` anlegen.
+- Kartenbasis: 2.304 sammelbare Zauber; rund 1.330 genau, ~700 geschätzt, ~270 unbekannt.
 
 ## Aufbau
 - `hscoach/effects.py`: deutscher Kartentext (kleingeschrieben) → `Effect`-Dataclass per Regex. `unknown=True`, bis etwas Konkretes erkannt ist.

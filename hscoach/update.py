@@ -32,7 +32,7 @@ API_URL = os.environ.get("HS_COACH_UPDATE_URL") or "https://api.github.com/repos
 TIMEOUT_S = 6
 MAX_ZIP_BYTES = 300 * 1024 * 1024
 EXE_NAME = "HSCoach.exe"
-ASSET_RE = re.compile(r"^HSCoach-[\w.\-]+\.zip$")
+ASSET_RE = re.compile(r"^HSCoach-\d[\d.]*\.zip$")          # nur das Windows-Zip, nicht "-mac.zip"
 
 Release = namedtuple("Release", "version url asset_url asset_name size sha256")
 

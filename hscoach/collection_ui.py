@@ -3,7 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-from . import collection, winstyle
+from . import collection, widgets, winstyle
 
 BG, BG2, FG, GOLD, GRAY, GREEN, RED = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899", "#66ff88", "#ff6666"
 
@@ -44,7 +44,7 @@ class CollectionWindow(tk.Toplevel):
         top.pack(fill="x", padx=10, pady=(8, 2))
         self.lbl_status = tk.Label(top, text="", bg=BG, fg=GRAY, font=("Segoe UI", 10), anchor="w")
         self.lbl_status.pack(side="left", fill="x", expand=True)
-        self.btn_refresh = tk.Button(top, text="⟳ Von HSReplay aktualisieren", command=self.refresh, bg="#1a1a3e", fg=GOLD,
+        self.btn_refresh = widgets.Button(top, text="⟳ Von HSReplay aktualisieren", command=self.refresh, bg="#1a1a3e", fg=GOLD,
                                      relief="flat", cursor="hand2")
         self.btn_refresh.pack(side="right")
 
@@ -115,9 +115,9 @@ class CollectionWindow(tk.Toplevel):
         self.var_code = tk.StringVar()
         tk.Entry(f, textvariable=self.var_code, bg="#1a1a3e", fg=FG, insertbackground=FG, relief="flat").pack(
             side="left", fill="x", expand=True, padx=(0, 6))
-        tk.Button(f, text="Aus Zwischenablage", command=self._paste_code, bg="#1a1a3e", fg=GOLD, relief="flat",
+        widgets.Button(f, text="Aus Zwischenablage", command=self._paste_code, bg="#1a1a3e", fg=GOLD, relief="flat",
                   cursor="hand2").pack(side="left", padx=2)
-        tk.Button(f, text="Prüfen", command=self._check_deck, bg="#2a5a2a", fg="white", relief="flat", width=10,
+        widgets.Button(f, text="Prüfen", command=self._check_deck, bg="#2a5a2a", fg="white", relief="flat", width=10,
                   cursor="hand2").pack(side="left", padx=2)
         self.txt_deck = tk.Text(self.tab_deck, bg="#080818", fg=FG, relief="flat", font=("Consolas", 10), wrap="word")
         self.txt_deck.pack(fill="both", expand=True, pady=8)

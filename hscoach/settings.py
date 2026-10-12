@@ -3,7 +3,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from . import config, detect, theme, winstyle
+from . import config, detect, theme, widgets, winstyle
 
 BG, BG2, FG, GOLD, GRAY = "#0d0d1a", "#111130", "#e8e8ff", "#ffd700", "#888899"
 
@@ -92,7 +92,7 @@ class SettingsDialog(tk.Toplevel):
         tk.Entry(f, textvariable=var, width=width, bg="#1a1a3e", fg=FG, insertbackground=FG, relief="flat").pack(
             side="left", padx=4)
         if browse:
-            tk.Button(f, text="…", command=lambda: self._browse(var), bg="#1a1a3e", fg=GOLD, relief="flat").pack(side="left")
+            widgets.Button(f, text="…", command=lambda: self._browse(var), bg="#1a1a3e", fg=GOLD, relief="flat").pack(side="left")
         return var
 
     def _check(self, label, key):
@@ -104,7 +104,7 @@ class SettingsDialog(tk.Toplevel):
     def _build(self):
         self._section("Hearthstone")
         v = self._row("Log-Ordner", "log_dir", browse=True)
-        tk.Label(self, text="Leer lassen = automatisch suchen. Erwartet wird der Ordner „Hearthstone\\Logs“.",
+        tk.Label(self, text="Leer lassen = automatisch suchen. Erwartet wird der Ordner „Hearthstone" + os.sep + "Logs“.",
                  bg=BG, fg=GRAY, font=("Segoe UI", 9), anchor="w").pack(fill="x", padx=14)
         self._row("Dein Spielername", "player_name")
         tk.Label(self, text="Leer lassen = automatisch erkennen (nur nötig, falls das falsch liegt, z. B. Name#1234).",
@@ -112,7 +112,7 @@ class SettingsDialog(tk.Toplevel):
         self.lbl_logcfg = tk.Label(self, text="", bg=BG, fg=GRAY, font=("Segoe UI", 10), anchor="w", justify="left",
                                    wraplength=640)
         self.lbl_logcfg.pack(fill="x", padx=14, pady=(8, 2))
-        self.btn_logcfg = tk.Button(self, text="Power.log aktivieren (log.config anlegen)", command=self._write_logcfg,
+        self.btn_logcfg = widgets.Button(self, text="Power.log aktivieren (log.config anlegen)", command=self._write_logcfg,
                                     bg="#1a1a3e", fg=GOLD, relief="flat", cursor="hand2")
         self._refresh_logcfg()
 
@@ -178,11 +178,11 @@ class SettingsDialog(tk.Toplevel):
 
         bar = tk.Frame(self, bg=BG)
         bar.pack(fill="x", padx=14, pady=14)
-        tk.Button(bar, text="Speichern", command=self._save, bg="#2a5a2a", fg="white", relief="flat", width=14,
+        widgets.Button(bar, text="Speichern", command=self._save, bg="#2a5a2a", fg="white", relief="flat", width=14,
                   cursor="hand2").pack(side="right", padx=4)
-        tk.Button(bar, text="Abbrechen", command=self.destroy, bg="#1a1a3e", fg=GOLD, relief="flat", width=12,
+        widgets.Button(bar, text="Abbrechen", command=self.destroy, bg="#1a1a3e", fg=GOLD, relief="flat", width=12,
                   cursor="hand2").pack(side="right", padx=4)
-        tk.Button(bar, text="API-Key entfernen", command=self._remove_key, bg="#1a1a3e", fg="#ff9999", relief="flat",
+        widgets.Button(bar, text="API-Key entfernen", command=self._remove_key, bg="#1a1a3e", fg="#ff9999", relief="flat",
                   cursor="hand2").pack(side="left")
 
     # -- Aktionen --------------------------------------------------------------------------------------------

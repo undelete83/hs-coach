@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.17.0 - 12.10.2026
+- **Neu: Mac-Version.** Der Coach läuft jetzt auch auf macOS (Hearthstone aus `/Applications/Hearthstone`). Log-Ordner und `log.config` (`~/Library/Preferences/Blizzard/Hearthstone/`) werden automatisch gefunden, „Power.log aktivieren“ funktioniert. Einstellungen, Cache und Logdatei liegen unter `~/Library/Application Support/`. Bauen mit `python3 scripts/build_mac.py` (braucht ein Python mit Tk, z. B. Homebrew `python-tk`), ergibt `HSCoach.app` und `HSCoach-<Version>-mac.zip`. Das Selbst-Update gibt es auf dem Mac nicht; der Update-Hinweis öffnet die Release-Seite.
+- Knöpfe auf dem Mac im dunklen Stil (macOS ignoriert sonst die Hintergrundfarbe von Tk-Knöpfen).
+- Der Windows-Updater lädt nur noch `HSCoach-<Version>.zip` und nie ein Mac-Zip aus demselben Release.
+
 ## 2.16.5 - 11.10.2026
 - **Mulligan als Erster**: Der Coach riet nur 1–2-Mana-Karten zu behalten und tauschte sonst alles. Mit einem Deck, das erst bei 3–4 Mana loslegt, führte das zu genauso klobigen Folgehänden. Jetzt gelten 1–3-Mana-Karten auch als Erster als Behalter (wie schon als Zweiter).
 

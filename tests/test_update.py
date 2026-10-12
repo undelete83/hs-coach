@@ -65,6 +65,15 @@ class TestCheck(unittest.TestCase):
         self.assertEqual((r.version, r.url), ("2.7.0", "https://example/r"))
         self.assertEqual((r.asset_name, r.asset_url, r.size, r.sha256), ("HSCoach-2.7.0.zip", ZIP_URL, 123, sha))
 
+    def test_mac_zip_is_ignored(self):
+        sha = "ef" * 32
+        r = update.check(REPO, "2.6.0", opener_for({
+            "tag_name": "v2.7.0", "assets": [
+                {"name": "HSCoach-2.7.0-mac.zip", "browser_download_url": ZIP_URL + "-mac", "size": 9,
+                 "digest": "sha256:" + "00" * 32},
+                {"name": "HSCoach-2.7.0.zip", "browser_download_url": ZIP_URL, "size": 5, "digest": "sha256:" + sha}]}))
+        self.assertEqual((r.asset_name, r.asset_url), ("HSCoach-2.7.0.zip", ZIP_URL))
+
     def test_checksum_file_fallback(self):
         sha = "cd" * 32
 

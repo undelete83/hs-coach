@@ -9,10 +9,12 @@ else:
     REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 _HOME = os.path.expanduser("~")
-CONFIG_DIR = os.path.join(os.environ.get("APPDATA") or _HOME, "HSCoach")
+IS_MAC = sys.platform == "darwin"
+_MAC_SUPPORT = os.path.join(_HOME, "Library", "Application Support")
+CONFIG_DIR = os.path.join(_MAC_SUPPORT if IS_MAC else (os.environ.get("APPDATA") or _HOME), "HSCoach")
 CONFIG_PATH = os.environ.get("HS_COACH_CONFIG", os.path.join(CONFIG_DIR, "config.json"))
 LEGACY_CONFIG_PATH = os.path.join(_HOME, "hs_coach_config.json")        # fruehere Ablage (Version < 2.6)
-APP_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or _HOME, "hs_coach")       # Cache, Logdatei
+APP_DIR = os.path.join(_MAC_SUPPORT if IS_MAC else (os.environ.get("LOCALAPPDATA") or _HOME), "hs_coach")  # Cache, Log
 
 _HDT = os.path.join(os.environ.get("APPDATA") or _HOME, "HearthstoneDeckTracker")
 

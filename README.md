@@ -41,6 +41,18 @@ pip install -r requirements.txt
 pythonw hs_coach.py        # ohne Konsolenfenster; mit "python" siehst du Meldungen
 ```
 
+### Variante C: macOS
+
+Der Coach läuft auch auf dem Mac (Hearthstone aus `/Applications/Hearthstone`). Er braucht ein Python mit Tk, z. B. von Homebrew:
+
+```bash
+brew install python@3.14 python-tk@3.14
+python3.14 scripts/build_mac.py      # baut dist/HSCoach.app (+ Zip)
+```
+
+Oder direkt aus dem Quellcode: `python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python hs_coach.py`.
+Auf dem Mac liegen `log.config` unter `~/Library/Preferences/Blizzard/Hearthstone/`, Einstellungen, Cache und Logdatei unter `~/Library/Application Support/HSCoach` bzw. `hs_coach`. Das Selbst-Update gibt es nur unter Windows; auf dem Mac öffnet der Update-Hinweis die Release-Seite.
+
 ## Einstellungen
 
 Alles Wichtige steht im Fenster unter **⚙ Einstellungen**:
