@@ -1,0 +1,39 @@
+name: Windows-Paket
+
+# Baut HSCoach-<Version>.zip (+ .sha256) auf einem Windows-Runner und haengt es an ein bestehendes Release.
+# Start: Actions > "Windows-Paket" > Run workflow, Tag angeben (z. B. v2.17.1)
+#        oder: gh workflow run release-windows.yml -f tag=v2.17.1
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release-Tag, z. B. v2.17.1"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -t .
+      - run: python scripts/check_secrets.py --all
+      - run: python scripts/build_exe.py
+      - name: Paket an das Release haengen
+        shell: bash
+        run: |
+          VERSION="${TAG#v}"
+          ZIP="dist/HSCoach-${VERSION}.zip"
+          test -f "$ZIP" || { echo "Erwartet: $ZIP (Version im Code passt nicht zum Tag?)"; ls dist; exit 1; }
+          gh release upload "$TAG" "$ZIP" "$ZIP.sha256" --clobber
