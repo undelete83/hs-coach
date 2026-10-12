@@ -1,0 +1,105 @@
+name: Release
+
+# Baut beide Pakete und veroeffentlicht das Release:
+#   Windows: HSCoach-<Version>.zip      (windows-latest, scripts/build_exe.py)
+#   Mac:     HSCoach-<Version>-mac.zip  (macos-latest/arm64, scripts/build_mac.py)
+# Start: Tag pushen (git tag v2.17.2 && git push origin v2.17.2)
+#        oder Actions > "Release" > Run workflow mit Tag (vorhandene Pakete werden ersetzt).
+#        dry_run = nur bauen und pruefen, nichts veroeffentlichen.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag, z. B. v2.17.2"
+        required: true
+      dry_run:
+        description: "Nur bauen, nichts veroeffentlichen"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -t .
+      - run: python scripts/check_secrets.py --all
+      - name: Version im Code muss zum Tag passen
+        shell: bash
+        run: |
+          CODE=$(python -c "import hscoach; print(hscoach.__version__)")
+          test "v$CODE" = "$TAG" || { echo "Tag $TAG, Code $CODE"; exit 1; }
+      - run: python scripts/build_exe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/HSCoach-*.zip
+            dist/HSCoach-*.zip.sha256
+
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -t .
+      - run: python scripts/build_mac.py
+      - name: App startet und meldet die richtige Version
+        run: |
+          VERSION="${TAG#v}"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' dist/HSCoach.app/Contents/Info.plist)" = "$VERSION"
+          codesign --verify --deep dist/HSCoach.app
+          test -f "dist/HSCoach-$VERSION-mac.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: |
+            dist/HSCoach-*-mac.zip
+            dist/HSCoach-*-mac.zip.sha256
+
+  publish:
+    needs: [windows, mac]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: pakete
+          merge-multiple: true
+      - name: Release anlegen oder Pakete ersetzen
+        run: |
+          VERSION="${TAG#v}"
+          ls -la pakete
+          FILES="pakete/HSCoach-$VERSION.zip pakete/HSCoach-$VERSION.zip.sha256 pakete/HSCoach-$VERSION-mac.zip pakete/HSCoach-$VERSION-mac.zip.sha256"
+          for f in $FILES; do test -f "$f" || { echo "fehlt: $f"; exit 1; }; done
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $FILES --clobber
+          else
+            python3 scripts/release_notes.py "$VERSION" notes.md
+            gh release create "$TAG" $FILES --title "HS Coach $VERSION" --notes-file notes.md --latest
+          fi

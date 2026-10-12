@@ -26,6 +26,15 @@ Repo: github.com/undelete83/hs-coach, Branch `main`. Besitzer: Andreas. Antworte
 4. `hscoach/__init__.py` Version erhöhen und oben in `CHANGELOG.md` einen Eintrag ergänzen (Deutsch, Datum tt.mm.jjjj; ein Test prüft das).
 5. Commit und Push auf `main`.
 
+## Release (immer Windows UND Mac)
+- **Nur nach ausdrücklichem „ja“ von Andreas veröffentlichen.**
+- Nach dem Push: `git tag vX.Y.Z && git push origin vX.Y.Z`. Der Workflow `.github/workflows/release.yml` baut dann auf GitHub-Runnern
+  `HSCoach-X.Y.Z.zip` (Windows) und `HSCoach-X.Y.Z-mac.zip` (macOS arm64), jeweils mit `.sha256`, prüft Tests/Version/Signatur
+  und legt das Release mit dem CHANGELOG-Abschnitt an (`scripts/release_notes.py`). Kein lokaler Build und kein `gh release create` von Hand nötig.
+- Ergebnis prüfen: `gh run list --workflow release.yml`, danach `gh release view vX.Y.Z` (vier Dateien).
+- Pakete eines bestehenden Releases neu bauen: Actions > „Release“ > Run workflow mit Tag (ersetzt die Pakete); `dry_run` baut nur.
+- Pushen von Workflow-Dateien braucht beim `gh`-Login den Scope `workflow`.
+
 ## Offene Ideen
 - Im echten Spiel mitschreiben, welche Karten „Effekt unbekannt" melden, und genau diese zuerst angehen.
 - Restliche unbekannte Zauber sind kleinteilig: Quests, Auren über mehrere Züge, Leichen-Mechaniken, Bekehren (Kopie feindlicher Diener, kostet 1), Todesröcheln vergeben, temporäres Stehlen (Dunkler Wahnsinn), Verbotene Frucht/Flamme (manaabhängig), Tödliches Rezept (Mana-Schwelle).
