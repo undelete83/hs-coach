@@ -5,6 +5,11 @@ zeigt der Coach zusätzlich den Commit und meldet "Neustart empfohlen", wenn im 
 Beim Erhöhen der Version bitte hier einen Eintrag ergänzen (ein Test prüft das). Einträge vor 2.6.0 stammen aus der
 privaten Entwicklungsphase; das öffentliche Repository beginnt mit 2.6.0.
 
+## 2.18.3 - 12.10.2026
+- Release mit den Fixes aus 2.18.2: **kein Absturz mehr bei Rückfragen auf dem Mac** (eigene Dialoge statt Systemdialog), **HTTPS in der Mac-App** (Zertifikate über `certifi`) und ein **Selbsttest**, der jedes Release vor dem Veröffentlichen auf Windows und Mac prüft.
+- Enthält außerdem den QR-Code fürs Handy aus 2.18.0 (Knopf „📱 Handy“).
+- Hinweis: Die Mac-App aus 2.18.1 konnte keine HTTPS-Verbindungen aufbauen und findet dieses Update daher nicht selbst – einmal von Hand laden.
+
 ## 2.18.2 - 12.10.2026
 - **Mac: Absturz bei Rückfragen behoben.** Der Dialog „Version … jetzt installieren?“ (und andere Rückfragen) ließ die Mac-App abstürzen: macOS 26 hängt an Systemdialoge eine Gamecontroller-Steuerung, die Tk 9 beim Aufräumen falsch freigibt. Auf dem Mac zeigt der Coach Rückfragen und Meldungen jetzt in eigenen Fenstern im Coach-Stil; unter Windows bleibt alles wie bisher.
 - **Mac: HTTPS in der Release-App.** Die von GitHub gebaute Mac-App (2.18.1) fand keine Zertifikate (`CERTIFICATE_VERIFY_FAILED`): keine Kartendaten, keine Update-Prüfung. Sie nutzt jetzt das Zertifikatspaket `certifi` (neue Abhängigkeit).
