@@ -6,11 +6,12 @@ Ergebnis auf stdout und in `<APP_DIR>/selftest.txt`; Exit-Code 0 = alles in Ordn
 """
 import os
 import sys
+import urllib.error
 import urllib.request
 
 from . import __version__
 
-URL = "https://api.github.com/"
+URL = "https://github.com/"           # keine API: deren Limit fuer anonyme Abfragen trifft geteilte CI-Rechner
 
 
 def run(stream=sys.stdout):
@@ -37,8 +38,11 @@ def run(stream=sys.stdout):
 
     def https():
         req = urllib.request.Request(URL, headers={"User-Agent": "HSCoach/" + __version__})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return f"HTTP {resp.status}"
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return f"HTTP {resp.status}"
+        except urllib.error.HTTPError as ex:     # Antwort kam an: Verbindung und Zertifikat sind in Ordnung
+            return f"HTTP {ex.code} (Zertifikat in Ordnung)"
 
     def qr():
         from . import phone_ui

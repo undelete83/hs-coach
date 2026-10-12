@@ -79,6 +79,18 @@ class TestCleanEnv(unittest.TestCase):
 
 
 class TestSelftest(unittest.TestCase):
+    def test_http_error_still_proves_tls(self):
+        import io
+        import urllib.error
+        from hscoach import selftest
+        err = urllib.error.HTTPError(selftest.URL, 429, "rate limit", {}, None)
+        with mock.patch.object(selftest.urllib.request, "urlopen", side_effect=err), \
+             mock.patch.object(selftest, "os") as fake_os:
+            fake_os.makedirs.side_effect = OSError
+            out = io.StringIO()
+            self.assertEqual(selftest.run(out), 0)
+        self.assertIn("HTTP 429", out.getvalue())
+
     def test_reports_failures_with_exit_code(self):
         import io
         from hscoach import selftest
